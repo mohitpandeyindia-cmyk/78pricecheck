@@ -1,0 +1,656 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --bg-light: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-main: #212529;
+  --text-muted: #6c757d;
+  --primary-color: #1b5e20;
+  --primary-hover: #144417;
+  --success-color: #2e7d32;
+  --border-color: #dee2e6;
+  --danger-color: #dc3545;
+  --danger-bg: #f8d7da;
+  --danger-border: #f5c2c7;
+  --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior-y: contain; /* Prevent pull-to-refresh pull gestures */
+}
+
+/* App Wrapper centered on desktop screens */
+.app-wrapper {
+  max-width: 480px;
+  margin: 0 auto;
+  height: 100%;
+  background-color: var(--bg-light);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.view-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+/* Welcome Page Layout */
+.welcome-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  padding: 50px 30px;
+  text-align: center;
+  background: radial-gradient(circle at top, #e8f5e9 0%, var(--bg-light) 60%);
+}
+
+.brand-header {
+  margin-top: 30px;
+}
+
+.logo-icon {
+  font-size: 3.5rem;
+  margin-bottom: 15px;
+}
+
+.brand-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+}
+
+.brand-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.welcome-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 35px 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.welcome-heading {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+
+.welcome-text {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.welcome-footer {
+  font-size: 0.85rem;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}
+
+.btn-primary:active {
+  background-color: var(--primary-hover);
+  transform: scale(0.98);
+}
+
+.btn-large {
+  width: 100%;
+  padding: 15px 20px;
+  font-size: 1.1rem;
+}
+
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  padding: 10px 20px;
+  font-size: 0.9rem;
+}
+
+.btn-outline:active {
+  background-color: rgba(27, 94, 32, 0.05);
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 5px 10px;
+}
+
+.btn-text:active {
+  color: var(--primary-color);
+}
+
+/* Scanner Split Screen */
+.app-header {
+  height: 6vh;
+  min-height: 45px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  background-color: var(--card-bg);
+}
+
+.header-logo {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+/* Upper 40% Viewport Viewfinder */
+.camera-viewport {
+  height: 38vh;
+  position: relative;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+#reader {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#reader video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Hide standard HTML5-QRCode scanner dialog interface widgets to keep it clean */
+#reader__dashboard, #reader__status_span {
+  display: none !important;
+}
+
+.scan-target-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 60%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Viewfinder shader cover */
+}
+
+.scan-target-box::before, .scan-target-box::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: var(--primary-color);
+  border-style: solid;
+  pointer-events: none;
+}
+
+/* Corner markers on barcode target frame */
+.scan-target-box::before {
+  top: -2px;
+  left: -2px;
+  border-width: 3px 0 0 3px;
+  border-top-left-radius: 6px;
+}
+
+.scan-target-box::after {
+  bottom: -2px;
+  right: -2px;
+  border-width: 0 3px 3px 0;
+  border-bottom-right-radius: 6px;
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
+  animation: scan-move 2s linear infinite;
+}
+
+@keyframes scan-move {
+  0% { top: 5%; }
+  50% { top: 95%; }
+  100% { top: 5%; }
+}
+
+/* Lower 60% Result Card Panel */
+.details-panel {
+  height: 56vh;
+  background-color: var(--bg-light);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Highlight outline/shadow pulse effect on card load */
+@keyframes highlight-glow {
+  0% { border-color: var(--success-color); box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.25); }
+  100% { border-color: var(--border-color); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+}
+
+.pulse-highlight {
+  animation: highlight-glow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.details-card-content {
+  flex: 1;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.details-state {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* State idle & loaders */
+.idle-graphic {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.state-instruction {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* State Single Product */
+.product-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin-bottom: 5px;
+  color: var(--text-main);
+}
+
+.barcode-badge {
+  background-color: var(--bg-light);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+
+.pricing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.mrp-row {
+  margin-bottom: 20px; /* Generous spacing between MRP and Today's Price */
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mrp-label-inline {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.mrp-val {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #adb5bd; /* Lighter grey for crossed-out MRP */
+  text-decoration: line-through;
+  font-family: monospace;
+}
+
+.price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.price-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.price-val {
+  font-size: 2.8rem; /* Significantly larger font */
+  font-weight: 800;
+  color: var(--primary-color); /* 78 Supermaart Brand Green #1b5e20 */
+  line-height: 1.1;
+  font-family: monospace;
+}
+
+/* State Multiple Matches */
+.multi-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  width: 100%;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+
+.multi-icon {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.multi-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.multi-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.multi-products-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 280px; /* Increase height to support vertical cards */
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Custom Scrollbar for list container */
+.multi-products-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.multi-products-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 2px;
+}
+
+.multi-item-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.multi-item-card:active {
+  background-color: #f8f9fa;
+}
+
+.multi-item-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 4px;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.multi-barcode-badge {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  background-color: var(--bg-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.multi-pricing-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.multi-mrp-row {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.multi-mrp-label-inline {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.multi-mrp-val {
+  font-size: 0.95rem;
+  color: #adb5bd;
+  text-decoration: line-through;
+  font-family: monospace;
+}
+
+.multi-price-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.multi-price-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
+}
+
+.multi-price-val {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  line-height: 1.1;
+  font-family: monospace;
+}
+
+/* Errors & Recovery Graphics */
+.error-graphic {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.error-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-main);
+}
+
+.error-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  max-width: 280px;
+  line-height: 1.4;
+  margin-bottom: 15px;
+}
+
+/* Feedback bubble popup */
+.scan-feedback-popup {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 12px;
+  z-index: 50;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* History Logs at the bottom */
+.session-history-container {
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.history-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.history-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 4px;
+}
+
+.history-list::-webkit-scrollbar {
+  height: 2px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+}
+
+.history-empty {
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.history-chip {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 90px;
+  cursor: pointer;
+}
+
+.history-chip:active {
+  background-color: var(--bg-light);
+}
+
+.history-chip-name {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-main);
+  max-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-chip-price {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--success-color);
+}
+
+/* Helper formats */
+.monospace {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}

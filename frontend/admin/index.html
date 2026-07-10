@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>78 PriceCheck - Upload Catalogue</title>
+  <link rel="stylesheet" href="/admin/css/style.css">
+  <script src="/admin/js/auth.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <span class="nav-brand">78 PriceCheck</span>
+      <div class="nav-links">
+        <a href="/admin/upload" class="nav-link active">Upload Catalogue</a>
+        <a href="/admin/history" class="nav-link">Upload History</a>
+        <button id="logout-btn" class="btn btn-link">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="main-container">
+    <div class="grid-layout">
+      <!-- Left Column: Upload Controls -->
+      <div class="card">
+        <h2 class="card-title">Upload Catalogue</h2>
+        <p class="card-desc">Select and upload the complete product catalogue Excel sheet. The database will be atomically replaced on a successful run.</p>
+        
+        <div class="action-bar" style="margin-bottom: 20px;">
+          <a href="/api/admin/template" class="btn btn-secondary">Download Excel Template</a>
+        </div>
+        
+        <form id="upload-form" class="upload-area">
+          <div class="file-picker">
+            <input type="file" id="file-input" name="file" accept=".xlsx" style="display: none;">
+            <button type="button" id="browse-btn" class="btn btn-outline">Choose Excel File</button>
+            <span id="file-name" class="file-name-label">No file selected</span>
+          </div>
+          
+          <button type="submit" id="upload-btn" class="btn btn-primary" disabled>Upload Catalogue</button>
+        </form>
+        
+        <!-- Progress Indicator -->
+        <div id="progress-container" class="progress-container" style="display: none;">
+          <div class="progress-bar-wrapper">
+            <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
+          </div>
+          <span id="progress-text" class="progress-text">Uploading: 0%</span>
+        </div>
+        
+        <!-- Upload Result Alerts -->
+        <div id="result-container" style="display: none; margin-top: 20px;">
+          <!-- Success Alert -->
+          <div id="success-alert" class="alert alert-success" style="display: none;">
+            <h3 class="alert-title">✔ Upload completed successfully</h3>
+            <div class="alert-details">
+              <p>Total products imported: <strong id="res-total">0</strong></p>
+              <p>Processing time: <strong id="res-time">0</strong> ms</p>
+              <p>Catalogue version: <strong id="res-version">N/A</strong></p>
+              <p>Upload timestamp: <strong id="res-date">N/A</strong></p>
+            </div>
+          </div>
+          
+          <!-- Failure Alert -->
+          <div id="failure-alert" class="alert alert-danger" style="display: none;">
+            <h3 class="alert-title">❌ Upload rejected</h3>
+            <p id="failure-msg" style="margin-bottom: 10px;"></p>
+            
+            <div id="errors-report-link" style="margin-bottom: 15px; display: none;">
+              <a id="download-errors-btn" class="btn btn-danger" href="#">Download CSV Error Report</a>
+            </div>
+            
+            <div class="error-log-wrapper">
+              <table class="error-table">
+                <thead>
+                  <tr>
+                    <th>Row</th>
+                    <th>Barcode</th>
+                    <th>Product Name</th>
+                    <th>Error Description</th>
+                  </tr>
+                </thead>
+                <tbody id="error-logs-body">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Column: Status Panel -->
+      <div class="card status-card">
+        <h2 class="card-title">Current Catalogue</h2>
+        <div class="status-panel">
+          <div class="status-item">
+            <span class="status-label">Products:</span>
+            <strong id="status-products" class="status-val">-</strong>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Version:</span>
+            <strong id="status-version" class="status-val">-</strong>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Last Updated:</span>
+            <div id="status-updated" class="status-val-multi">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/admin/js/upload.js"></script>
+</body>
+</html>

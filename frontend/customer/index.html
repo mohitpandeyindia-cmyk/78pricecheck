@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Welcome to 78 PriceCheck</title>
+  <link rel="stylesheet" href="css/customer.css">
+  <!-- html5-qrcode library for barcode camera decoding -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    
+    <!-- State A: Welcome View -->
+    <div id="welcome-view" class="welcome-container">
+      <div class="brand-header">
+        <div class="logo-icon">🛒</div>
+        <h1 class="brand-title">78 PriceCheck</h1>
+        <p class="brand-subtitle">78 Supermaart service</p>
+      </div>
+      
+      <div class="welcome-card">
+        <h2 class="welcome-heading">Welcome to 78 PriceCheck</h2>
+        <p class="welcome-text">Check the latest price of any product instantly.</p>
+        
+        <button id="start-scan-btn" class="btn btn-primary btn-large">Scan Barcode</button>
+      </div>
+      
+      <footer class="welcome-footer">
+        <p class="text-muted">Point your phone camera to a product barcode to verify prices.</p>
+      </footer>
+    </div>
+    
+    <!-- State B: Active Scanner & Result View (SPA Panel) -->
+    <div id="scanner-view" class="view-panel" style="display: none;">
+      <!-- Thin, Minimal Header: Only Logo/Title and Back button -->
+      <header class="app-header">
+        <span class="header-logo">🛒 78 PriceCheck</span>
+        <button id="back-btn" class="btn btn-text">Back</button>
+      </header>
+      
+      <!-- Upper 40% Viewport Viewfinder -->
+      <div class="camera-viewport">
+        <div id="reader"></div>
+        <div class="scan-target-box">
+          <div class="scan-line"></div>
+        </div>
+      </div>
+      
+      <!-- Lower 60% Sliding Result Card Panel -->
+      <div id="result-panel" class="details-panel">
+        <!-- Barcode Detected Success Flash Bubble -->
+        <div id="scan-feedback" class="scan-feedback-popup" style="display: none;">
+          Barcode Detected
+        </div>
+        
+        <div id="details-card" class="details-card-content">
+          <!-- State 1: Idle -->
+          <div id="state-idle" class="details-state">
+            <div class="idle-graphic">🔍</div>
+            <p class="state-instruction">Align product barcode in the box above to verify price.</p>
+          </div>
+          
+          <!-- State 2: Loading -->
+          <div id="state-loading" class="details-state" style="display: none;">
+            <div class="spinner"></div>
+            <p class="state-instruction">Looking up price...</p>
+          </div>
+          
+          <!-- State 3: Single Match Display -->
+          <div id="state-single" class="details-state" style="display: none;">
+            <h2 id="single-name" class="product-title">-</h2>
+            <div class="barcode-badge monospace" id="single-barcode">-</div>
+            
+            <div class="pricing-container">
+              <div class="mrp-row">
+                <span class="mrp-label-inline">MRP:</span>
+                <span class="mrp-val" id="single-mrp">-</span>
+              </div>
+              
+              <div class="price-block">
+                <span class="price-label">Today's Price</span>
+                <span class="price-val" id="single-sale-price">-</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- State 4: Multiple Matches Display -->
+          <div id="state-multiple" class="details-state" style="display: none;">
+            <div class="multi-header">
+              <span class="multi-icon">ℹ</span>
+              <div>
+                <h3 class="multi-title">Multiple matching products found.</h3>
+                <p class="multi-subtitle">Compare the MRP to identify the correct product.</p>
+              </div>
+            </div>
+            
+            <div class="multi-products-list" id="multi-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          
+          <!-- State 5: Product Not Found Alert -->
+          <div id="state-not-found" class="details-state" style="display: none;">
+            <div class="error-graphic">❌</div>
+            <h3 class="error-title">Product not found</h3>
+            <p class="error-desc">Please try scanning again or ask a store associate for assistance.</p>
+          </div>
+          
+          <!-- State F1: Camera Permission Denied -->
+          <div id="state-camera-denied" class="details-state" style="display: none;">
+            <div class="error-graphic">📷</div>
+            <h3 class="error-title" style="font-size: 1.1rem; margin-bottom: 8px;">Camera access is required to scan product barcodes.</h3>
+            <p class="error-desc">Please enable camera permission and try again.</p>
+            <button id="retry-camera-denied-btn" class="btn btn-outline">Retry</button>
+          </div>
+          
+          <!-- State F2: Camera Unavailable -->
+          <div id="state-camera-unavailable" class="details-state" style="display: none;">
+            <div class="error-graphic">📷</div>
+            <h3 class="error-title">Unable to access the camera.</h3>
+            <p class="error-desc">Please close other applications using the camera and try again.</p>
+            <button id="retry-camera-unavailable-btn" class="btn btn-outline">Retry</button>
+          </div>
+          
+          <!-- State F3: Network Error -->
+          <div id="state-network-error" class="details-state" style="display: none;">
+            <div class="error-graphic">⚡</div>
+            <h3 class="error-title">Unable to connect.</h3>
+            <p class="error-desc">Please check your internet connection.</p>
+            <button id="retry-network-btn" class="btn btn-outline">Retry</button>
+          </div>
+          
+          <!-- State F4: Server Error -->
+          <div id="state-server-error" class="details-state" style="display: none;">
+            <div class="error-graphic">⚡</div>
+            <h3 class="error-title">Price service is temporarily unavailable.</h3>
+            <p class="error-desc">Please try again shortly.</p>
+            <button id="retry-server-btn" class="btn btn-outline">Retry</button>
+          </div>
+        </div>
+        
+        <!-- Scan Session History -->
+        <div class="session-history-container">
+          <h4 class="history-section-title">Recently Scanned</h4>
+          <div class="history-list" id="recent-scans-list">
+            <span class="history-empty text-muted">No items scanned yet in this session.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+  
+  <script src="js/customer.js"></script>
+</body>
+</html>

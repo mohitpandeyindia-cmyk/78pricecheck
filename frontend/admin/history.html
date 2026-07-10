@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>78 PriceCheck - Upload History</title>
+  <link rel="stylesheet" href="/admin/css/style.css">
+  <script src="/admin/js/auth.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <span class="nav-brand">78 PriceCheck</span>
+      <div class="nav-links">
+        <a href="/admin/upload" class="nav-link">Upload Catalogue</a>
+        <a href="/admin/history" class="nav-link active">Upload History</a>
+        <button id="logout-btn" class="btn btn-link">Logout</button>
+      </div>
+    </div>
+  </nav>
+  
+  <div class="main-container">
+    <div class="card">
+      <h2 class="card-title">Upload History Logs</h2>
+      <p class="card-desc">Auditing log tracking of complete replacement catalogue runs uploaded by administrators.</p>
+      
+      <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+      
+      <div class="table-responsive">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>File Name</th>
+              <th>Total Rows</th>
+              <th>Failed Rows</th>
+              <th>Status</th>
+              <th>Processing Time</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="history-rows">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <script src="/admin/js/history.js"></script>
+</body>
+</html>

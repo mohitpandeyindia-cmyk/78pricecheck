@@ -1,0 +1,30 @@
+# Dependency directories
+node_modules/
+
+# Build outputs
+dist/
+
+# Environmental variables
+.env
+.env.*
+!.env.example
+
+# SQLite databases
+*.db
+*.sqlite
+
+# Uploads folder files
+uploads/*
+
+# Preserve structural files
+!.gitkeep
+
+# System and IDE configurations
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Redundant extracted folder
+78pricecheck/
