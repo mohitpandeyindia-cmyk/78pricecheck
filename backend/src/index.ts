@@ -133,6 +133,7 @@ app.get('*', (req, res, next) => {
   const indexPath = path.join(FRONTEND_PATH, 'customer/index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
+      console.error(`[Static Files Error] Failed to serve index.html from path: "${indexPath}". Error:`, err);
       // If frontend hasn't been built yet, output simple landing info
       res.status(200).send(`
         <!DOCTYPE html>
