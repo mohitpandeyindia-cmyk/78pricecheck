@@ -1,0 +1,8 @@
+{
+  "name": "seventyeightos-root",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm run build --prefix backend",
+    "start": "npm start --prefix backend"
+  }
+}
