@@ -93,6 +93,27 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+// Diagnostic path debug endpoint
+app.get('/api/debug-paths', (req, res) => {
+  try {
+    const fs = require('fs');
+    const dirContents = (p: string) => {
+      try { return fs.readdirSync(p); } catch (e: any) { return e.message; }
+    };
+    res.json({
+      cwd: process.cwd(),
+      dirname: __dirname,
+      resolvedFrontend: path.resolve(__dirname, '../../frontend'),
+      rootContents: dirContents('/'),
+      appContents: dirContents('/app'),
+      cwdContents: dirContents(process.cwd()),
+      frontendContents: dirContents(path.resolve(__dirname, '../../frontend'))
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // API Routes
 app.use('/api', versionRouter);
 app.use('/api', adminRouter);
