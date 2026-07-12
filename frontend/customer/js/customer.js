@@ -157,7 +157,19 @@ function renderRecentScans() {
       document.getElementById('single-name').textContent = item.name;
       document.getElementById('single-barcode').textContent = item.barcode;
       document.getElementById('single-sale-price').textContent = formatCurrency(item.salePrice);
-      document.getElementById('single-mrp').textContent = '';
+      document.getElementById('single-mrp').textContent = item.mrp ? formatCurrency(item.mrp) : '';
+      
+      const bulkContainer = document.getElementById('single-bulk-container');
+      if (item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
+        document.getElementById('single-bulk-qty').textContent = `Buy ${item.wholesaleQty} or more`;
+        document.getElementById('single-bulk-price').textContent = `${formatCurrency(item.wholesalePrice)} each`;
+        const savings = Number(item.salePrice) - Number(item.wholesalePrice);
+        document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
+        bulkContainer.style.display = 'block';
+      } else {
+        bulkContainer.style.display = 'none';
+      }
+      
       applyCardHighlight();
     });
     
@@ -192,6 +204,20 @@ async function lookupBarcode(barcode) {
         data.products.forEach(p => {
           const card = document.createElement('div');
           card.className = 'multi-item-card';
+          
+          let bulkHtml = '';
+          if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+            const savings = Number(p.salePrice) - Number(p.wholesalePrice);
+            bulkHtml = `
+              <div class="multi-bulk-container">
+                <div class="multi-bulk-header">Bulk Offer</div>
+                <div class="multi-bulk-qty">Buy ${p.wholesaleQty}+</div>
+                <div class="multi-bulk-price">${formatCurrency(p.wholesalePrice)} each</div>
+                <div class="multi-bulk-savings">Save ${formatCurrency(savings)} per item</div>
+              </div>
+            `;
+          }
+
           card.innerHTML = `
             <div class="multi-item-name">${p.name}</div>
             <div class="multi-barcode-badge monospace">${p.barcode}</div>
@@ -204,6 +230,7 @@ async function lookupBarcode(barcode) {
                 <span class="multi-price-label">Today's Price</span>
                 <span class="multi-price-val">${formatCurrency(p.salePrice)}</span>
               </div>
+              ${bulkHtml}
             </div>
           `;
           
@@ -215,6 +242,18 @@ async function lookupBarcode(barcode) {
             document.getElementById('single-barcode').textContent = p.barcode;
             document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
             document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+            
+            const bulkContainer = document.getElementById('single-bulk-container');
+            if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+              document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
+              document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
+              const savings = Number(p.salePrice) - Number(p.wholesalePrice);
+              document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
+              bulkContainer.style.display = 'block';
+            } else {
+              bulkContainer.style.display = 'none';
+            }
+            
             applyCardHighlight();
           });
           
@@ -231,6 +270,17 @@ async function lookupBarcode(barcode) {
         document.getElementById('single-barcode').textContent = p.barcode;
         document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
         document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+        
+        const bulkContainer = document.getElementById('single-bulk-container');
+        if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+          document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
+          document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
+          const savings = Number(p.salePrice) - Number(p.wholesalePrice);
+          document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
+          bulkContainer.style.display = 'block';
+        } else {
+          bulkContainer.style.display = 'none';
+        }
         
         addToHistory(p);
       } else {

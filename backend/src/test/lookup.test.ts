@@ -15,20 +15,20 @@ async function runTests() {
   await db.run('DELETE FROM products WHERE barcode LIKE ?', 'TEST_%');
   
   // Insert test products:
-  // TEST_1001: Exact lookup target ($15.00)
-  // TEST_10010: Trailing-zero lookup target ($10.00 - cheaper, should sort first)
-  // TEST_1002: Exact match only ($20.00)
+  // TEST_1001: Exact lookup target ($15.00) with wholesale pricing
+  // TEST_10010: Trailing-zero lookup target ($10.00 - cheaper, should sort first) without wholesale
+  // TEST_1002: Exact match only ($20.00) with wholesale pricing
   await db.run(
-    `INSERT INTO products (barcode, name, sale_price, mrp) 
-     VALUES ('TEST_1001', 'Test Product Exact', 15.00, 15.00)`
+    `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty) 
+     VALUES ('TEST_1001', 'Test Product Exact', 15.00, 15.00, 12.00, 5)`
   );
   await db.run(
-    `INSERT INTO products (barcode, name, sale_price, mrp) 
-     VALUES ('TEST_10010', 'Test Product Zero Padded', 10.00, 10.00)`
+    `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty) 
+     VALUES ('TEST_10010', 'Test Product Zero Padded', 10.00, 10.00, NULL, NULL)`
   );
   await db.run(
-    `INSERT INTO products (barcode, name, sale_price, mrp) 
-     VALUES ('TEST_1002', 'Test Product Single', 20.00, 20.00)`
+    `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty) 
+     VALUES ('TEST_1002', 'Test Product Single', 20.00, 20.00, 16.00, 3)`
   );
 
   let passed = 0;
@@ -56,6 +56,8 @@ async function runTests() {
     assert(Array.isArray(dataA.products), 'Exact lookup returns products list');
     assert(dataA.products.length === 1, 'Exact lookup returns exactly 1 item');
     assert(dataA.products[0].barcode === 'TEST_1002', 'Exact lookup returns correct product barcode');
+    assert(dataA.products[0].wholesalePrice === 16.00, 'Exact lookup returns correct wholesalePrice (16.00)');
+    assert(dataA.products[0].wholesaleQty === 3, 'Exact lookup returns correct wholesaleQty (3)');
 
     // Scenario B: Trailing-zero match
     // Querying TEST_10010 should match exactly
@@ -65,6 +67,8 @@ async function runTests() {
     assert(dataB.multipleMatches === false, 'Zero padded lookup has multipleMatches: false');
     assert(dataB.products.length === 1, 'Zero padded lookup returns exactly 1 item');
     assert(dataB.products[0].barcode === 'TEST_10010', 'Zero padded lookup returns correct barcode');
+    assert(dataB.products[0].wholesalePrice === null, 'Zero padded lookup returns null wholesalePrice');
+    assert(dataB.products[0].wholesaleQty === null, 'Zero padded lookup returns null wholesaleQty');
 
     // Scenario C: Both exact and trailing-zero matches returned together
     // Querying TEST_1001 matches exact TEST_1001 and trailing-zero TEST_10010
@@ -87,9 +91,13 @@ async function runTests() {
     assert(dataC.products[0].barcode === 'TEST_10010', 'Cheaper product is listed first in response');
     assert(dataC.products[0].mrp === 10.00, 'First item MRP is $10.00');
     assert(dataC.products[0].salePrice === 10.00, 'First item salePrice is $10.00');
+    assert(dataC.products[0].wholesalePrice === null, 'First item wholesalePrice is null');
+    assert(dataC.products[0].wholesaleQty === null, 'First item wholesaleQty is null');
     assert(dataC.products[1].barcode === 'TEST_1001', 'More expensive product is listed second');
     assert(dataC.products[1].mrp === 15.00, 'Second item MRP is $15.00');
     assert(dataC.products[1].salePrice === 15.00, 'Second item salePrice is $15.00');
+    assert(dataC.products[1].wholesalePrice === 12.00, 'Second item wholesalePrice is 12.00');
+    assert(dataC.products[1].wholesaleQty === 5, 'Second item wholesaleQty is 5');
 
     // Scenario F: No matching products (Article VII: Price Integrity)
     const resF = await fetch(`${BASE_URL}/products/lookup/TEST_9999_NON_EXISTENT`);

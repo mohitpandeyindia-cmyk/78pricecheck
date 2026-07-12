@@ -94,8 +94,10 @@ async function runTests() {
       headers[0] === 'Barcode' && 
       headers[1] === 'Product Name' && 
       headers[2] === 'MRP' && 
-      headers[3] === 'Sale Price',
-      'Template headers match exactly: Barcode, Product Name, MRP, Sale Price'
+      headers[3] === 'Sale Price' &&
+      headers[4] === 'Wholesale Price' &&
+      headers[5] === 'Wholesale Qty',
+      'Template headers match exactly: Barcode, Product Name, MRP, Sale Price, Wholesale Price, Wholesale Qty'
     );
 
     // 3. Test POST /api/admin/upload - Header Validation
@@ -273,6 +275,109 @@ async function runTests() {
     assert(versionData.catalogVersion !== 'empty', 'Catalog version is populated');
     assert(versionData.lastCatalogUpload !== null, 'Last upload timestamp is logged');
 
+    // 9. Wholesale / Bulk Offer validation tests
+    console.log('\n[9/9] Testing Wholesale / Bulk Offer validation rules...');
+    
+    // 9a. Test missing quantity rejection
+    const invalidBulkQtyWb = XLSX.utils.book_new();
+    const invalidBulkQtyWs = XLSX.utils.aoa_to_sheet([
+      ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'],
+      ['TEST_BULK_BAD_QTY', 'Wholesale Missing Qty', 100.00, 80.00, 70.00, '']
+    ]);
+    XLSX.utils.book_append_sheet(invalidBulkQtyWb, invalidBulkQtyWs, 'Catalog');
+    const invalidBulkQtyBuf = XLSX.write(invalidBulkQtyWb, { type: 'buffer', bookType: 'xlsx' });
+    const multipartBulkQty = makeMultipartBody(invalidBulkQtyBuf, 'invalid_bulk_qty.xlsx');
+    const bulkQtyRes = await fetch(`${BASE_URL}/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': multipartBulkQty.contentType, 'Authorization': `Bearer ${token}` },
+      body: multipartBulkQty.body
+    });
+    assert(bulkQtyRes.status === 400, 'Uploading wholesale price without quantity is rejected (400 Bad Request)');
+    const bulkQtyData = await bulkQtyRes.json() as any;
+    assert(bulkQtyData.errors[0].error.includes('Wholesale Qty is required'), 'Reports missing quantity error message');
+
+    // 9b. Test missing price rejection
+    const invalidBulkPriceWb = XLSX.utils.book_new();
+    const invalidBulkPriceWs = XLSX.utils.aoa_to_sheet([
+      ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'],
+      ['TEST_BULK_BAD_PRICE', 'Wholesale Missing Price', 100.00, 80.00, '', 5]
+    ]);
+    XLSX.utils.book_append_sheet(invalidBulkPriceWb, invalidBulkPriceWs, 'Catalog');
+    const invalidBulkPriceBuf = XLSX.write(invalidBulkPriceWb, { type: 'buffer', bookType: 'xlsx' });
+    const multipartBulkPrice = makeMultipartBody(invalidBulkPriceBuf, 'invalid_bulk_price.xlsx');
+    const bulkPriceRes = await fetch(`${BASE_URL}/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': multipartBulkPrice.contentType, 'Authorization': `Bearer ${token}` },
+      body: multipartBulkPrice.body
+    });
+    assert(bulkPriceRes.status === 400, 'Uploading wholesale quantity without price is rejected (400 Bad Request)');
+    const bulkPriceData = await bulkPriceRes.json() as any;
+    assert(bulkPriceData.errors[0].error.includes('Wholesale Price is required'), 'Reports missing price error message');
+
+    // 9c. Test Wholesale Price >= Sale Price rejection
+    const bulkPriceGtSaleWb = XLSX.utils.book_new();
+    const bulkPriceGtSaleWs = XLSX.utils.aoa_to_sheet([
+      ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'],
+      ['TEST_BULK_BAD_GT_SALE', 'Wholesale Price >= Sale Price', 100.00, 80.00, 85.00, 5]
+    ]);
+    XLSX.utils.book_append_sheet(bulkPriceGtSaleWb, bulkPriceGtSaleWs, 'Catalog');
+    const bulkPriceGtSaleBuf = XLSX.write(bulkPriceGtSaleWb, { type: 'buffer', bookType: 'xlsx' });
+    const multipartPriceGtSale = makeMultipartBody(bulkPriceGtSaleBuf, 'bulk_price_gt_sale.xlsx');
+    const priceGtSaleRes = await fetch(`${BASE_URL}/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': multipartPriceGtSale.contentType, 'Authorization': `Bearer ${token}` },
+      body: multipartPriceGtSale.body
+    });
+    assert(priceGtSaleRes.status === 400, 'Uploading wholesale price >= sale price is rejected (400 Bad Request)');
+    const priceGtSaleData = await priceGtSaleRes.json() as any;
+    assert(priceGtSaleData.errors[0].error.includes('must be strictly less than Sale Price'), 'Reports price strictly less than sale price error');
+
+    // 9d. Test Wholesale Qty < 2 rejection
+    const bulkQtyLt2Wb = XLSX.utils.book_new();
+    const bulkQtyLt2Ws = XLSX.utils.aoa_to_sheet([
+      ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'],
+      ['TEST_BULK_BAD_QTY_LT_2', 'Wholesale Qty < 2', 100.00, 80.00, 70.00, 1]
+    ]);
+    XLSX.utils.book_append_sheet(bulkQtyLt2Wb, bulkQtyLt2Ws, 'Catalog');
+    const bulkQtyLt2Buf = XLSX.write(bulkQtyLt2Wb, { type: 'buffer', bookType: 'xlsx' });
+    const multipartQtyLt2 = makeMultipartBody(bulkQtyLt2Buf, 'bulk_qty_lt_2.xlsx');
+    const qtyLt2Res = await fetch(`${BASE_URL}/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': multipartQtyLt2.contentType, 'Authorization': `Bearer ${token}` },
+      body: multipartQtyLt2.body
+    });
+    assert(qtyLt2Res.status === 400, 'Uploading wholesale qty < 2 is rejected (400 Bad Request)');
+    const qtyLt2Data = await qtyLt2Res.json() as any;
+    assert(qtyLt2Data.errors[0].error.includes('Wholesale Qty must be 2 or more'), 'Reports quantity 2 or more error message');
+
+    // 9e. Successful catalogue replacement with bulk offers
+    const validBulkWb = XLSX.utils.book_new();
+    const validBulkWs = XLSX.utils.aoa_to_sheet([
+      ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'],
+      ['TEST_BULK_X', 'Bulk Offer Product X', 100.00, 80.00, 70.00, 5],
+      ['TEST_BULK_Y', 'Normal Product Y', 50.00, 40.00, '', '']
+    ]);
+    XLSX.utils.book_append_sheet(validBulkWb, validBulkWs, 'Catalog');
+    const validBulkBuf = XLSX.write(validBulkWb, { type: 'buffer', bookType: 'xlsx' });
+    const multipartValidBulk = makeMultipartBody(validBulkBuf, 'valid_bulk.xlsx');
+    const validBulkRes = await fetch(`${BASE_URL}/admin/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': multipartValidBulk.contentType, 'Authorization': `Bearer ${token}` },
+      body: multipartValidBulk.body
+    });
+    assert(validBulkRes.status === 200, 'Valid bulk catalog upload returns 200 OK');
+    
+    // Verify database persistence
+    const dbBulkX = await db.get("SELECT barcode, name, sale_price, mrp, wholesale_price, wholesale_qty FROM products WHERE barcode = 'TEST_BULK_X'");
+    assert(!!dbBulkX, 'Product with bulk offer was saved in database');
+    assert(dbBulkX.wholesale_price === 70.00, 'Saved wholesale price matches input');
+    assert(dbBulkX.wholesale_qty === 5, 'Saved wholesale quantity matches input');
+    
+    const dbBulkY = await db.get("SELECT barcode, name, sale_price, mrp, wholesale_price, wholesale_qty FROM products WHERE barcode = 'TEST_BULK_Y'");
+    assert(!!dbBulkY, 'Product without bulk offer was saved in database');
+    assert(dbBulkY.wholesale_price === null, 'Product without bulk offer has null wholesale price');
+    assert(dbBulkY.wholesale_qty === null, 'Product without bulk offer has null wholesale quantity');
+
   } catch (err: any) {
     console.error('Fatal test execution error:', err);
     failed++;
@@ -286,6 +391,7 @@ async function runTests() {
   await db.run("DELETE FROM upload_history WHERE filename = 'valid_catalog.xlsx'");
   await db.run("DELETE FROM upload_history WHERE filename = 'mixed_headers.xlsx'");
   await db.run("DELETE FROM upload_history WHERE filename = 'duplicate_row.xlsx'");
+  await db.run("DELETE FROM upload_history WHERE filename LIKE ?", '%bulk%.xlsx');
   await db.close();
 
   console.log('\n================================================');

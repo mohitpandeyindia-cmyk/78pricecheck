@@ -91,7 +91,7 @@ const upload = multer({
 router.get('/admin/template', (req: Request, res: Response): void => {
   try {
     const wb = XLSX.utils.book_new();
-    const headers = [['Barcode', 'Product Name', 'MRP', 'Sale Price']];
+    const headers = [['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty']];
     const ws = XLSX.utils.aoa_to_sheet(headers);
     XLSX.utils.book_append_sheet(wb, ws, 'Template');
     
@@ -148,18 +148,22 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
 
     // Header validation (case-insensitive column match)
     const headers = rows[0].map(h => String(h).trim().toLowerCase());
-    const expectedHeaders = ['barcode', 'product name', 'mrp', 'sale price'];
+    const expectedHeadersBase = ['barcode', 'product name', 'mrp', 'sale price'];
+    const expectedHeadersFull = ['barcode', 'product name', 'mrp', 'sale price', 'wholesale price', 'wholesale qty'];
 
-    if (headers.length !== expectedHeaders.length || !expectedHeaders.every((val, index) => val === headers[index])) {
+    const matchesBase = headers.length === 4 && expectedHeadersBase.every((val, index) => val === headers[index]);
+    const matchesFull = headers.length === 6 && expectedHeadersFull.every((val, index) => val === headers[index]);
+
+    if (!matchesBase && !matchesFull) {
       res.status(400).json({
         success: false,
-        message: 'Header mismatch. Expected headers (case-insensitive): Barcode, Product Name, MRP, Sale Price'
+        message: 'Header mismatch. Expected headers (case-insensitive): Barcode, Product Name, MRP, Sale Price [, Wholesale Price, Wholesale Qty]'
       });
       return;
     }
 
     const errors: { row: number; barcode: string; name: string; error: string }[] = [];
-    const validatedProducts: { barcode: string; name: string; mrp: number; salePrice: number }[] = [];
+    const validatedProducts: { barcode: string; name: string; mrp: number; salePrice: number; wholesalePrice: number | null; wholesaleQty: number | null }[] = [];
     const seenBarcodes = new Map<string, number>(); // barcode -> row index (1-based)
     
     const validationStart = Date.now();
@@ -176,6 +180,8 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
       const rawName = row[1];
       const rawMrp = row[2];
       const rawSalePrice = row[3];
+      const rawWholesalePrice = row[4];
+      const rawWholesaleQty = row[5];
 
       const barcode = rawBarcode !== undefined && rawBarcode !== null ? String(rawBarcode).trim() : '';
       if (barcode === '') {
@@ -244,7 +250,88 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
         continue;
       }
 
-      validatedProducts.push({ barcode, name, mrp, salePrice });
+      // Wholesale validations
+      const hasWholesalePrice = rawWholesalePrice !== undefined && rawWholesalePrice !== null && String(rawWholesalePrice).trim() !== '';
+      const hasWholesaleQty = rawWholesaleQty !== undefined && rawWholesaleQty !== null && String(rawWholesaleQty).trim() !== '';
+
+      if (hasWholesalePrice && !hasWholesaleQty) {
+        errors.push({
+          row: i + 1,
+          barcode,
+          name,
+          error: 'Wholesale Qty is required when Wholesale Price is provided.'
+        });
+        continue;
+      }
+
+      if (!hasWholesalePrice && hasWholesaleQty) {
+        errors.push({
+          row: i + 1,
+          barcode,
+          name,
+          error: 'Wholesale Price is required when Wholesale Qty is provided.'
+        });
+        continue;
+      }
+
+      let wholesalePrice: number | null = null;
+      let wholesaleQty: number | null = null;
+
+      if (hasWholesalePrice && hasWholesaleQty) {
+        wholesalePrice = Number(rawWholesalePrice);
+        if (isNaN(wholesalePrice) || wholesalePrice <= 0) {
+          errors.push({
+            row: i + 1,
+            barcode,
+            name,
+            error: `Wholesale Price must be greater than zero. Found: "${rawWholesalePrice}"`
+          });
+          continue;
+        }
+
+        if (wholesalePrice >= salePrice) {
+          errors.push({
+            row: i + 1,
+            barcode,
+            name,
+            error: `Wholesale Price (₹${wholesalePrice}) must be strictly less than Sale Price (₹${salePrice}).`
+          });
+          continue;
+        }
+
+        if (wholesalePrice > mrp) {
+          errors.push({
+            row: i + 1,
+            barcode,
+            name,
+            error: `Wholesale Price (₹${wholesalePrice}) must be less than or equal to MRP (₹${mrp}).`
+          });
+          continue;
+        }
+
+        wholesaleQty = Number(rawWholesaleQty);
+        if (isNaN(wholesaleQty) || !Number.isInteger(wholesaleQty)) {
+          errors.push({
+            row: i + 1,
+            barcode,
+            name,
+            error: `Wholesale Qty must be an integer. Found: "${rawWholesaleQty}"`
+          });
+          continue;
+        }
+
+        if (wholesaleQty < 2) {
+          errors.push({
+            row: i + 1,
+            barcode,
+            name,
+            error: `Wholesale Qty must be 2 or more. Found: "${rawWholesaleQty}"`
+          });
+          continue;
+        }
+      }
+
+      validatedProducts.push({ barcode, name, mrp, salePrice, wholesalePrice, wholesaleQty });
     }
 
     const validationTime = Date.now() - validationStart;
@@ -295,12 +382,12 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
       await db.run('DELETE FROM products');
 
       const insertStmt = await db.prepare(
-        `INSERT INTO products (barcode, name, sale_price, mrp, updated_at) 
-         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
       );
 
       for (const p of validatedProducts) {
-        await insertStmt.run(p.barcode, p.name, p.salePrice, p.mrp);
+        await insertStmt.run(p.barcode, p.name, p.salePrice, p.mrp, p.wholesalePrice, p.wholesaleQty);
       }
 
       await insertStmt.finalize();

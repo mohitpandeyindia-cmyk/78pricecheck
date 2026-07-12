@@ -654,3 +654,81 @@ html, body {
 .text-muted {
   color: var(--text-muted);
 }
+
+/* Bulk Offer styling */
+.bulk-offer-container {
+  margin-top: 15px;
+  background-color: #e8f5e9;
+  border: 1px solid #1b5e20;
+  border-radius: 8px;
+  padding: 12px 15px;
+  text-align: center;
+}
+
+.bulk-offer-header {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1b5e20;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bulk-offer-qty {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.bulk-offer-price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1b5e20;
+  font-family: monospace;
+  margin-bottom: 2px;
+}
+
+.bulk-offer-savings {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1b5e20;
+}
+
+/* Multi-match Bulk Offer styles */
+.multi-bulk-container {
+  margin-top: 8px;
+  background-color: #e8f5e9;
+  border: 1px solid #1b5e20;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+  width: 100%;
+}
+
+.multi-bulk-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1b5e20;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.multi-bulk-qty {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.multi-bulk-price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1b5e20;
+  font-family: monospace;
+}
+
+.multi-bulk-savings {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #1b5e20;
+}

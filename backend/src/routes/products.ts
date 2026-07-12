@@ -24,7 +24,7 @@ router.get('/products/lookup/:barcode', async (req: Request, res: Response): Pro
     // Query database for both exact match and match with one trailing zero appended.
     // Utilizes index on barcode for high-performance lookup (< 1 second).
     const products = await db.all(
-      `SELECT barcode, name, mrp, sale_price as salePrice 
+      `SELECT barcode, name, mrp, sale_price as salePrice, wholesale_price as wholesalePrice, wholesale_qty as wholesaleQty 
        FROM products 
        WHERE barcode = ? OR barcode = ?`,
       trimmedBarcode,

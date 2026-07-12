@@ -56,6 +56,8 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       name TEXT NOT NULL,
       mrp REAL NOT NULL,
       sale_price REAL NOT NULL,
+      wholesale_price REAL NULL,
+      wholesale_qty INTEGER NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
 
