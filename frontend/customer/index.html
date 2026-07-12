@@ -63,8 +63,8 @@
       <!-- Sliding Result Card Panel -->
       <div id="result-panel" class="details-panel">
         <!-- Barcode Detected Success Flash Bubble -->
-        <div id="scan-feedback" class="scan-feedback-popup" style="display: none;">
-          Barcode Detected
+        <div id="scan-feedback" class="scan-feedback-popup">
+          ✓ Price Updated
         </div>
         
         <!-- Large Floating Product Card -->
@@ -83,63 +83,43 @@
           
           <!-- State 3: Single Match Display -->
           <div id="state-single" class="details-state" style="display: none;">
-            <!-- Interactive name row with expand/collapse barcode -->
-            <div class="product-title-row" id="single-title-row">
+            <!-- Product Title naturally styled -->
+            <div class="product-title-row">
               <h2 id="single-name" class="product-title">-</h2>
-              <span class="product-chevron-icon" id="single-chevron">▼</span>
+            </div>
+            
+            <!-- Barcode Interactive Toggle Trigger -->
+            <div class="barcode-toggle-container" id="single-barcode-toggle">
+              <span class="barcode-toggle-label">View Barcode</span>
+              <span class="barcode-toggle-chevron">▼</span>
             </div>
             
             <!-- Barcode Collapsible Area -->
             <div class="barcode-collapsible" id="single-barcode-area">
-              <span class="barcode-label">Barcode</span>
               <span class="barcode-val monospace" id="single-barcode">-</span>
             </div>
             
-            <!-- Compact MRP with dashed divider -->
-            <div class="mrp-container">
-              <span class="mrp-text">MRP <span class="mrp-strikethrough" id="single-mrp">-</span></span>
-            </div>
-            <div class="dashed-divider"></div>
-            
-            <!-- Today's Price centered visual hero -->
-            <div class="todays-price-container">
-              <div class="todays-price-header">
-                <span class="accent-line-short"></span>
-                <span class="price-header-label">TODAY'S PRICE</span>
-                <span class="accent-line-short"></span>
+            <div class="price-section">
+              <!-- MRP immediately above Today's Price -->
+              <div class="mrp-line" id="single-mrp-container">
+                MRP <span class="mrp-strikethrough" id="single-mrp">-</span>
               </div>
-              <div class="todays-price-val-row">
-                <span class="price-stroke price-stroke-left">
-                  <span class="stroke-bar"></span>
-                  <span class="stroke-bar"></span>
-                  <span class="stroke-bar"></span>
-                </span>
+              
+              <!-- Today's Price Hero -->
+              <div class="todays-price-hero">
                 <span class="price-val" id="single-sale-price">-</span>
-                <span class="price-stroke price-stroke-right">
-                  <span class="stroke-bar"></span>
-                  <span class="stroke-bar"></span>
-                  <span class="stroke-bar"></span>
-                </span>
               </div>
             </div>
             
             <!-- Bulk Offer Card (Premium Promotional Panel) -->
             <div id="single-bulk-container" class="bulk-offer-panel" style="display: none;">
               <div class="bulk-left-col">
-                <div class="bulk-percentage-badge">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="5" x2="5" y2="19"></line>
-                    <circle cx="6.5" cy="6.5" r="2.5"></circle>
-                    <circle cx="17.5" cy="17.5" r="2.5"></circle>
-                  </svg>
-                </div>
-                <div class="bulk-title">BULK OFFER</div>
+                <div class="bulk-title">Bulk Offer</div>
                 <div class="bulk-subtitle" id="single-bulk-qty">-</div>
               </div>
-              <div class="bulk-divider-dashed"></div>
               <div class="bulk-right-col">
                 <div class="bulk-price" id="single-bulk-price">-</div>
-                <div class="bulk-savings-pill" id="single-bulk-savings">-</div>
+                <div class="bulk-savings-text" id="single-bulk-savings">-</div>
               </div>
             </div>
           </div>

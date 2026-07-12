@@ -108,12 +108,28 @@ function applyCardHighlight() {
   }
 }
 
-// Flash small "Barcode Detected" bubble alert
+// Reset barcode expand/collapse state to default collapsed
+function resetBarcodeCollapse() {
+  const singleBarcodeArea = document.getElementById('single-barcode-area');
+  const toggle = document.getElementById('single-barcode-toggle');
+  if (singleBarcodeArea && toggle) {
+    singleBarcodeArea.classList.remove('expanded');
+    const chevron = toggle.querySelector('.barcode-toggle-chevron');
+    if (chevron) {
+      chevron.classList.remove('expanded');
+      chevron.textContent = '▼';
+    }
+  }
+}
+
+// Flash small "Price Updated" success confirmation indicator
 function triggerFeedbackPopup() {
-  scanFeedback.style.display = 'block';
-  setTimeout(() => {
-    scanFeedback.style.display = 'none';
-  }, 900);
+  if (scanFeedback) {
+    scanFeedback.classList.add('visible');
+    setTimeout(() => {
+      scanFeedback.classList.remove('visible');
+    }, 300);
+  }
 }
 
 // Add a newly verified item to session history
@@ -217,10 +233,7 @@ async function lookupBarcode(barcode) {
             addToHistory(p);
             
             // Set product title row collapse status
-            const singleBarcodeArea = document.getElementById('single-barcode-area');
-            const singleChevron = document.getElementById('single-chevron');
-            if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
-            if (singleChevron) singleChevron.classList.remove('expanded');
+            resetBarcodeCollapse();
 
             showState('single');
             document.getElementById('single-name').textContent = p.name;
@@ -232,9 +245,9 @@ async function lookupBarcode(barcode) {
             if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
               document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
               document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
-              const savings = Number(p.salePrice) - Number(p.wholesalePrice);
-              document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-              bulkContainer.style.display = 'grid';
+              const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+              document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
+              bulkContainer.style.display = 'flex';
             } else {
               bulkContainer.style.display = 'none';
             }
@@ -252,10 +265,7 @@ async function lookupBarcode(barcode) {
         const p = data.products[0];
         
         // Set product title row collapse status
-        const singleBarcodeArea = document.getElementById('single-barcode-area');
-        const singleChevron = document.getElementById('single-chevron');
-        if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
-        if (singleChevron) singleChevron.classList.remove('expanded');
+        resetBarcodeCollapse();
 
         showState('single');
         document.getElementById('single-name').textContent = p.name;
@@ -267,9 +277,9 @@ async function lookupBarcode(barcode) {
         if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
           document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
           document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
-          const savings = Number(p.salePrice) - Number(p.wholesalePrice);
-          document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-          bulkContainer.style.display = 'grid';
+          const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+          document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
+          bulkContainer.style.display = 'flex';
         } else {
           bulkContainer.style.display = 'none';
         }
@@ -537,14 +547,15 @@ if (headerBrandBtn) {
 }
 
 // Collapsible barcode details click binder
-const singleTitleRow = document.getElementById('single-title-row');
-if (singleTitleRow) {
-  singleTitleRow.addEventListener('click', () => {
+const singleBarcodeToggle = document.getElementById('single-barcode-toggle');
+if (singleBarcodeToggle) {
+  singleBarcodeToggle.addEventListener('click', () => {
     const singleBarcodeArea = document.getElementById('single-barcode-area');
-    const singleChevron = document.getElementById('single-chevron');
-    if (singleBarcodeArea && singleChevron) {
-      singleBarcodeArea.classList.toggle('expanded');
-      singleChevron.classList.toggle('expanded');
+    const chevron = singleBarcodeToggle.querySelector('.barcode-toggle-chevron');
+    if (singleBarcodeArea && chevron) {
+      const isExpanded = singleBarcodeArea.classList.toggle('expanded');
+      chevron.classList.toggle('expanded');
+      chevron.textContent = isExpanded ? '▲' : '▼';
     }
   });
 }
@@ -631,10 +642,7 @@ function renderRecentScansBottomSheet() {
       closeHistorySheet();
       
       // Reset product title row collapse status
-      const singleBarcodeArea = document.getElementById('single-barcode-area');
-      const singleChevron = document.getElementById('single-chevron');
-      if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
-      if (singleChevron) singleChevron.classList.remove('expanded');
+      resetBarcodeCollapse();
 
       showState('single');
       document.getElementById('single-name').textContent = item.name;
@@ -646,9 +654,9 @@ function renderRecentScansBottomSheet() {
       if (item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
         document.getElementById('single-bulk-qty').textContent = `Buy ${item.wholesaleQty} or more`;
         document.getElementById('single-bulk-price').textContent = `${formatCurrency(item.wholesalePrice)} each`;
-        const savings = Number(item.salePrice) - Number(item.wholesalePrice);
-        document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-        bulkContainer.style.display = 'grid';
+        const savings = (Number(item.salePrice) - Number(item.wholesalePrice)) * Number(item.wholesaleQty);
+        document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
+        bulkContainer.style.display = 'flex';
       } else {
         bulkContainer.style.display = 'none';
       }
