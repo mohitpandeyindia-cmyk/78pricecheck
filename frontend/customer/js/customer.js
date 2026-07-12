@@ -257,7 +257,8 @@ async function lookupBarcode(barcode) {
 }
 
 // Start camera scan stream
-async function startCameraScanner() {
+// Start camera scan stream
+function startCameraScanner() {
   console.log('[Camera Debug] Scan button clicked');
   console.log('[Camera Debug] Camera initialization started');
   
@@ -293,48 +294,46 @@ async function startCameraScanner() {
     return;
   }
 
-  // 3. Query and Log Camera Permission State (if Permissions API is supported)
-  console.log('[Camera Debug] Requesting browser camera permission status...');
-  let currentPermissionState = 'prompt';
+  // 3. Query and Log Camera Permission State asynchronously (keeps thread synchronous)
   if (navigator.permissions && navigator.permissions.query) {
-    try {
-      const perm = await navigator.permissions.query({ name: 'camera' });
-      currentPermissionState = perm.state;
-      console.log('[Camera Debug] Camera permission state:', currentPermissionState);
-      
-      // If permission is explicitly denied, show settings guide right away
-      if (currentPermissionState === 'denied') {
-        logAndShowDeniedError(new Error('Permission denied by browser settings (Permissions API reported denied).'));
-        return;
-      }
-    } catch (permErr) {
-      console.warn('[Camera Debug] Failed to query camera permission state:', permErr.message || permErr);
-    }
-  } else {
-    console.log('[Camera Debug] Permissions query API not supported by this browser.');
+    navigator.permissions.query({ name: 'camera' })
+      .then(perm => {
+        console.log('[Camera Debug] Camera permission state:', perm.state);
+        // If state is already explicitly denied, trigger error guide
+        if (perm.state === 'denied') {
+          logAndShowDeniedError(new Error('Permission denied by browser settings (Permissions API reported denied).'));
+        }
+      })
+      .catch(permErr => {
+        console.warn('[Camera Debug] Failed to query camera permission state:', permErr.message || permErr);
+      });
   }
 
-  // 4. Request camera stream via native getUserMedia to trigger the prompt if state is "prompt"
+  // 4. Request camera stream via native getUserMedia (must run synchronously in event thread for iOS Safari!)
   console.log('[Camera Debug] Requesting native camera permission prompt via getUserMedia...');
-  let nativeStream = null;
-  try {
-    console.log('[Camera Debug] Calling getUserMedia() with facingMode: "environment"...');
-    nativeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    console.log('[Camera Debug] getUserMedia() succeeded with environment constraints.');
-  } catch (err) {
-    console.warn('[Camera Debug] getUserMedia() with environment constraints failed:', err.message || err);
-    console.log('[Camera Debug] Retrying getUserMedia() with fallback constraints...');
-    try {
-      nativeStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      console.log('[Camera Debug] getUserMedia() succeeded with fallback constraints.');
-    } catch (fallbackErr) {
-      console.error('[Camera Debug] getUserMedia() failed entirely:', fallbackErr.message || fallbackErr);
-      logAndShowDeniedError(fallbackErr);
-      return;
-    }
-  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(stream => {
+      console.log('[Camera Debug] getUserMedia() succeeded with environment constraints.');
+      handleCameraStreamSuccess(stream);
+    })
+    .catch(err => {
+      console.warn('[Camera Debug] getUserMedia() with environment constraints failed:', err.message || err);
+      console.log('[Camera Debug] Retrying getUserMedia() with fallback constraints...');
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          console.log('[Camera Debug] getUserMedia() succeeded with fallback constraints.');
+          handleCameraStreamSuccess(stream);
+        })
+        .catch(fallbackErr => {
+          console.error('[Camera Debug] getUserMedia() failed entirely:', fallbackErr.message || fallbackErr);
+          logAndShowDeniedError(fallbackErr);
+        });
+    });
+}
 
-  // 5. If getUserMedia succeeded, stop tracks to release hardware before starting the scanner library
+// Handle native stream authorization success
+function handleCameraStreamSuccess(nativeStream) {
+  // Stop native tracks immediately to free hardware context before initializing the library
   if (nativeStream) {
     try {
       nativeStream.getTracks().forEach(track => track.stop());
@@ -344,19 +343,24 @@ async function startCameraScanner() {
     }
   }
 
-  // 6. Enumerate Available Camera Devices (for logging)
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cameras = devices.filter(d => d.kind === 'videoinput');
-    console.log(`[Camera Debug] Available camera devices (${cameras.length}):`);
-    cameras.forEach((c, idx) => {
-      console.log(`  - [${idx}] ID: ${c.deviceId || 'empty'}, Label: "${c.label || 'no label'}"`);
+  // Log available devices, then start scanner
+  navigator.mediaDevices.enumerateDevices()
+    .then(devices => {
+      const cameras = devices.filter(d => d.kind === 'videoinput');
+      console.log(`[Camera Debug] Available camera devices (${cameras.length}):`);
+      cameras.forEach((c, idx) => {
+        console.log(`  - [${idx}] ID: ${c.deviceId || 'empty'}, Label: "${c.label || 'no label'}"`);
+      });
+      startScannerLibrary();
+    })
+    .catch(enumErr => {
+      console.warn('[Camera Debug] Failed to enumerate devices:', enumErr.message || enumErr);
+      startScannerLibrary();
     });
-  } catch (enumErr) {
-    console.warn('[Camera Debug] Failed to enumerate devices:', enumErr.message || enumErr);
-  }
+}
 
-  // 7. Initialize Html5Qrcode scanner object if not already present
+// Start html5-qrcode scanner loop
+function startScannerLibrary() {
   if (!html5QrcodeScanner) {
     html5QrcodeScanner = new Html5Qrcode("reader");
   }
@@ -368,7 +372,6 @@ async function startCameraScanner() {
     }
   };
 
-  // 8. Start scanner library using the verified permission context
   console.log('[Camera Debug] Html5Qrcode.start() called with facingMode: "environment"');
   html5QrcodeScanner.start(
     { facingMode: "environment" },
