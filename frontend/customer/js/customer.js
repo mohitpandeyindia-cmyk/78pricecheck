@@ -97,9 +97,15 @@ function triggerHapticVibrate() {
 // Trigger border-flash visual highlight effect when rendering a new product card
 function applyCardHighlight() {
   const detailsCard = document.getElementById('details-card');
-  detailsCard.classList.remove('pulse-highlight');
-  void detailsCard.offsetWidth; // Force CSS repaint reflow
-  detailsCard.classList.add('pulse-highlight');
+  if (detailsCard) {
+    detailsCard.classList.remove('pulse-highlight');
+    detailsCard.classList.add('scanned');
+    void detailsCard.offsetWidth; // Force CSS repaint reflow
+    detailsCard.classList.add('pulse-highlight');
+    setTimeout(() => {
+      detailsCard.classList.remove('scanned');
+    }, 300);
+  }
 }
 
 // Flash small "Barcode Detected" bubble alert
@@ -118,7 +124,11 @@ function addToHistory(product) {
   recentScans.unshift({
     name: product.name,
     barcode: product.barcode,
-    salePrice: product.salePrice
+    salePrice: product.salePrice,
+    mrp: product.mrp,
+    wholesalePrice: product.wholesalePrice,
+    wholesaleQty: product.wholesaleQty,
+    scannedAt: Date.now()
   });
   
   // Limit cache history list to 5 items
@@ -135,46 +145,9 @@ function addToHistory(product) {
   renderRecentScans();
 }
 
-// Render history chips UI
+// Sturdier render RecentScans stub
 function renderRecentScans() {
-  recentScansList.innerHTML = '';
-  if (recentScans.length === 0) {
-    recentScansList.innerHTML = '<span class="history-empty text-muted">No items scanned yet in this session.</span>';
-    return;
-  }
-  
-  recentScans.forEach(item => {
-    const chip = document.createElement('div');
-    chip.className = 'history-chip';
-    chip.innerHTML = `
-      <span class="history-chip-name">${item.name}</span>
-      <span class="history-chip-price">${formatCurrency(item.salePrice)}</span>
-    `;
-    
-    // Clicking history item re-displays it immediately
-    chip.addEventListener('click', () => {
-      showState('single');
-      document.getElementById('single-name').textContent = item.name;
-      document.getElementById('single-barcode').textContent = item.barcode;
-      document.getElementById('single-sale-price').textContent = formatCurrency(item.salePrice);
-      document.getElementById('single-mrp').textContent = item.mrp ? formatCurrency(item.mrp) : '';
-      
-      const bulkContainer = document.getElementById('single-bulk-container');
-      if (item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
-        document.getElementById('single-bulk-qty').textContent = `Buy ${item.wholesaleQty} or more`;
-        document.getElementById('single-bulk-price').textContent = `${formatCurrency(item.wholesalePrice)} each`;
-        const savings = Number(item.salePrice) - Number(item.wholesalePrice);
-        document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-        bulkContainer.style.display = 'block';
-      } else {
-        bulkContainer.style.display = 'none';
-      }
-      
-      applyCardHighlight();
-    });
-    
-    recentScansList.appendChild(chip);
-  });
+  // Chips rendering is deprecated, history is now displayed inside the slide-up bottom sheet
 }
 
 // Format double values into localized currency
@@ -209,11 +182,16 @@ async function lookupBarcode(barcode) {
           if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
             const savings = Number(p.salePrice) - Number(p.wholesalePrice);
             bulkHtml = `
-              <div class="multi-bulk-container">
-                <div class="multi-bulk-header">Bulk Offer</div>
-                <div class="multi-bulk-qty">Buy ${p.wholesaleQty}+</div>
-                <div class="multi-bulk-price">${formatCurrency(p.wholesalePrice)} each</div>
-                <div class="multi-bulk-savings">Save ${formatCurrency(savings)} per item</div>
+              <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; grid-template-columns: 1fr auto 1fr;">
+                <div class="bulk-left-col">
+                  <div class="bulk-title" style="font-size: 0.75rem;">BULK OFFER</div>
+                  <div class="bulk-subtitle" style="font-size: 0.7rem;">Buy ${p.wholesaleQty}+</div>
+                </div>
+                <div class="bulk-divider-dashed" style="height: 32px;"></div>
+                <div class="bulk-right-col">
+                  <div class="bulk-price" style="font-size: 1rem;">${formatCurrency(p.wholesalePrice)} each</div>
+                  <div class="bulk-savings-pill" style="font-size: 0.65rem; padding: 1px 6px;">Save ${formatCurrency(savings)}</div>
+                </div>
               </div>
             `;
           }
@@ -237,6 +215,13 @@ async function lookupBarcode(barcode) {
           // Clicking item adds it to session history
           card.addEventListener('click', () => {
             addToHistory(p);
+            
+            // Set product title row collapse status
+            const singleBarcodeArea = document.getElementById('single-barcode-area');
+            const singleChevron = document.getElementById('single-chevron');
+            if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
+            if (singleChevron) singleChevron.classList.remove('expanded');
+
             showState('single');
             document.getElementById('single-name').textContent = p.name;
             document.getElementById('single-barcode').textContent = p.barcode;
@@ -249,7 +234,7 @@ async function lookupBarcode(barcode) {
               document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
               const savings = Number(p.salePrice) - Number(p.wholesalePrice);
               document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-              bulkContainer.style.display = 'block';
+              bulkContainer.style.display = 'grid';
             } else {
               bulkContainer.style.display = 'none';
             }
@@ -265,6 +250,13 @@ async function lookupBarcode(barcode) {
       } else if (data.products && data.products.length > 0) {
         // Render single product details card
         const p = data.products[0];
+        
+        // Set product title row collapse status
+        const singleBarcodeArea = document.getElementById('single-barcode-area');
+        const singleChevron = document.getElementById('single-chevron');
+        if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
+        if (singleChevron) singleChevron.classList.remove('expanded');
+
         showState('single');
         document.getElementById('single-name').textContent = p.name;
         document.getElementById('single-barcode').textContent = p.barcode;
@@ -277,7 +269,7 @@ async function lookupBarcode(barcode) {
           document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
           const savings = Number(p.salePrice) - Number(p.wholesalePrice);
           document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
-          bulkContainer.style.display = 'block';
+          bulkContainer.style.display = 'grid';
         } else {
           bulkContainer.style.display = 'none';
         }
@@ -533,6 +525,146 @@ backBtn.addEventListener('click', () => {
   scannerView.style.display = 'none';
   welcomeView.style.display = 'flex';
 });
+
+// Brand Header Home navigation
+const headerBrandBtn = document.getElementById('header-brand-btn');
+if (headerBrandBtn) {
+  headerBrandBtn.addEventListener('click', () => {
+    stopCameraScanner();
+    scannerView.style.display = 'none';
+    welcomeView.style.display = 'flex';
+  });
+}
+
+// Collapsible barcode details click binder
+const singleTitleRow = document.getElementById('single-title-row');
+if (singleTitleRow) {
+  singleTitleRow.addEventListener('click', () => {
+    const singleBarcodeArea = document.getElementById('single-barcode-area');
+    const singleChevron = document.getElementById('single-chevron');
+    if (singleBarcodeArea && singleChevron) {
+      singleBarcodeArea.classList.toggle('expanded');
+      singleChevron.classList.toggle('expanded');
+    }
+  });
+}
+
+// Bottom Sheet slide-up controls
+const openHistoryBtn = document.getElementById('open-history-btn');
+const closeHistoryBtn = document.getElementById('close-history-btn');
+const historySheet = document.getElementById('history-sheet');
+const historySheetOverlay = document.getElementById('history-sheet-overlay');
+
+if (openHistoryBtn && historySheet && historySheetOverlay) {
+  openHistoryBtn.addEventListener('click', () => {
+    renderRecentScansBottomSheet();
+    historySheetOverlay.style.display = 'block';
+    historySheet.style.display = 'flex';
+    setTimeout(() => {
+      historySheet.style.transform = 'translate(-50%, 0)';
+    }, 10);
+  });
+}
+
+function closeHistorySheet() {
+  if (historySheet && historySheetOverlay) {
+    historySheet.style.transform = 'translate(-50%, 100%)';
+    setTimeout(() => {
+      historySheet.style.display = 'none';
+      historySheetOverlay.style.display = 'none';
+    }, 300);
+  }
+}
+
+if (closeHistoryBtn) {
+  closeHistoryBtn.addEventListener('click', closeHistorySheet);
+}
+if (historySheetOverlay) {
+  historySheetOverlay.addEventListener('click', closeHistorySheet);
+}
+
+// Render dynamic recent scans rows in the slide-up bottom sheet
+function renderRecentScansBottomSheet() {
+  const listContainer = document.getElementById('sheet-list-container');
+  if (!listContainer) return;
+  listContainer.innerHTML = '';
+  
+  if (recentScans.length === 0) {
+    listContainer.innerHTML = '<span class="history-empty text-muted" style="text-align: center; display: block; padding: 20px;">No items scanned yet in this session.</span>';
+    return;
+  }
+
+  // Display maximum 2 items only
+  const displayItems = recentScans.slice(0, 2);
+
+  displayItems.forEach((item, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'sheet-item';
+    
+    // Relative timestamp calculation
+    let timeString = 'Just now';
+    if (item.scannedAt) {
+      const diff = Math.floor((Date.now() - item.scannedAt) / 1000);
+      if (diff < 60) {
+        timeString = 'Just now';
+      } else {
+        const mins = Math.floor(diff / 60);
+        timeString = `${mins} min ago`;
+      }
+    } else {
+      timeString = index === 0 ? 'Just now' : '2 min ago';
+    }
+
+    itemDiv.innerHTML = `
+      <div class="sheet-thumb-placeholder">🛒</div>
+      <div class="sheet-item-middle">
+        <span class="sheet-item-name">${item.name}</span>
+        <div class="sheet-item-price-time">
+          <span class="sheet-item-price">${formatCurrency(item.salePrice)}</span>
+          <span class="sheet-item-time">${timeString}</span>
+        </div>
+      </div>
+      <span class="sheet-item-chevron">&gt;</span>
+    `;
+
+    itemDiv.addEventListener('click', () => {
+      closeHistorySheet();
+      
+      // Reset product title row collapse status
+      const singleBarcodeArea = document.getElementById('single-barcode-area');
+      const singleChevron = document.getElementById('single-chevron');
+      if (singleBarcodeArea) singleBarcodeArea.classList.remove('expanded');
+      if (singleChevron) singleChevron.classList.remove('expanded');
+
+      showState('single');
+      document.getElementById('single-name').textContent = item.name;
+      document.getElementById('single-barcode').textContent = item.barcode;
+      document.getElementById('single-sale-price').textContent = formatCurrency(item.salePrice);
+      document.getElementById('single-mrp').textContent = formatCurrency(item.mrp);
+      
+      const bulkContainer = document.getElementById('single-bulk-container');
+      if (item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
+        document.getElementById('single-bulk-qty').textContent = `Buy ${item.wholesaleQty} or more`;
+        document.getElementById('single-bulk-price').textContent = `${formatCurrency(item.wholesalePrice)} each`;
+        const savings = Number(item.salePrice) - Number(item.wholesalePrice);
+        document.getElementById('single-bulk-savings').textContent = `Save ${formatCurrency(savings)} per item`;
+        bulkContainer.style.display = 'grid';
+      } else {
+        bulkContainer.style.display = 'none';
+      }
+      
+      applyCardHighlight();
+    });
+
+    listContainer.appendChild(itemDiv);
+
+    if (index < displayItems.length - 1) {
+      const div = document.createElement('div');
+      div.className = 'sheet-item-divider';
+      listContainer.appendChild(div);
+    }
+  });
+}
 
 document.getElementById('retry-camera-denied-btn').addEventListener('click', () => {
   startCameraScanner();

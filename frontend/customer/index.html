@@ -32,29 +32,43 @@
     </div>
     
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
+    <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="view-panel" style="display: none;">
-      <!-- Thin, Minimal Header: Only Logo/Title and Back button -->
-      <header class="app-header">
-        <span class="header-logo">🛒 78 PriceCheck</span>
-        <button id="back-btn" class="btn btn-text">Back</button>
+      <!-- Premium Supermarket Header -->
+      <header class="top-header">
+        <button id="back-btn" class="header-back-btn">&larr; Back</button>
+        <div class="header-brand" id="header-brand-btn">
+          <div class="brand-line-1">SEVENTY EIGHT</div>
+          <div class="brand-line-2">SUPERMAART</div>
+        </div>
+        <div class="header-logo-placeholder">[ LOGO ]</div>
       </header>
       
-      <!-- Upper 40% Viewport Viewfinder -->
-      <div class="camera-viewport">
+      <!-- Scanner Area (Always Active) -->
+      <div class="scanner-area">
         <div id="reader"></div>
-        <div class="scan-target-box">
-          <div class="scan-line"></div>
+        <div class="scanner-brackets">
+          <div class="bracket bracket-tl"></div>
+          <div class="bracket bracket-tr"></div>
+          <div class="bracket bracket-bl"></div>
+          <div class="bracket bracket-br"></div>
+        </div>
+        <div class="scanner-glow-line"></div>
+        <div class="scanner-status">
+          <span class="status-dot"></span>
+          <span class="status-text">Scanner is always active</span>
         </div>
       </div>
       
-      <!-- Lower 60% Sliding Result Card Panel -->
+      <!-- Sliding Result Card Panel -->
       <div id="result-panel" class="details-panel">
         <!-- Barcode Detected Success Flash Bubble -->
         <div id="scan-feedback" class="scan-feedback-popup" style="display: none;">
           Barcode Detected
         </div>
         
-        <div id="details-card" class="details-card-content">
+        <!-- Large Floating Product Card -->
+        <div id="details-card" class="product-card">
           <!-- State 1: Idle -->
           <div id="state-idle" class="details-state">
             <div class="idle-graphic">🔍</div>
@@ -69,27 +83,64 @@
           
           <!-- State 3: Single Match Display -->
           <div id="state-single" class="details-state" style="display: none;">
-            <h2 id="single-name" class="product-title">-</h2>
-            <div class="barcode-badge monospace" id="single-barcode">-</div>
+            <!-- Interactive name row with expand/collapse barcode -->
+            <div class="product-title-row" id="single-title-row">
+              <h2 id="single-name" class="product-title">-</h2>
+              <span class="product-chevron-icon" id="single-chevron">▼</span>
+            </div>
             
-            <div class="pricing-container">
-              <div class="mrp-row">
-                <span class="mrp-label-inline">MRP:</span>
-                <span class="mrp-val" id="single-mrp">-</span>
+            <!-- Barcode Collapsible Area -->
+            <div class="barcode-collapsible" id="single-barcode-area">
+              <span class="barcode-label">Barcode</span>
+              <span class="barcode-val monospace" id="single-barcode">-</span>
+            </div>
+            
+            <!-- Compact MRP with dashed divider -->
+            <div class="mrp-container">
+              <span class="mrp-text">MRP <span class="mrp-strikethrough" id="single-mrp">-</span></span>
+            </div>
+            <div class="dashed-divider"></div>
+            
+            <!-- Today's Price centered visual hero -->
+            <div class="todays-price-container">
+              <div class="todays-price-header">
+                <span class="accent-line-short"></span>
+                <span class="price-header-label">TODAY'S PRICE</span>
+                <span class="accent-line-short"></span>
               </div>
-              
-              <div class="price-block">
-                <span class="price-label">Today's Price</span>
+              <div class="todays-price-val-row">
+                <span class="price-stroke price-stroke-left">
+                  <span class="stroke-bar"></span>
+                  <span class="stroke-bar"></span>
+                  <span class="stroke-bar"></span>
+                </span>
                 <span class="price-val" id="single-sale-price">-</span>
+                <span class="price-stroke price-stroke-right">
+                  <span class="stroke-bar"></span>
+                  <span class="stroke-bar"></span>
+                  <span class="stroke-bar"></span>
+                </span>
               </div>
             </div>
             
-            <!-- Bulk Offer Card -->
-            <div id="single-bulk-container" class="bulk-offer-container" style="display: none;">
-              <div class="bulk-offer-header">Bulk Offer</div>
-              <div class="bulk-offer-qty" id="single-bulk-qty">-</div>
-              <div class="bulk-offer-price" id="single-bulk-price">-</div>
-              <div class="bulk-offer-savings" id="single-bulk-savings">-</div>
+            <!-- Bulk Offer Card (Premium Promotional Panel) -->
+            <div id="single-bulk-container" class="bulk-offer-panel" style="display: none;">
+              <div class="bulk-left-col">
+                <div class="bulk-percentage-badge">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="5" x2="5" y2="19"></line>
+                    <circle cx="6.5" cy="6.5" r="2.5"></circle>
+                    <circle cx="17.5" cy="17.5" r="2.5"></circle>
+                  </svg>
+                </div>
+                <div class="bulk-title">BULK OFFER</div>
+                <div class="bulk-subtitle" id="single-bulk-qty">-</div>
+              </div>
+              <div class="bulk-divider-dashed"></div>
+              <div class="bulk-right-col">
+                <div class="bulk-price" id="single-bulk-price">-</div>
+                <div class="bulk-savings-pill" id="single-bulk-savings">-</div>
+              </div>
             </div>
           </div>
           
@@ -148,14 +199,26 @@
           </div>
         </div>
         
-        <!-- Scan Session History -->
-        <div class="session-history-container">
-          <h4 class="history-section-title">Recently Scanned</h4>
-          <div class="history-list" id="recent-scans-list">
-            <span class="history-empty text-muted">No items scanned yet in this session.</span>
-          </div>
+        <!-- Centered Recently Scanned Link -->
+        <div class="recently-scanned-trigger-container">
+          <button id="open-history-btn" class="recently-scanned-link">Recently scanned &gt;</button>
         </div>
       </div>
+      
+      <!-- Recently Scanned Bottom Sheet Overlay -->
+      <div id="history-sheet-overlay" class="sheet-overlay" style="display: none;"></div>
+      <div id="history-sheet" class="bottom-sheet" style="display: none;">
+        <div class="sheet-grab-handle"></div>
+        <div class="sheet-header">
+          <span class="sheet-title">Recently Scanned</span>
+          <button id="close-history-btn" class="sheet-close-btn">&times;</button>
+        </div>
+        <div class="sheet-divider"></div>
+        <div class="sheet-list" id="sheet-list-container">
+          <!-- Populated dynamically with max 2 items -->
+        </div>
+      </div>
+    </div>
     </div>
     
   </div>
