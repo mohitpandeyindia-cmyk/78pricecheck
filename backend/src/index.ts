@@ -94,9 +94,25 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Diagnostic path debug endpoint
-app.get('/api/debug-paths', (req, res) => {
+app.get('/api/debug-paths', async (req, res) => {
   try {
     const fs = require('fs');
+    const { getDb } = require('./db');
+    const db = await getDb();
+    
+    let adminCount = 0;
+    let productCount = 0;
+    let dbError = null;
+    
+    try {
+      const admins = await db.get('SELECT COUNT(*) as count FROM admins');
+      adminCount = admins ? admins.count : 0;
+      const products = await db.get('SELECT COUNT(*) as count FROM products');
+      productCount = products ? products.count : 0;
+    } catch (dbErr: any) {
+      dbError = dbErr.message;
+    }
+
     const dirContents = (p: string) => {
       try { return fs.readdirSync(p); } catch (e: any) { return e.message; }
     };
@@ -104,6 +120,11 @@ app.get('/api/debug-paths', (req, res) => {
       cwd: process.cwd(),
       dirname: __dirname,
       resolvedFrontend: path.resolve(__dirname, '../../frontend'),
+      databasePath: process.env.DATABASE_PATH || 'default',
+      databaseFileExists: fs.existsSync(process.env.DATABASE_PATH || 'c:/seventyeightos/backend/database/78pricecheck.db'),
+      adminCount,
+      productCount,
+      dbError,
       rootContents: dirContents('/'),
       appContents: dirContents('/app'),
       cwdContents: dirContents(process.cwd()),
