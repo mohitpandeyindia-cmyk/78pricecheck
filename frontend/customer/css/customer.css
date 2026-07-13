@@ -245,7 +245,7 @@ html, body {
 
 /* Scanner Area (Always Active with Device Adaptive Heights) */
 .scanner-area {
-  height: 35vh; /* Default: Phones (~40% of screen height) */
+  height: 30vh; /* Default: Phones (~35% of screen height) */
   position: relative;
   background-color: #0e1a0e;
   overflow: hidden;
@@ -254,13 +254,13 @@ html, body {
 
 @media (min-width: 481px) and (max-width: 1024px) {
   .scanner-area {
-    height: 38vh; /* Tablets */
+    height: 32vh; /* Tablets */
   }
 }
 
 @media (min-width: 1025px) {
   .scanner-area {
-    height: 40vh; /* Desktop */
+    height: 35vh; /* Desktop */
   }
 }
 
