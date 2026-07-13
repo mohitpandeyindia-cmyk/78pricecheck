@@ -22,11 +22,30 @@ const states = {
 };
 
 let html5QrcodeScanner = null;
-let lastScannedBarcode = null;
+let lastScannedBarcode = ""; // Prevent repeated lookups of same item
 let lastScanTime = 0;
+let lastSeenTime = 0; // Track when current barcode was last seen in viewport
+let lastDetectedBarcode = ""; // Track consecutive frame detections
+let firstDetectedTime = 0; // Timestamp of first detection frame
+let detectionCount = 0; // Counter for stability
+let isScanPaused = false; // Throttling scanner
+let lookupInProgress = false; // Concurrency lock
 let recentScans = [];
 let currentRecoveryBarcode = null;
 let cameraPermissionGranted = false;
+
+// Dev-mode performance metric log properties
+const DEBUG_MODE = true;
+let cameraStartTime = 0;
+let firstDecodeTime = 0;
+
+// Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
+setInterval(() => {
+  if (lastScannedBarcode && Date.now() - lastSeenTime > 2000) {
+    if (DEBUG_MODE) console.log(`[DEBUG] Scan lock on barcode ${lastScannedBarcode} cleared after 2.0s of absence.`);
+    lastScannedBarcode = "";
+  }
+}, 500);
 
 // Query browser camera permission state on load
 if (navigator.permissions && navigator.permissions.query) {
@@ -122,14 +141,28 @@ function resetBarcodeCollapse() {
   }
 }
 
-// Flash small "Price Updated" success confirmation indicator
-function triggerFeedbackPopup() {
-  if (scanFeedback) {
-    scanFeedback.classList.add('visible');
+// Two-stage product recognition and update indicator (Milestone 6.2)
+function triggerFeedbackPopup(productName) {
+  if (!scanFeedback) return;
+  
+  // Format the name slightly to fit within the pill nicely
+  const displayName = productName.length > 18 ? productName.slice(0, 18) + '...' : productName;
+  scanFeedback.textContent = `✓ ${displayName} recognised`;
+  scanFeedback.classList.add('visible');
+  
+  // Morph to "✓ Price Updated" after 250ms
+  setTimeout(() => {
+    scanFeedback.style.opacity = '0';
+    setTimeout(() => {
+      scanFeedback.textContent = '✓ Price Updated';
+      scanFeedback.style.opacity = '';
+    }, 100);
+    
+    // Hide completely after 300ms more
     setTimeout(() => {
       scanFeedback.classList.remove('visible');
     }, 300);
-  }
+  }, 250);
 }
 
 // Add a newly verified item to session history
@@ -173,138 +206,249 @@ function formatCurrency(val) {
 }
 
 // Fetch pricing values from endpoint
+// Fetch pricing values from endpoint
 async function lookupBarcode(barcode) {
+  if (lookupInProgress) {
+    if (DEBUG_MODE) console.log(`[DEBUG] Lookup request blocked: barcode ${barcode} is already in progress.`);
+    return;
+  }
+  
+  lookupInProgress = true;
   currentRecoveryBarcode = barcode;
-  showState('loading');
+  
+  // Dev metrics start
+  const apiStart = Date.now();
+  if (firstDecodeTime === 0) {
+    firstDecodeTime = apiStart;
+    if (DEBUG_MODE) console.log(`[METRICS] First successful decode at: ${apiStart - cameraStartTime}ms from camera start`);
+  }
+  
+  // Transition card out: add replacing class to single state or multi state
+  const singleState = document.getElementById('state-single');
+  const multiState = document.getElementById('state-multiple');
+  const priceValEl = document.getElementById('single-sale-price');
+  
+  if (singleState) singleState.classList.add('replacing');
+  if (multiState) multiState.classList.add('replacing');
+  if (priceValEl) priceValEl.classList.add('faded');
+  
+  // Switch to loading state if no card is visible yet
+  const statesKeys = Object.keys(states);
+  let anyProductVisible = false;
+  statesKeys.forEach(k => {
+    if ((k === 'single' || k === 'multiple') && states[k].style.display === 'flex') {
+      anyProductVisible = true;
+    }
+  });
+  if (!anyProductVisible) {
+    showState('loading');
+  }
   
   try {
     const response = await fetch(`/api/products/lookup/${barcode}`);
+    const apiEnd = Date.now();
+    if (DEBUG_MODE) console.log(`[METRICS] API request duration: ${apiEnd - apiStart}ms`);
     
-    if (response.status === 200) {
-      const data = await response.json();
-      applyCardHighlight();
+    // Wait for the slide-out visual transition to finish (150ms)
+    setTimeout(async () => {
+      const renderStart = Date.now();
       
-      if (data.multipleMatches && data.products.length > 1) {
-        // Render scrollable multiple matches grid
-        showState('multiple');
-        const listContainer = document.getElementById('multi-list');
-        listContainer.innerHTML = '';
+      if (response.status === 200) {
+        const data = await response.json();
         
-        data.products.forEach(p => {
-          const card = document.createElement('div');
-          card.className = 'multi-item-card';
+        // Remove old details layout styles
+        if (singleState) singleState.classList.remove('replacing');
+        if (multiState) multiState.classList.remove('replacing');
+        
+        if (data.multipleMatches && data.products.length > 1) {
+          showState('multiple');
+          const listContainer = document.getElementById('multi-list');
+          listContainer.innerHTML = '';
           
-          let bulkHtml = '';
-          if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-            const savings = Number(p.salePrice) - Number(p.wholesalePrice);
-            bulkHtml = `
-              <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; grid-template-columns: 1fr auto 1fr;">
-                <div class="bulk-left-col">
-                  <div class="bulk-title" style="font-size: 0.75rem;">BULK OFFER</div>
-                  <div class="bulk-subtitle" style="font-size: 0.7rem;">Buy ${p.wholesaleQty}+</div>
+          data.products.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'multi-item-card';
+            
+            let bulkHtml = '';
+            if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+              const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+              bulkHtml = `
+                <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <div class="bulk-left-col" style="display: flex; flex-direction: column; align-items: flex-start;">
+                    <div class="bulk-header-row" style="display: flex; align-items: center; gap: 4px;">
+                      <svg class="bulk-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                        <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                      </svg>
+                      <span class="bulk-title" style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color);">Bulk Offer</span>
+                    </div>
+                    <div class="bulk-subtitle" style="font-size: 0.7rem; color: var(--text-muted);">Buy ${p.wholesaleQty}+</div>
+                  </div>
+                  <div class="bulk-right-col" style="display: flex; flex-direction: column; align-items: flex-end;">
+                    <div class="bulk-price" style="font-size: 1rem; font-weight: 800; color: var(--primary-color);">${formatCurrency(p.wholesalePrice)} each</div>
+                    <div class="bulk-savings-text" style="font-size: 0.7rem; font-weight: 700; color: #2e7d32;">You save ${formatCurrency(savings).replace('.00', '')}</div>
+                  </div>
                 </div>
-                <div class="bulk-divider-dashed" style="height: 32px;"></div>
-                <div class="bulk-right-col">
-                  <div class="bulk-price" style="font-size: 1rem;">${formatCurrency(p.wholesalePrice)} each</div>
-                  <div class="bulk-savings-pill" style="font-size: 0.65rem; padding: 1px 6px;">Save ${formatCurrency(savings)}</div>
+              `;
+            }
+  
+            card.innerHTML = `
+              <div class="multi-item-name">${p.name}</div>
+              <div class="multi-barcode-badge monospace">${p.barcode}</div>
+              <div class="multi-pricing-container">
+                <div class="multi-mrp-row">
+                  <span class="multi-mrp-label-inline">MRP:</span>
+                  <span class="multi-mrp-val">${formatCurrency(p.mrp)}</span>
                 </div>
+                <div class="multi-price-block">
+                  <span class="multi-price-label">Today's Price</span>
+                  <span class="multi-price-val">${formatCurrency(p.salePrice)}</span>
+                </div>
+                ${bulkHtml}
               </div>
             `;
-          }
-
-          card.innerHTML = `
-            <div class="multi-item-name">${p.name}</div>
-            <div class="multi-barcode-badge monospace">${p.barcode}</div>
-            <div class="multi-pricing-container">
-              <div class="multi-mrp-row">
-                <span class="multi-mrp-label-inline">MRP:</span>
-                <span class="multi-mrp-val">${formatCurrency(p.mrp)}</span>
-              </div>
-              <div class="multi-price-block">
-                <span class="multi-price-label">Today's Price</span>
-                <span class="multi-price-val">${formatCurrency(p.salePrice)}</span>
-              </div>
-              ${bulkHtml}
-            </div>
-          `;
-          
-          // Clicking item adds it to session history
-          card.addEventListener('click', () => {
-            addToHistory(p);
             
-            // Set product title row collapse status
-            resetBarcodeCollapse();
-
-            showState('single');
-            document.getElementById('single-name').textContent = p.name;
-            document.getElementById('single-barcode').textContent = p.barcode;
-            document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
-            document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+            card.addEventListener('click', () => {
+              addToHistory(p);
+              resetBarcodeCollapse();
+              
+              // Slide down transition
+              if (singleState) singleState.classList.add('replacing');
+              setTimeout(() => {
+                showState('single');
+                document.getElementById('single-name').textContent = p.name;
+                document.getElementById('single-barcode').textContent = p.barcode;
+                document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
+                document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+                
+                const bulkContainer = document.getElementById('single-bulk-container');
+                if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+                  document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
+                  document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
+                  const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+                  document.getElementById('single-bulk-savings').textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
+                  bulkContainer.style.display = 'flex';
+                } else {
+                  bulkContainer.style.display = 'none';
+                }
+                
+                if (singleState) singleState.classList.remove('replacing');
+                if (priceValEl) priceValEl.classList.remove('faded');
+                applyCardHighlight();
+              }, 150);
+            });
             
-            const bulkContainer = document.getElementById('single-bulk-container');
-            if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-              document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
-              document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
-              const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-              document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
-              bulkContainer.style.display = 'flex';
-            } else {
-              bulkContainer.style.display = 'none';
-            }
-            
-            applyCardHighlight();
+            listContainer.appendChild(card);
           });
           
-          listContainer.appendChild(card);
-        });
-        
-        // Auto-add first match to history logs
-        addToHistory(data.products[0]);
-      } else if (data.products && data.products.length > 0) {
-        // Render single product details card
-        const p = data.products[0];
-        
-        // Set product title row collapse status
-        resetBarcodeCollapse();
-
-        showState('single');
-        document.getElementById('single-name').textContent = p.name;
-        document.getElementById('single-barcode').textContent = p.barcode;
-        document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
-        document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
-        
-        const bulkContainer = document.getElementById('single-bulk-container');
-        if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-          document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty} or more`;
-          document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
-          const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-          document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
-          bulkContainer.style.display = 'flex';
+          addToHistory(data.products[0]);
+          lookupInProgress = false;
+        } else if (data.products && data.products.length > 0) {
+          const p = data.products[0];
+          resetBarcodeCollapse();
+          
+          showState('single');
+          document.getElementById('single-name').textContent = p.name;
+          document.getElementById('single-barcode').textContent = p.barcode;
+          document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
+          document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+          
+          const bulkContainer = document.getElementById('single-bulk-container');
+          if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+            document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
+            document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
+            const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+            document.getElementById('single-bulk-savings').textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
+            bulkContainer.style.display = 'flex';
+          } else {
+            bulkContainer.style.display = 'none';
+          }
+          
+          if (singleState) singleState.classList.remove('replacing');
+          if (priceValEl) priceValEl.classList.remove('faded');
+          
+          addToHistory(p);
+          triggerFeedbackPopup(p.name);
+          
+          // Lock scan to this barcode to prevent accidental duplicates
+          lastScannedBarcode = barcode;
+          
+          // API/Render metrics
+          const renderEnd = Date.now();
+          if (DEBUG_MODE) {
+            console.log(`[METRICS] UI rendering duration: ${renderEnd - renderStart}ms`);
+            console.log(`[METRICS] Total decode-to-render: ${renderEnd - apiStart}ms`);
+          }
+          
+          // Resume decoding after 1.0s debounce pause
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
         } else {
-          bulkContainer.style.display = 'none';
+          showState('notFound');
+          // Resume scanning after failure
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
         }
-        
-        addToHistory(p);
       } else {
-        showState('notFound');
+        // Recovery trigger: handle bad responses
+        handleLookupFailure();
       }
-    } else if (response.status === 404) {
-      showState('notFound');
-    } else {
-      // Trigger server failure recovery screen
-      showState('serverError');
-    }
-  } catch (err) {
-    // Trigger network failure recovery screen
-    showState('networkError');
+    }, 150);
     
-    // Automatically attempt background lookup reconnects every 3 seconds
+  } catch (err) {
+    if (DEBUG_MODE) console.error('[DEBUG] Lookup fetch error:', err);
+    handleLookupFailure();
+  }
+}
+
+// Graceful lookup error fallback
+function handleLookupFailure() {
+  if (scanFeedback) {
+    scanFeedback.textContent = "Unable to retrieve price. Please try again.";
+    scanFeedback.classList.add('visible');
     setTimeout(() => {
-      const activeStateVisible = states.networkError.style.display === 'flex';
-      if (activeStateVisible && currentRecoveryBarcode === barcode) {
-        lookupBarcode(barcode);
-      }
-    }, 3000);
+      scanFeedback.classList.remove('visible');
+    }, 2000);
+  }
+  
+  // Revert card replacement visual classes
+  const singleState = document.getElementById('state-single');
+  const multiState = document.getElementById('state-multiple');
+  const priceValEl = document.getElementById('single-sale-price');
+  if (singleState) singleState.classList.remove('replacing');
+  if (multiState) multiState.classList.remove('replacing');
+  if (priceValEl) priceValEl.classList.remove('faded');
+  
+  // Revert back to previous displays if applicable, or stay idle
+  const isSingleActive = document.getElementById('single-name').textContent !== '-';
+  if (isSingleActive) {
+    showState('single');
+  } else {
+    showState('idle');
+  }
+  
+  // Auto-resume scanner loop
+  setTimeout(() => {
+    resetScannerStatusLine();
+    lookupInProgress = false;
+    isScanPaused = false;
+  }, 1000);
+}
+
+// Reset status bar display
+function resetScannerStatusLine() {
+  const dot = document.querySelector('.status-dot');
+  const text = document.querySelector('.status-text');
+  if (dot && text) {
+    dot.style.backgroundColor = '#ffffff';
+    dot.style.boxShadow = 'none';
+    text.textContent = 'Align barcode inside the frame';
   }
 }
 
@@ -315,7 +459,7 @@ function startCameraScanner() {
   console.log('[Camera Debug] Camera initialization started');
   
   showState('idle');
-  lastScannedBarcode = null;
+  lastScannedBarcode = "";
   lastScanTime = 0;
 
   // Clear previous debug details if any
@@ -418,20 +562,57 @@ function startScannerLibrary() {
   }
 
   const config = {
-    fps: 10,
+    fps: 15,
     qrbox: (width, height) => {
-      return { width: Math.round(width * 0.8), height: Math.round(height * 0.45) };
+      // Dynamic bounds (preferred 70% width, clamped min: 240px, max: 340px)
+      let boxWidth = Math.round(width * 0.70);
+      if (boxWidth < 240) boxWidth = 240;
+      if (boxWidth > 340) boxWidth = 340;
+      if (boxWidth > width) boxWidth = width;
+      
+      let boxHeight = Math.round(boxWidth / 2.5);
+      if (boxHeight > height) boxHeight = height;
+      
+      // Calculate DOM scaled size to align CSS overlay brackets perfectly
+      const reader = document.getElementById('reader');
+      if (reader) {
+        const domWidth = reader.clientWidth;
+        const domHeight = reader.clientHeight;
+        const scale = Math.max(domWidth / width, domHeight / height);
+        const visualWidth = Math.round(boxWidth * scale);
+        const visualHeight = Math.round(boxHeight * scale);
+        
+        const brackets = document.querySelector('.scanner-brackets');
+        if (brackets) {
+          brackets.style.width = `${visualWidth}px`;
+          brackets.style.height = `${visualHeight}px`;
+        }
+      }
+      
+      return { width: boxWidth, height: boxHeight };
     }
   };
 
+  const cameraConstraints = {
+    facingMode: { ideal: "environment" },
+    focusMode: { ideal: "continuous" },
+    width: { min: 640, ideal: 1280, max: 1920 },
+    height: { min: 480, ideal: 720, max: 1080 }
+  };
+
   console.log('[Camera Debug] Html5Qrcode.start() called with facingMode: "environment"');
+  if (DEBUG_MODE) cameraStartTime = Date.now();
+  
   html5QrcodeScanner.start(
-    { facingMode: "environment" },
+    cameraConstraints,
     config,
     onBarcodeDecoded,
     onBarcodeScanError
   ).then(() => {
-    console.log('[Camera Debug] Html5Qrcode.start() succeeded with environment constraints.');
+    console.log('[Camera Debug] Html5Qrcode.start() succeeded.');
+    if (DEBUG_MODE) {
+      console.log(`[METRICS] Camera initialized successfully in ${Date.now() - cameraStartTime}ms`);
+    }
   }).catch(err => {
     console.warn('[Camera Debug] Html5Qrcode.start() with environment constraints failed:', err.message || err);
     
@@ -497,14 +678,70 @@ function appendDebugInfo(container, errText) {
 // Handler functions
 function onBarcodeDecoded(decodedText) {
   const now = Date.now();
-  if (decodedText === lastScannedBarcode && (now - lastScanTime) < 2000) {
+  
+  // Track last seen timestamp to calculate disappearance intervals for anti-double scans
+  lastSeenTime = now;
+  
+  // Ignore subsequent scans if lookup is in progress or scan debouncing is active
+  if (isScanPaused || lookupInProgress) return;
+  
+  // Anti-double scan check: ignore stationary scanned barcode
+  if (decodedText === lastScannedBarcode) {
     return;
   }
-  lastScannedBarcode = decodedText;
+  
+  // Time-based confidence check (consistent across 15fps to 60fps frame rates)
+  if (decodedText === lastDetectedBarcode) {
+    detectionCount++;
+  } else {
+    lastDetectedBarcode = decodedText;
+    firstDetectedTime = now;
+    detectionCount = 1;
+    return; // Wait for next frame to build confidence
+  }
+  
+  const elapsedStableTime = now - firstDetectedTime;
+  const isStable = (detectionCount >= 2) || (elapsedStableTime >= 100);
+  if (!isStable) {
+    return;
+  }
+  
+  // Stable detection confirmed! Reset transient state frame counters
+  detectionCount = 0;
+  lastDetectedBarcode = "";
+  
+  // Lock the scanner loop
+  isScanPaused = true;
   lastScanTime = now;
-  triggerFeedbackPopup();
+  
+  // 1. Log metrics in dev environment
+  if (DEBUG_MODE) {
+    console.log(`[DEBUG] Stable barcode detected: ${decodedText} (stable for ${elapsedStableTime}ms, frames: ${detectionCount})`);
+  }
+  
+  // 2. Flash brackets green for 200ms
+  const brackets = document.querySelector('.scanner-brackets');
+  if (brackets) {
+    brackets.classList.add('flash-green');
+    setTimeout(() => {
+      brackets.classList.remove('flash-green');
+    }, 200);
+  }
+  
+  // 3. Update top status label to green dot and "✓ Barcode detected"
+  const dot = document.querySelector('.status-dot');
+  const text = document.querySelector('.status-text');
+  if (dot && text) {
+    dot.style.backgroundColor = '#2e7d32';
+    dot.style.boxShadow = '0 0 8px #2e7d32';
+    text.textContent = '✓ Barcode detected';
+  }
+  
+  // 4. Synthesize beep and haptic feedback
   triggerHapticVibrate();
   playSuccessBeep();
+  
+  // 5. Lookup details from backend catalog
   lookupBarcode(decodedText);
 }
 

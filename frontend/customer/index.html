@@ -52,11 +52,11 @@
           <div class="bracket bracket-tr"></div>
           <div class="bracket bracket-bl"></div>
           <div class="bracket bracket-br"></div>
+          <div class="scanner-glow-line"></div>
         </div>
-        <div class="scanner-glow-line"></div>
         <div class="scanner-status">
           <span class="status-dot"></span>
-          <span class="status-text">Scanner is always active</span>
+          <span class="status-text">Align barcode inside the frame</span>
         </div>
       </div>
       
@@ -71,8 +71,8 @@
         <div id="details-card" class="product-card">
           <!-- State 1: Idle -->
           <div id="state-idle" class="details-state">
-            <div class="idle-graphic">🔍</div>
-            <p class="state-instruction">Align product barcode in the box above to verify price.</p>
+            <h3 class="idle-heading">Ready to scan</h3>
+            <p class="state-instruction">Point your camera at any product barcode.</p>
           </div>
           
           <!-- State 2: Loading -->
@@ -90,7 +90,7 @@
             
             <!-- Barcode Interactive Toggle Trigger -->
             <div class="barcode-toggle-container" id="single-barcode-toggle">
-              <span class="barcode-toggle-label">View Barcode</span>
+              <span class="barcode-toggle-label">SKU / Barcode</span>
               <span class="barcode-toggle-chevron">▼</span>
             </div>
             
@@ -114,7 +114,13 @@
             <!-- Bulk Offer Card (Premium Promotional Panel) -->
             <div id="single-bulk-container" class="bulk-offer-panel" style="display: none;">
               <div class="bulk-left-col">
-                <div class="bulk-title">Bulk Offer</div>
+                <div class="bulk-header-row">
+                  <svg class="bulk-tag-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                  </svg>
+                  <span class="bulk-title">Bulk Offer</span>
+                </div>
                 <div class="bulk-subtitle" id="single-bulk-qty">-</div>
               </div>
               <div class="bulk-right-col">
@@ -149,8 +155,14 @@
           <!-- State F1: Camera Permission Denied -->
           <div id="state-camera-denied" class="details-state" style="display: none;">
             <div class="error-graphic">📷</div>
-            <h3 class="error-title" style="font-size: 1.1rem; margin-bottom: 8px;">Camera access is required to scan product barcodes.</h3>
-            <p class="error-desc">Please enable camera permission and try again.</p>
+            <h3 class="error-title">Unable to access the camera.</h3>
+            <div class="error-desc bulleted-guide">
+              <ul>
+                <li>Check browser permissions</li>
+                <li>Ensure HTTPS is enabled</li>
+                <li>Reload the page</li>
+              </ul>
+            </div>
             <button id="retry-camera-denied-btn" class="btn btn-outline">Retry</button>
           </div>
           
@@ -158,7 +170,13 @@
           <div id="state-camera-unavailable" class="details-state" style="display: none;">
             <div class="error-graphic">📷</div>
             <h3 class="error-title">Unable to access the camera.</h3>
-            <p class="error-desc">Please close other applications using the camera and try again.</p>
+            <div class="error-desc bulleted-guide">
+              <ul>
+                <li>Check browser permissions</li>
+                <li>Ensure HTTPS is enabled</li>
+                <li>Reload the page</li>
+              </ul>
+            </div>
             <button id="retry-camera-unavailable-btn" class="btn btn-outline">Retry</button>
           </div>
           

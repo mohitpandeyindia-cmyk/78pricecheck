@@ -243,13 +243,25 @@ html, body {
   user-select: none;
 }
 
-/* Scanner Area (Always Active) */
+/* Scanner Area (Always Active with Device Adaptive Heights) */
 .scanner-area {
-  height: 170px;
+  height: 160px; /* Default: Phones */
   position: relative;
   background-color: #0e1a0e;
   overflow: hidden;
   width: 100%;
+}
+
+@media (min-width: 481px) and (max-width: 1024px) {
+  .scanner-area {
+    height: 180px; /* Tablets */
+  }
+}
+
+@media (min-width: 1025px) {
+  .scanner-area {
+    height: 200px; /* Desktop */
+  }
 }
 
 #reader {
@@ -273,11 +285,13 @@ html, body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 65%;
-  height: 60%;
+  /* width and height are dynamically synchronized by JS from qrbox preview scale */
+  width: 240px;
+  height: 96px;
   pointer-events: none;
   box-shadow: 0 0 0 9999px rgba(14, 26, 14, 0.45); /* Dark overlay shroud */
   z-index: 10;
+  transition: width 0.15s ease, height 0.15s ease;
 }
 
 .bracket {
@@ -286,6 +300,12 @@ html, body {
   height: 16px;
   border-color: var(--primary-color);
   border-style: solid;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.scanner-brackets.flash-green .bracket {
+  border-color: #2e7d32 !important;
+  box-shadow: 0 0 10px rgba(46, 125, 50, 0.6);
 }
 
 .bracket-tl {
@@ -316,11 +336,11 @@ html, body {
   border-bottom-right-radius: 6px;
 }
 
-/* Scanner Glow Scanning Line */
+/* Scanner Glow Scanning Line - relative to dynamic brackets */
 .scanner-glow-line {
   position: absolute;
-  left: 17.5%;
-  width: 65%;
+  left: 5%;
+  width: 90%;
   height: 3px;
   background: linear-gradient(90deg, transparent, #4caf50, #81c784, #4caf50, transparent);
   box-shadow: 0 0 8px #4caf50;
@@ -974,4 +994,42 @@ html, body {
 @keyframes fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Card content fade-out and slide-up replacements (Milestone 6.2) */
+.details-state {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.details-state.replacing {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Today's Price number micro-fade transition (Milestone 6.2) */
+.price-val {
+  transition: opacity 150ms ease;
+  will-change: opacity;
+}
+
+.price-val.faded {
+  opacity: 0.15;
+}
+
+/* Troubleshooting list style details */
+.bulleted-guide {
+  text-align: left;
+  margin-top: 8px;
+}
+.bulleted-guide ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.bulleted-guide li {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
 }
