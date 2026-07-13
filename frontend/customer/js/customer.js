@@ -678,54 +678,8 @@ function startCameraScanner() {
       });
   }
 
-  // 4. Request camera stream via native getUserMedia (must run synchronously in event thread for iOS Safari!)
-  console.log('[Camera Debug] Requesting native camera permission prompt via getUserMedia...');
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    .then(stream => {
-      console.log('[Camera Debug] getUserMedia() succeeded with environment constraints.');
-      handleCameraStreamSuccess(stream);
-    })
-    .catch(err => {
-      console.warn('[Camera Debug] getUserMedia() with environment constraints failed:', err.message || err);
-      console.log('[Camera Debug] Retrying getUserMedia() with fallback constraints...');
-      navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-          console.log('[Camera Debug] getUserMedia() succeeded with fallback constraints.');
-          handleCameraStreamSuccess(stream);
-        })
-        .catch(fallbackErr => {
-          console.error('[Camera Debug] getUserMedia() failed entirely:', fallbackErr.message || fallbackErr);
-          logAndShowDeniedError(fallbackErr);
-        });
-    });
-}
-
-// Handle native stream authorization success
-function handleCameraStreamSuccess(nativeStream) {
-  // Stop native tracks immediately to free hardware context before initializing the library
-  if (nativeStream) {
-    try {
-      nativeStream.getTracks().forEach(track => track.stop());
-      console.log('[Camera Debug] Native temporary stream stopped successfully.');
-    } catch (stopErr) {
-      console.warn('[Camera Debug] Failed to stop native temporary stream:', stopErr);
-    }
-  }
-
-  // Log available devices, then start scanner
-  navigator.mediaDevices.enumerateDevices()
-    .then(devices => {
-      const cameras = devices.filter(d => d.kind === 'videoinput');
-      console.log(`[Camera Debug] Available camera devices (${cameras.length}):`);
-      cameras.forEach((c, idx) => {
-        console.log(`  - [${idx}] ID: ${c.deviceId || 'empty'}, Label: "${c.label || 'no label'}"`);
-      });
-      startScannerLibrary();
-    })
-    .catch(enumErr => {
-      console.warn('[Camera Debug] Failed to enumerate devices:', enumErr.message || enumErr);
-      startScannerLibrary();
-    });
+  // 4. Start scanner library directly to avoid camera hardware context lock race conditions
+  startScannerLibrary();
 }
 
 // Start html5-qrcode scanner loop
