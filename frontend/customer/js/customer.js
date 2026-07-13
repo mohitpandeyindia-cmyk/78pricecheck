@@ -376,6 +376,16 @@ function formatCurrency(val) {
   return '₹' + Number(val).toFixed(2);
 }
 
+// Premium currency parts formatter
+function formatPremiumPrice(val) {
+  if (val === undefined || val === null) return 'N/A';
+  const formatted = Number(val).toFixed(2);
+  const parts = formatted.split('.');
+  const wholeNumber = parts[0];
+  const decimalNumber = parts[1] || '00';
+  return `<span class="price-currency">₹</span><span class="price-whole">${wholeNumber}</span><span class="price-decimal">.${decimalNumber}</span>`;
+}
+
 // Fetch pricing values from endpoint
 // Fetch pricing values from endpoint
 async function lookupBarcode(barcode) {
@@ -491,10 +501,10 @@ async function lookupBarcode(barcode) {
               if (singleState) singleState.classList.add('replacing');
               setTimeout(() => {
                 showState('single');
-                document.getElementById('single-name').textContent = p.name;
-                document.getElementById('single-barcode').textContent = p.barcode;
-                document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
-                document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+                 document.getElementById('single-name').textContent = p.name;
+                 document.getElementById('single-barcode').textContent = p.barcode;
+                 document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
+                 document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
                 
                 const bulkContainer = document.getElementById('single-bulk-container');
                 if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
@@ -525,7 +535,7 @@ async function lookupBarcode(barcode) {
           showState('single');
           document.getElementById('single-name').textContent = p.name;
           document.getElementById('single-barcode').textContent = p.barcode;
-          document.getElementById('single-sale-price').textContent = formatCurrency(p.salePrice);
+          document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
           document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
           
           const bulkContainer = document.getElementById('single-bulk-container');
@@ -1117,7 +1127,7 @@ function renderRecentScansBottomSheet() {
       showState('single');
       document.getElementById('single-name').textContent = item.name;
       document.getElementById('single-barcode').textContent = item.barcode;
-      document.getElementById('single-sale-price').textContent = formatCurrency(item.salePrice);
+      document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(item.salePrice);
       document.getElementById('single-mrp').textContent = formatCurrency(item.mrp);
       
       const bulkContainer = document.getElementById('single-bulk-container');
