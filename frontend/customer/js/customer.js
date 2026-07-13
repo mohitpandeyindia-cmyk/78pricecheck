@@ -52,6 +52,40 @@ let lastFpsCalculationTime = Date.now();
 let currentFps = 0;
 let ambientLightInterval = null;
 
+// Centralized Layout Manager
+const LayoutManager = {
+  recalculateLayout() {
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    const height = window.innerHeight || document.documentElement.clientHeight;
+    
+    // 1. Set app height variable for devices/browsers that have dvh constraints
+    document.documentElement.style.setProperty('--app-height', `${height}px`);
+    
+    // 2. Set responsive scale factor based on viewport size (reference 375x667)
+    const scaleWidth = Math.min(width / 375, 1.25);
+    const scaleHeight = Math.min(height / 667, 1.25);
+    const scale = Math.min(scaleWidth, scaleHeight);
+    document.documentElement.style.setProperty('--responsive-scale', scale.toFixed(2));
+    
+    console.log(`[LayoutManager] Recalculated size: ${width}x${height}, scale: ${scale.toFixed(2)}`);
+  },
+  init() {
+    this.recalculateLayout();
+    window.addEventListener('resize', () => this.recalculateLayout());
+    
+    // Listen to orientation change via matchMedia API
+    const orientationQuery = window.matchMedia('(orientation: landscape)');
+    if (typeof orientationQuery.addEventListener === 'function') {
+      orientationQuery.addEventListener('change', () => this.recalculateLayout());
+    } else if (typeof orientationQuery.addListener === 'function') {
+      orientationQuery.addListener(() => this.recalculateLayout());
+    }
+  }
+};
+
+// Initialize Layout
+LayoutManager.init();
+
 // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
 setInterval(() => {
   if (lastScannedBarcode && Date.now() - lastSeenTime > 2000) {
