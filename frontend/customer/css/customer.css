@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@700&family=Outfit:wght@300;400;500;600;700;800&family=Poppins:wght@500;700;800&display=swap');
 
 :root {
   /* System Colors */
@@ -87,6 +87,19 @@ html, body {
   flex-direction: column;
   height: 100%;
   width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background-color: var(--bg-light);
+  transform: translateY(100%);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.view-panel.active {
+  transform: translateY(0);
 }
 
 /* Welcome Page Layout */
@@ -94,108 +107,245 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: center;
   height: 100%;
-  padding: 24px 0 0 0; /* Zero padding on bottom and sides for mascot fit */
-  text-align: center;
+  width: 100%;
+  padding: 0;
+  margin: 0;
   background: radial-gradient(circle at top, #f4fbf7 0%, var(--bg-light) 75%);
   box-sizing: border-box;
   overflow: hidden;
+  position: relative;
+  animation: welcome-fade-in 0.4s ease-out forwards;
+}
+
+@keyframes welcome-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.brand-ribbon-container {
+  width: 100vw;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.brand-ribbon-img {
+  width: 100%;
+  height: auto;
+  max-height: 25dvh;
+  object-fit: contain;
+  display: block;
 }
 
 .welcome-content-body {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 24px;
-  text-align: center;
-  flex: 1;
-  justify-content: center;
+  justify-content: space-evenly;
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-2) var(--space-4) 0 var(--space-4);
+  box-sizing: border-box;
+  z-index: 10;
 }
 
-.welcome-greetings {
-  margin-bottom: 12px;
+/* Greeting (Hindi & Calligraphic Kanpur) */
+.greeting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: var(--space-1);
 }
 
-.welcome-greeting-hindi {
-  font-size: 2.2rem; /* Compact size */
-  font-weight: 800;
-  color: #e64a19; /* Bright orangish red fill */
-  -webkit-text-stroke: 1.2px #7f0000; /* Dark red outline */
-  letter-spacing: 0.5px;
-  line-height: 1.2;
-  margin-bottom: 8px;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.welcome-title {
-  font-size: 1.95rem; /* Compact size */
-  font-weight: 900;
-  color: var(--primary-color);
-  letter-spacing: -0.5px;
-  margin-top: 2px;
-  margin-bottom: 2px;
-}
-
-.welcome-service-subtitle {
-  font-size: 0.7rem;
+.greeting-namaste {
+  font-family: 'Kalam', cursive, sans-serif;
+  font-size: clamp(2.4rem, 7vw, 3.6rem);
   font-weight: 700;
-  color: #868e96;
-  letter-spacing: 1px;
-  margin-bottom: 12px;
-  text-transform: uppercase;
+  color: #e65100; /* Rich saffron/reddish-orange */
+  -webkit-text-stroke: 1.5px #5d001e; /* Dark maroon stroke */
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  line-height: 1.0;
+  margin-bottom: 4px;
 }
 
-.welcome-deals-text {
-  font-size: 0.85rem;
+.greeting-kanpur {
+  font-family: 'Kalam', cursive, sans-serif;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  color: #e65100; /* Rich saffron */
+  -webkit-text-stroke: 1.2px #5d001e; /* Dark maroon stroke */
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  line-height: 1.0;
+}
+
+/* Product Identity */
+.product-identity {
+  text-align: center;
+  margin-top: var(--space-2);
+}
+
+.product-title {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(1.8rem, 5.5vw, 2.4rem);
   font-weight: 800;
-  color: #2e7d32;
+  color: #212121; /* Dark charcoal */
+  letter-spacing: -0.5px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.product-subtitle {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+  font-weight: 500;
+  color: #757575; /* Grey */
+  margin-top: 6px;
   letter-spacing: 0.5px;
-  margin-bottom: 16px;
-  text-transform: uppercase;
+  display: block;
+}
+
+/* Primary Action Button & Wrapper */
+.welcome-scan-btn-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: button-breathe 5.5s infinite ease-in-out;
+  margin-top: var(--space-2);
+}
+
+@keyframes button-breathe {
+  0%, 100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.01);
+  }
+  55% {
+    transform: scale(1);
+  }
 }
 
 .welcome-scan-btn {
-  background-color: #2e7d32 !important;
-  border-color: #2e7d32 !important;
-  font-size: 1.15rem !important;
-  font-weight: 900 !important;
-  padding: 12px 36px !important; /* Reduced padding to save height */
-  border-radius: 50px !important;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #ffffff !important;
-  box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: clamp(60px, 8vh, 64px);
+  border-radius: 19px;
+  background-color: var(--primary-color); /* Deep supermarket green */
+  color: #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--text-md);
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.welcome-scan-btn:hover {
-  background-color: #1b5e20 !important;
-  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(27, 94, 32, 0.15);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.5px;
 }
 
 .welcome-scan-btn:active {
-  transform: translateY(0);
+  transform: scale(0.98);
+  box-shadow: 0 3px 8px rgba(27, 94, 32, 0.1);
 }
 
+/* Ripple effect container styles */
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.35);
+  transform: scale(0);
+  animation: ripple-animation 0.4s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Mascot Container Layout */
 .welcome-mascot-container {
   width: 100%;
-  margin-top: auto;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0;
-  flex: 1 1 auto;
+  margin-top: auto;
+  line-height: 0;
+  z-index: 5;
 }
 
 .welcome-mascot {
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  max-width: clamp(280px, 85vw, 420px);
   height: auto;
-  max-height: 28vh; /* Limit mascot to 28% of height to prevent cropping */
-  display: block;
   object-fit: contain;
+  vertical-align: bottom;
+  display: block;
+}
+
+/* Camera Opening Loading State Card */
+.opening-camera-text {
+  font-family: 'Poppins', sans-serif;
+  font-size: var(--text-md);
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
+  text-align: center;
+}
+
+.bouncing-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-1);
+}
+
+.bouncing-dots .dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--primary-color);
+  border-radius: 50%;
+  animation: dot-bounce 1.4s infinite ease-in-out both;
+}
+
+.bouncing-dots .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.bouncing-dots .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes dot-bounce {
+  0%, 80%, 100% { 
+    transform: scale(0.3);
+    opacity: 0.3;
+  }
+  40% { 
+    transform: scale(1.0);
+    opacity: 1;
+  }
 }
 
 /* Buttons */
@@ -333,16 +483,7 @@ html, body {
   object-fit: contain;
 }
 
-.welcome-logo {
-  width: calc(100% + 48px); /* Stretch to touch ends of the screen */
-  max-width: none;
-  margin-left: -24px;
-  margin-right: -24px;
-  height: auto;
-  max-height: 12vh; /* Limit logo to 12% of height to prevent cropping */
-  object-fit: contain;
-  margin-bottom: 24px;
-}
+
 
 /* Scanner Area (Always Active with Device Adaptive Heights) */
 .scanner-area {

@@ -10,6 +10,7 @@ const recentScansList = document.getElementById('recent-scans-list');
 
 // Pricing Result States
 const states = {
+  'camera-opening': document.getElementById('state-camera-opening'),
   idle: document.getElementById('state-idle'),
   loading: document.getElementById('state-loading'),
   single: document.getElementById('state-single'),
@@ -191,29 +192,44 @@ const StateManager = {
       case 'BOOTING':
       case 'INITIALIZING':
         welcomeView.style.display = 'flex';
-        scannerView.style.display = 'none';
+        scannerView.classList.remove('active');
+        setTimeout(() => {
+          if (this.currentState === 'BOOTING' || this.currentState === 'INITIALIZING') {
+            scannerView.style.display = 'none';
+          }
+        }, 400);
         break;
         
       case 'READY':
         welcomeView.style.display = 'flex';
-        scannerView.style.display = 'none';
+        scannerView.classList.remove('active');
+        setTimeout(() => {
+          if (this.currentState === 'READY') {
+            scannerView.style.display = 'none';
+          }
+        }, 400);
         break;
         
       case 'SCANNING':
-        welcomeView.style.display = 'none';
+        welcomeView.style.display = 'flex';
         scannerView.style.display = 'flex';
-        showState('idle');
+        setTimeout(() => {
+          scannerView.classList.add('active');
+        }, 20);
+        showState('camera-opening'); // Show premium custom Opening Camera state first
         break;
         
       case 'LOOKUP':
-        welcomeView.style.display = 'none';
+        welcomeView.style.display = 'flex';
         scannerView.style.display = 'flex';
+        scannerView.classList.add('active');
         showState('loading');
         break;
         
       case 'DISPLAY_RESULT':
-        welcomeView.style.display = 'none';
+        welcomeView.style.display = 'flex';
         scannerView.style.display = 'flex';
+        scannerView.classList.add('active');
         if (data.type === 'single') {
           showState('single');
         } else if (data.type === 'multiple') {
@@ -224,32 +240,20 @@ const StateManager = {
         break;
         
       case 'OFFLINE':
-        welcomeView.style.display = 'none';
+        welcomeView.style.display = 'flex';
         scannerView.style.display = 'flex';
+        scannerView.classList.add('active');
         showState('networkError');
         break;
         
       case 'ERROR':
-        welcomeView.style.display = 'none';
+        welcomeView.style.display = 'flex';
         scannerView.style.display = 'flex';
+        scannerView.classList.add('active');
         if (data.type === 'cameraDenied') {
           showState('cameraDenied');
-          const desc = states.cameraDenied.querySelector('.error-desc');
-          if (desc) {
-            desc.innerHTML = 'Camera permission is blocked or denied.<br><br>' +
-              '<strong>To allow access:</strong><br>' +
-              '1. Tap the lock icon (🔒) or settings icon in your Chrome address bar.<br>' +
-              '2. Select <strong>"Site settings"</strong>.<br>' +
-              '3. Locate <strong>"Camera"</strong> and change it to <strong>"Allow"</strong>, then reload the page.';
-          }
-          if (data.errorString) appendDebugInfo(states.cameraDenied, data.errorString);
         } else if (data.type === 'cameraUnavailable') {
           showState('cameraUnavailable');
-          const desc = states.cameraUnavailable.querySelector('.error-desc');
-          if (desc) {
-            desc.textContent = data.errorDesc || 'Unable to open camera hardware stream. Please check camera connections or restart browser.';
-          }
-          if (data.errorString) appendDebugInfo(states.cameraUnavailable, data.errorString);
         } else if (data.type === 'notFound') {
           showState('notFound');
         } else {
@@ -386,6 +390,7 @@ const CameraManager = {
       
       this.applyFocusConstraints();
       startAmbientLightDetection();
+      showState('idle');
       
     } catch (err) {
       console.warn('[CameraManager] Main camera start path failed, attempting fallback...', err);
@@ -394,12 +399,14 @@ const CameraManager = {
         this.state = 'READY';
         this.applyFocusConstraints();
         startAmbientLightDetection();
+        showState('idle');
       } catch (err2) {
         console.warn('[CameraManager] Fallback environment camera failed, trying user camera...', err2);
         try {
           await this.html5Qrcode.start({ facingMode: "user" }, this.config, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
           startAmbientLightDetection();
+          showState('idle');
         } catch (err3) {
           this.state = 'ERROR';
           isCameraRunning = false;
@@ -1199,11 +1206,31 @@ function stopCameraScanner() {
 }
 
 // UI Triggers & SPA screen toggles
-startScanBtn.addEventListener('click', () => {
-  StateManager.transitionTo('SCANNING');
-  CameraManager.start().catch(err => {
-    console.error('Failed to start camera:', err);
-  });
+startScanBtn.addEventListener('click', (e) => {
+  const rect = startScanBtn.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple-effect';
+  ripple.style.left = `${x}px`;
+  ripple.style.top = `${y}px`;
+  
+  const size = Math.max(rect.width, rect.height);
+  ripple.style.width = `${size}px`;
+  ripple.style.height = `${size}px`;
+  ripple.style.marginLeft = `-${size / 2}px`;
+  ripple.style.marginTop = `-${size / 2}px`;
+  
+  startScanBtn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 400);
+  
+  setTimeout(() => {
+    StateManager.transitionTo('SCANNING');
+    CameraManager.start().catch(err => {
+      console.error('Failed to start camera:', err);
+    });
+  }, 150);
 });
 
 backBtn.addEventListener('click', () => {

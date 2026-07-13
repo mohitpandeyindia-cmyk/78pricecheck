@@ -16,23 +16,28 @@
     
     <!-- State A: Welcome View -->
     <div id="welcome-view" class="welcome-container">
+      <div class="brand-ribbon-container">
+        <img src="assets/logo.png" alt="78 Supermaart Ribbon" class="brand-ribbon-img">
+      </div>
+      
       <div class="welcome-content-body">
-        <img class="welcome-logo" src="assets/logo.png" alt="78 Supermaart Logo">
-        
-        <div class="welcome-greetings">
-          <div class="welcome-greeting-hindi">नमस्ते</div>
+        <div class="greeting-container">
+          <span class="greeting-namaste">नमस्ते</span>
+          <span class="greeting-kanpur">कानपुर</span>
         </div>
         
-        <h1 class="welcome-title">78 PriceCheck</h1>
-        <p class="welcome-service-subtitle">SEVENTY EIGHT SUPERMAART SMART SERVICE</p>
+        <div class="product-identity">
+          <h1 class="product-title">78 PriceCheck</h1>
+          <span class="product-subtitle">A Smart Service</span>
+        </div>
         
-        <p class="welcome-deals-text">DISCOVER BEST PRICES AND DEALS</p>
-        
-        <button id="start-scan-btn" class="btn btn-primary btn-large welcome-scan-btn">SCAN BARCODE</button>
+        <div class="welcome-scan-btn-wrapper">
+          <button id="start-scan-btn" class="welcome-scan-btn">TAP TO SCAN</button>
+        </div>
       </div>
       
       <div class="welcome-mascot-container">
-        <img class="welcome-mascot" src="assets/mascot.png" alt="Mascot">
+        <img class="welcome-mascot" src="assets/mascot.png" alt="78 Mascot">
       </div>
     </div>
     
@@ -82,6 +87,16 @@
         
         <!-- Large Floating Product Card -->
         <div id="details-card" class="product-card">
+          <!-- State: Camera Opening -->
+          <div id="state-camera-opening" class="details-state" style="display: none;">
+            <div class="opening-camera-text">Opening Camera</div>
+            <div class="bouncing-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+
           <!-- State 1: Idle -->
           <div id="state-idle" class="details-state">
             <h3 class="idle-heading">Ready to scan</h3>
@@ -163,31 +178,19 @@
           </div>
           
           <!-- State F1: Camera Permission Denied -->
-          <div id="state-camera-denied" class="details-state" style="display: none;">
+          <div id="state-camera-denied" class="details-state style-camera-error" style="display: none;">
             <div class="error-graphic">📷</div>
-            <h3 class="error-title">Unable to access the camera.</h3>
-            <div class="error-desc bulleted-guide">
-              <ul>
-                <li>Check browser permissions</li>
-                <li>Ensure HTTPS is enabled</li>
-                <li>Reload the page</li>
-              </ul>
-            </div>
-            <button id="retry-camera-denied-btn" class="btn btn-outline">Retry</button>
+            <h3 class="error-title">Camera access is needed</h3>
+            <p class="error-desc" style="margin-bottom: var(--space-3);">to scan product barcodes.</p>
+            <button id="retry-camera-denied-btn" class="welcome-scan-btn" style="width: 100%; height: 56px; border-radius: 16px; margin: 0; box-shadow: none;">Enable Camera</button>
           </div>
           
           <!-- State F2: Camera Unavailable -->
-          <div id="state-camera-unavailable" class="details-state" style="display: none;">
+          <div id="state-camera-unavailable" class="details-state style-camera-error" style="display: none;">
             <div class="error-graphic">📷</div>
-            <h3 class="error-title">Unable to access the camera.</h3>
-            <div class="error-desc bulleted-guide">
-              <ul>
-                <li>Check browser permissions</li>
-                <li>Ensure HTTPS is enabled</li>
-                <li>Reload the page</li>
-              </ul>
-            </div>
-            <button id="retry-camera-unavailable-btn" class="btn btn-outline">Retry</button>
+            <h3 class="error-title">Camera access is needed</h3>
+            <p class="error-desc" style="margin-bottom: var(--space-3);">to scan product barcodes.</p>
+            <button id="retry-camera-unavailable-btn" class="welcome-scan-btn" style="width: 100%; height: 56px; border-radius: 16px; margin: 0; box-shadow: none;">Enable Camera</button>
           </div>
           
           <!-- State F3: Network Error -->
