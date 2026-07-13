@@ -60,20 +60,24 @@ setInterval(() => {
   }
 }, 500);
 
-// Query browser camera permission state on load
-if (navigator.permissions && navigator.permissions.query) {
-  navigator.permissions.query({ name: 'camera' }).then(permissionStatus => {
-    console.log('Initial camera permission state:', permissionStatus.state);
-    if (permissionStatus.state === 'granted') {
-      cameraPermissionGranted = true;
-    }
-    permissionStatus.onchange = () => {
-      cameraPermissionGranted = (permissionStatus.state === 'granted');
-      console.log('Camera permission state changed to:', permissionStatus.state);
-    };
-  }).catch(err => {
-    console.warn('Camera permission query not supported in this browser', err);
-  });
+// Query browser camera permission state on load safely
+try {
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'camera' }).then(permissionStatus => {
+      console.log('Initial camera permission state:', permissionStatus.state);
+      if (permissionStatus.state === 'granted') {
+        cameraPermissionGranted = true;
+      }
+      permissionStatus.onchange = () => {
+        cameraPermissionGranted = (permissionStatus.state === 'granted');
+        console.log('Camera permission state changed to:', permissionStatus.state);
+      };
+    }).catch(err => {
+      console.warn('Camera permission query not supported in this browser', err);
+    });
+  }
+} catch (err) {
+  console.warn('Synchronous camera permission query failed or not supported:', err);
 }
 
 // Initialize Session History from LocalStorage
