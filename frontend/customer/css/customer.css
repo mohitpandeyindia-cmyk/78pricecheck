@@ -78,49 +78,49 @@ html, body {
 }
 
 .welcome-greeting-hindi {
-  font-size: 2.5rem; /* Increased size */
+  font-size: 2.2rem; /* Compact size */
   font-weight: 800;
   color: #e64a19; /* Bright orangish red fill */
   -webkit-text-stroke: 1.2px #7f0000; /* Dark red outline */
   letter-spacing: 0.5px;
   line-height: 1.2;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .welcome-title {
-  font-size: 2.1rem;
+  font-size: 1.95rem; /* Compact size */
   font-weight: 900;
   color: var(--primary-color);
   letter-spacing: -0.5px;
-  margin-top: 4px;
-  margin-bottom: 4px;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 .welcome-service-subtitle {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #868e96;
   letter-spacing: 1px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   text-transform: uppercase;
 }
 
 .welcome-deals-text {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #2e7d32;
   letter-spacing: 0.5px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   text-transform: uppercase;
 }
 
 .welcome-scan-btn {
   background-color: #2e7d32 !important;
   border-color: #2e7d32 !important;
-  font-size: 1.25rem !important;
+  font-size: 1.15rem !important;
   font-weight: 900 !important;
-  padding: 16px 40px !important;
+  padding: 12px 36px !important; /* Reduced padding to save height */
   border-radius: 50px !important;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -147,12 +147,14 @@ html, body {
   align-items: flex-end;
   justify-content: center;
   padding: 0;
+  flex: 1 1 auto;
 }
 
 .welcome-mascot {
-  width: 100%;
-  max-width: 440px;
+  width: auto;
+  max-width: 100%;
   height: auto;
+  max-height: 28vh; /* Limit mascot to 28% of height to prevent cropping */
   display: block;
   object-fit: contain;
 }
@@ -298,6 +300,7 @@ html, body {
   margin-left: -24px;
   margin-right: -24px;
   height: auto;
+  max-height: 12vh; /* Limit logo to 12% of height to prevent cropping */
   object-fit: contain;
   margin-bottom: 24px;
 }
