@@ -733,57 +733,129 @@ function startScannerLibrary() {
   
   // Enumerate cameras via the library helper (requests permissions safely)
   Html5Qrcode.getCameras().then(devices => {
+    let cameraIdToUse = null;
     if (devices && devices.length > 0) {
       // Find environment/rear camera device label
       const backCam = devices.find(d => {
-        const label = d.label.toLowerCase();
+        const label = (d.label || '').toLowerCase();
         return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main');
       });
-      const selectedCameraId = backCam ? backCam.deviceId : devices[0].deviceId;
+      // Ensure we only use it if deviceId is non-empty string
+      const candidateId = backCam ? backCam.deviceId : devices[0].deviceId;
+      if (candidateId) {
+        cameraIdToUse = candidateId;
+      }
+    }
+    
+    // Fall back to environment constraints object if device ID is missing
+    const cameraArg = cameraIdToUse ? cameraIdToUse : { facingMode: "environment" };
+    console.log('[Camera Debug] html5QrcodeScanner.start() with:', cameraArg);
+
+    html5QrcodeScanner.start(
+      cameraArg,
+      config,
+      onBarcodeDecoded,
+      onBarcodeScanError
+    ).then(() => {
+      console.log('[Camera Debug] Html5Qrcode.start() succeeded.');
+      if (DEBUG_MODE) {
+        cameraInitDuration = Date.now() - cameraStartTime;
+        console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
+        updateDebugOverlay();
+      }
+      startAmbientLightDetection();
       
-      console.log(`[Camera Debug] Selected camera ID: ${selectedCameraId} (label: "${backCam ? backCam.label : devices[0].label}")`);
+      // Safely apply continuous autofocus tracks constraints
+      try {
+        const video = document.querySelector('#reader video');
+        if (video && video.srcObject) {
+          const track = video.srcObject.getVideoTracks()[0];
+          if (track && typeof track.getCapabilities === 'function') {
+            const capabilities = track.getCapabilities();
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              track.applyConstraints({
+                advanced: [{ focusMode: 'continuous' }]
+              }).catch(e => console.log('[Camera Debug] Continuous autofocus track constraint failed:', e));
+            }
+          }
+        }
+      } catch (focusErr) {
+        console.warn('[Camera Debug] Autofocus track capabilities validation failed:', focusErr);
+      }
+    }).catch(startErr => {
+      console.warn('[Camera Debug] html5QrcodeScanner.start() failed, trying environment constraints...', startErr);
       
+      // Fallback 1: Force environment constraints
       html5QrcodeScanner.start(
-        selectedCameraId,
+        { facingMode: "environment" },
         config,
         onBarcodeDecoded,
         onBarcodeScanError
       ).then(() => {
-        console.log('[Camera Debug] Html5Qrcode.start() succeeded.');
+        console.log('[Camera Debug] Fallback environment camera succeeded.');
         if (DEBUG_MODE) {
           cameraInitDuration = Date.now() - cameraStartTime;
-          console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
           updateDebugOverlay();
         }
         startAmbientLightDetection();
+      }).catch(fallbackErr => {
+        console.warn('[Camera Debug] Fallback environment failed, trying user camera...', fallbackErr);
         
-        // Safely apply continuous autofocus tracks constraints
-        try {
-          const video = document.querySelector('#reader video');
-          if (video && video.srcObject) {
-            const track = video.srcObject.getVideoTracks()[0];
-            if (track && typeof track.getCapabilities === 'function') {
-              const capabilities = track.getCapabilities();
-              if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                track.applyConstraints({
-                  advanced: [{ focusMode: 'continuous' }]
-                }).catch(e => console.log('[Camera Debug] Continuous autofocus track constraint failed:', e));
-              }
-            }
+        // Fallback 2: Try front-facing camera
+        html5QrcodeScanner.start(
+          { facingMode: "user" },
+          config,
+          onBarcodeDecoded,
+          onBarcodeScanError
+        ).then(() => {
+          console.log('[Camera Debug] Fallback user camera succeeded.');
+          if (DEBUG_MODE) {
+            cameraInitDuration = Date.now() - cameraStartTime;
+            updateDebugOverlay();
           }
-        } catch (focusErr) {
-          console.warn('[Camera Debug] Autofocus track capabilities validation failed:', focusErr);
-        }
-      }).catch(startErr => {
-        console.error('[Camera Debug] html5QrcodeScanner.start() failed:', startErr);
-        logAndShowDeniedError(startErr);
+          startAmbientLightDetection();
+        }).catch(finalErr => {
+          console.error('[Camera Debug] Camera start failed entirely:', finalErr);
+          logAndShowDeniedError(finalErr);
+        });
       });
-    } else {
-      logAndShowDeniedError(new Error('No camera hardware devices found.'));
-    }
+    });
   }).catch(enumErr => {
-    console.error('[Camera Debug] getCameras() failed:', enumErr);
-    logAndShowDeniedError(enumErr);
+    console.warn('[Camera Debug] getCameras() failed, falling back directly to environment constraints:', enumErr);
+    
+    // Direct fallback to environment constraints if enumeration fails
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      config,
+      onBarcodeDecoded,
+      onBarcodeScanError
+    ).then(() => {
+      console.log('[Camera Debug] Direct environment constraints camera succeeded.');
+      if (DEBUG_MODE) {
+        cameraInitDuration = Date.now() - cameraStartTime;
+        updateDebugOverlay();
+      }
+      startAmbientLightDetection();
+    }).catch(directErr => {
+      console.error('[Camera Debug] Direct environment constraints failed, trying user camera...', directErr);
+      
+      html5QrcodeScanner.start(
+        { facingMode: "user" },
+        config,
+        onBarcodeDecoded,
+        onBarcodeScanError
+      ).then(() => {
+        console.log('[Camera Debug] Fallback user camera succeeded.');
+        if (DEBUG_MODE) {
+          cameraInitDuration = Date.now() - cameraStartTime;
+          updateDebugOverlay();
+        }
+        startAmbientLightDetection();
+      }).catch(finalErr => {
+        console.error('[Camera Debug] Camera start failed entirely:', finalErr);
+        logAndShowDeniedError(finalErr);
+      });
+    });
   });
 }
 
