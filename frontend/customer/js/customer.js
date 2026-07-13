@@ -30,14 +30,22 @@ let firstDetectedTime = 0; // Timestamp of first detection frame
 let detectionCount = 0; // Counter for stability
 let isScanPaused = false; // Throttling scanner
 let lookupInProgress = false; // Concurrency lock
+let isCameraRunning = false; // Recovery track
 let recentScans = [];
 let currentRecoveryBarcode = null;
 let cameraPermissionGranted = false;
 
-// Dev-mode performance metric log properties
+// Dev-mode performance metrics and overlay variables
 const DEBUG_MODE = true;
 let cameraStartTime = 0;
 let firstDecodeTime = 0;
+let lastApiDuration = 0;
+let lastRenderDuration = 0;
+let cameraInitDuration = 0;
+let frameCount = 0;
+let lastFpsCalculationTime = Date.now();
+let currentFps = 0;
+let ambientLightInterval = null;
 
 // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
 setInterval(() => {
@@ -126,6 +134,160 @@ function applyCardHighlight() {
     }, 300);
   }
 }
+
+// FPS frame counting tracker
+function registerFrameForFps() {
+  frameCount++;
+  const now = Date.now();
+  const elapsed = now - lastFpsCalculationTime;
+  if (elapsed >= 1000) {
+    currentFps = Math.round((frameCount * 1000) / elapsed);
+    frameCount = 0;
+    lastFpsCalculationTime = now;
+    updateDebugOverlay();
+  }
+}
+
+// Development-only metrics card overlay (Milestone 6.2)
+function updateDebugOverlay() {
+  if (!DEBUG_MODE) return;
+  const overlay = document.getElementById('debug-overlay');
+  if (!overlay) return;
+
+  overlay.style.display = 'block';
+
+  const camStart = cameraInitDuration > 0 ? `${cameraInitDuration} ms` : '-';
+  const firstDec = firstDecodeTime > 0 ? `${firstDecodeTime - cameraStartTime} ms` : '-';
+  const apiTime = lastApiDuration > 0 ? `${lastApiDuration} ms` : '-';
+  const renderTime = lastRenderDuration > 0 ? `${lastRenderDuration} ms` : '-';
+
+  // Retrieve active stream resolution
+  let resStr = '-';
+  const video = document.querySelector('#reader video');
+  if (video) {
+    resStr = `${video.videoWidth}×${video.videoHeight}`;
+  }
+
+  overlay.innerHTML = `
+    Camera Start: ${camStart}<br>
+    First Decode: ${firstDec}<br>
+    API: ${apiTime}<br>
+    Render: ${renderTime}<br>
+    FPS: ${currentFps}<br>
+    Resolution: ${resStr}
+  `;
+}
+
+// Canvas-based ambient light analyzer loop
+function startAmbientLightDetection() {
+  if (ambientLightInterval) clearInterval(ambientLightInterval);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 12;
+  const ctx = canvas.getContext('2d');
+
+  ambientLightInterval = setInterval(() => {
+    const video = document.querySelector('#reader video');
+    if (video && video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        let totalLuminance = 0;
+        const len = data.length;
+        for (let i = 0; i < len; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          // Standard luminance weights
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          totalLuminance += luminance;
+        }
+
+        const avgLuminance = totalLuminance / (canvas.width * canvas.height);
+        const suggestion = document.getElementById('low-light-suggestion');
+        if (suggestion) {
+          if (avgLuminance < 45) {
+            suggestion.style.display = 'block';
+          } else {
+            suggestion.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        // Suppress canvas security restrictions if any
+      }
+    }
+  }, 1000);
+}
+
+function stopAmbientLightDetection() {
+  if (ambientLightInterval) {
+    clearInterval(ambientLightInterval);
+    ambientLightInterval = null;
+  }
+  const suggestion = document.getElementById('low-light-suggestion');
+  if (suggestion) suggestion.style.display = 'none';
+}
+
+// Future-ready Torch / Flashlight track controls
+window.setScannerTorch = async function(enabled) {
+  const video = document.querySelector('#reader video');
+  if (video && video.srcObject) {
+    const track = video.srcObject.getVideoTracks()[0];
+    if (track && typeof track.getCapabilities === 'function') {
+      try {
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+          await track.applyConstraints({
+            advanced: [{ torch: enabled }]
+          });
+          if (DEBUG_MODE) console.log(`[DEBUG] Torch successfully set to: ${enabled}`);
+          return true;
+        } else {
+          if (DEBUG_MODE) console.log('[DEBUG] Torch capability is not supported on this track.');
+        }
+      } catch (err) {
+        console.warn('Failed to apply torch constraints:', err);
+      }
+    }
+  }
+  return false;
+};
+
+// Stop scanner without clearing active state trace
+async function stopCameraScannerSilent() {
+  if (html5QrcodeScanner) {
+    try {
+      if (html5QrcodeScanner.isScanning) {
+        await html5QrcodeScanner.stop();
+      }
+    } catch (err) {
+      console.warn('Failed to stop camera silently:', err);
+    }
+  }
+  stopAmbientLightDetection();
+}
+
+// Page Visibility API camera auto-recovery listener
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible') {
+    if (isCameraRunning) {
+      const video = document.querySelector('#reader video');
+      let isStreamActive = false;
+      if (video && video.srcObject) {
+        isStreamActive = video.srcObject.getTracks().some(track => track.readyState === 'live');
+      }
+
+      if (!isStreamActive) {
+        if (DEBUG_MODE) console.log('[DEBUG] Camera stream inactive upon visibility recovery. Restarting...');
+        await stopCameraScannerSilent();
+        startCameraScanner();
+      }
+    }
+  }
+});
 
 // Reset barcode expand/collapse state to default collapsed
 function resetBarcodeCollapse() {
@@ -247,7 +409,11 @@ async function lookupBarcode(barcode) {
   try {
     const response = await fetch(`/api/products/lookup/${barcode}`);
     const apiEnd = Date.now();
-    if (DEBUG_MODE) console.log(`[METRICS] API request duration: ${apiEnd - apiStart}ms`);
+    lastApiDuration = apiEnd - apiStart;
+    if (DEBUG_MODE) {
+      console.log(`[METRICS] API request duration: ${lastApiDuration}ms`);
+      updateDebugOverlay();
+    }
     
     // Wait for the slide-out visual transition to finish (150ms)
     setTimeout(async () => {
@@ -375,9 +541,11 @@ async function lookupBarcode(barcode) {
           
           // API/Render metrics
           const renderEnd = Date.now();
+          lastRenderDuration = renderEnd - renderStart;
           if (DEBUG_MODE) {
-            console.log(`[METRICS] UI rendering duration: ${renderEnd - renderStart}ms`);
+            console.log(`[METRICS] UI rendering duration: ${lastRenderDuration}ms`);
             console.log(`[METRICS] Total decode-to-render: ${renderEnd - apiStart}ms`);
+            updateDebugOverlay();
           }
           
           // Resume decoding after 1.0s debounce pause
@@ -459,8 +627,13 @@ function startCameraScanner() {
   console.log('[Camera Debug] Camera initialization started');
   
   showState('idle');
+  isCameraRunning = true;
   lastScannedBarcode = "";
   lastScanTime = 0;
+  firstDecodeTime = 0;
+  currentFps = 0;
+  frameCount = 0;
+  updateDebugOverlay();
 
   // Clear previous debug details if any
   const oldDebugs = document.querySelectorAll('.error-debug-details');
@@ -611,8 +784,11 @@ function startScannerLibrary() {
   ).then(() => {
     console.log('[Camera Debug] Html5Qrcode.start() succeeded.');
     if (DEBUG_MODE) {
-      console.log(`[METRICS] Camera initialized successfully in ${Date.now() - cameraStartTime}ms`);
+      cameraInitDuration = Date.now() - cameraStartTime;
+      console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
+      updateDebugOverlay();
     }
+    startAmbientLightDetection();
   }).catch(err => {
     console.warn('[Camera Debug] Html5Qrcode.start() with environment constraints failed:', err.message || err);
     
@@ -624,6 +800,12 @@ function startScannerLibrary() {
       onBarcodeScanError
     ).then(() => {
       console.log('[Camera Debug] Html5Qrcode.start() fallback succeeded.');
+      if (DEBUG_MODE) {
+        cameraInitDuration = Date.now() - cameraStartTime;
+        console.log(`[METRICS] Camera initialized (fallback) successfully in ${cameraInitDuration}ms`);
+        updateDebugOverlay();
+      }
+      startAmbientLightDetection();
     }).catch(fallbackErr => {
       console.error('[Camera Debug] Html5Qrcode.start() fallback failed:', fallbackErr.message || fallbackErr);
       logAndShowDeniedError(fallbackErr);
@@ -746,11 +928,13 @@ function onBarcodeDecoded(decodedText) {
 }
 
 function onBarcodeScanError(errorMessage) {
-  // Suppress logs
+  // Increment frames for real-time FPS overlay calculation
+  registerFrameForFps();
 }
 
 // Stop camera scan stream
 function stopCameraScanner() {
+  isCameraRunning = false;
   if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
     html5QrcodeScanner.stop().then(() => {
       console.log('Camera stream stopped successfully.');
@@ -758,6 +942,9 @@ function stopCameraScanner() {
       console.warn('Failed to stop camera stream:', err);
     });
   }
+  stopAmbientLightDetection();
+  const overlay = document.getElementById('debug-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 // UI Triggers & SPA screen toggles

@@ -1033,3 +1033,47 @@ html, body {
   color: var(--text-muted);
   margin-bottom: 4px;
 }
+
+/* Development performance metrics overlay */
+.debug-overlay {
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  background-color: rgba(0, 0, 0, 0.75);
+  color: #00ff66;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.65rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  z-index: 100;
+  pointer-events: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  line-height: 1.4;
+  text-shadow: 0 0 2px #00ff66;
+}
+
+/* Low Ambient light suggestions */
+.low-light-tip {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(180, 83, 9, 0.95); /* Deep warning amber */
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  z-index: 15;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: pulse-amber 2s infinite ease-in-out;
+}
+
+@keyframes pulse-amber {
+  0% { transform: translate(-50%, 0) scale(1); }
+  50% { transform: translate(-50%, 0) scale(1.02); background-color: rgba(217, 119, 6, 0.95); }
+  100% { transform: translate(-50%, 0) scale(1); }
+}
