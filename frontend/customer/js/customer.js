@@ -928,7 +928,7 @@ function startScannerLibrary() {
         });
       });
     });
-  });
+  }
 }
 
 // Unified error handler displaying Chrome permission instructions & raw developer console details
