@@ -240,18 +240,23 @@ html, body {
   color: var(--primary-color); /* Brand green */
 }
 
-.header-logo-placeholder {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #adb5bd;
-  border: 1px dashed #dee2e6;
-  border-radius: 4px;
-  padding: 4px 8px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
+.header-logo {
+  height: 34px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.welcome-logo {
+  height: 110px;
+  width: auto;
+  border-radius: 12px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  background-color: #ffffff;
+  padding: 4px;
 }
 
 /* Scanner Area (Always Active with Device Adaptive Heights) */
