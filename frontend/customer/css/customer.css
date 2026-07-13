@@ -386,7 +386,7 @@ html, body {
   letter-spacing: 0.2px;
 }
 
-/* Lower 60% Sliding Result Panel */
+/* Lower 65% Sliding Result Panel */
 .details-panel {
   flex: 1;
   background-color: var(--bg-light);
@@ -395,7 +395,8 @@ html, body {
   justify-content: space-between;
   padding: 16px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 10;
 }
 
 .details-state {
