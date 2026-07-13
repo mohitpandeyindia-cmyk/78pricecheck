@@ -83,6 +83,70 @@ const LayoutManager = {
   }
 };
 
+// Feature Flags Configurator
+const FeatureFlags = {
+  features: {
+    FEATURE_BULK_OFFERS: true,
+    FEATURE_RECENT: true,
+    FEATURE_DEBUG: DEBUG_MODE,
+    FEATURE_TORCH: true,
+    FEATURE_PRODUCT_IMAGES: false
+  },
+  isEnabled(key) {
+    return !!this.features[key];
+  }
+};
+
+// Centralized Event Analytics Service
+const AnalyticsService = {
+  listeners: [],
+  
+  subscribe(callback) {
+    this.listeners.push(callback);
+  },
+  
+  logEvent(eventName, eventData = {}) {
+    const payload = {
+      event: eventName,
+      data: eventData,
+      timestamp: Date.now()
+    };
+    
+    if (FeatureFlags.isEnabled('FEATURE_DEBUG')) {
+      console.log(`[Analytics Service] Logged: ${eventName}`, eventData);
+    }
+    
+    this.listeners.forEach(cb => {
+      try {
+        cb(payload);
+      } catch (err) {
+        console.error('[Analytics Service] Listener invocation failed:', err);
+      }
+    });
+  }
+};
+
+// Centralized Error Boundaries Manager
+const ErrorManager = {
+  handleError(managerName, error, context = {}) {
+    console.error(`[ErrorManager] Boundary caught exception in [${managerName}]:`, error, context);
+    
+    AnalyticsService.logEvent('error_occurred', {
+      manager: managerName,
+      errorName: error ? error.name : 'UnknownError',
+      errorMessage: error ? error.message : String(error),
+      context: context
+    });
+    
+    if (managerName === 'CameraManager') {
+      StateManager.transitionTo('ERROR', {
+        type: 'cameraUnavailable',
+        errorString: error ? `${error.name}: ${error.message}` : 'Camera Stream Interrupted'
+      });
+    }
+  }
+};
+
 // Centralized DOM Render Queue
 const DOMRenderQueue = {
   queue: [],
@@ -339,9 +403,7 @@ const CameraManager = {
         } catch (err3) {
           this.state = 'ERROR';
           isCameraRunning = false;
-          console.error('[CameraManager] Camera start failed entirely:', err3);
-          logAndShowDeniedError(err3);
-          throw err3;
+          ErrorManager.handleError('CameraManager', err3, { action: 'start' });
         }
       }
     }
@@ -458,14 +520,19 @@ try {
 }
 
 // Initialize Session History from LocalStorage
-try {
-  const cached = localStorage.getItem('recent_scans');
-  if (cached) {
-    recentScans = JSON.parse(cached);
-    renderRecentScans();
+if (FeatureFlags.isEnabled('FEATURE_RECENT')) {
+  try {
+    const cached = localStorage.getItem('recent_scans');
+    if (cached) {
+      recentScans = JSON.parse(cached);
+      renderRecentScans();
+    }
+  } catch (e) {
+    console.warn('Failed to load cached scan history', e);
   }
-} catch (e) {
-  console.warn('Failed to load cached scan history', e);
+} else {
+  const container = document.querySelector('.recently-scanned-trigger-container');
+  if (container) container.style.display = 'none';
 }
 
 // State display helper
@@ -796,6 +863,11 @@ async function lookupBarcode(barcode) {
         
         if (data.multipleMatches && data.products.length > 1) {
           StateManager.transitionTo('DISPLAY_RESULT', { type: 'multiple' });
+          AnalyticsService.logEvent('multiple_matches_shown', { barcode: barcode, count: data.products.length });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = `Multiple matches found. ${data.products.length} matching items displayed.`;
+          }
           const listContainer = document.getElementById('multi-list');
           listContainer.innerHTML = '';
           
@@ -804,7 +876,7 @@ async function lookupBarcode(barcode) {
             card.className = 'multi-item-card';
             
             let bulkHtml = '';
-            if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+            if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
               const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
               bulkHtml = `
                 <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -882,13 +954,18 @@ async function lookupBarcode(barcode) {
           resetBarcodeCollapse();
           
           StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
+          }
           document.getElementById('single-name').textContent = p.name;
           document.getElementById('single-barcode').textContent = p.barcode;
           document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
           document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
           
           const bulkContainer = document.getElementById('single-bulk-container');
-          if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+          if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+            AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
             document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
             document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
             const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
@@ -924,6 +1001,11 @@ async function lookupBarcode(barcode) {
           }, 1000);
         } else {
           StateManager.transitionTo('ERROR', { type: 'notFound' });
+          AnalyticsService.logEvent('product_not_found', { barcode: barcode });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = "Product details not found.";
+          }
           // Resume scanning after failure
           setTimeout(() => {
             resetScannerStatusLine();
@@ -1058,6 +1140,13 @@ function onBarcodeDecoded(decodedText) {
   isScanPaused = true;
   lastScanTime = now;
   
+  // A11y and Telemetry Hooks
+  AnalyticsService.logEvent('scan_success', { barcode: decodedText });
+  const announcer = document.getElementById('a11y-announcer');
+  if (announcer) {
+    announcer.textContent = "Barcode scanned successfully. Fetching details.";
+  }
+  
   // 1. Log metrics in dev environment
   if (DEBUG_MODE) {
     console.log(`[DEBUG] Stable barcode detected: ${decodedText} (stable for ${elapsedStableTime}ms, frames: ${detectionCount})`);
@@ -1179,6 +1268,10 @@ if (historySheetOverlay) {
   historySheetOverlay.addEventListener('click', closeHistorySheet);
 }
 
+// Complete Startup Boot Sequence
+StateManager.transitionTo('READY');
+AnalyticsService.logEvent('app_opened');
+
 // Render dynamic recent scans rows in the slide-up bottom sheet
 function renderRecentScansBottomSheet() {
   const listContainer = document.getElementById('sheet-list-container');
@@ -1260,11 +1353,11 @@ function renderRecentScansBottomSheet() {
 }
 
 document.getElementById('retry-camera-denied-btn').addEventListener('click', () => {
-  startCameraScanner();
+  CameraManager.start();
 });
 
 document.getElementById('retry-camera-unavailable-btn').addEventListener('click', () => {
-  startCameraScanner();
+  CameraManager.start();
 });
 
 document.getElementById('retry-network-btn').addEventListener('click', () => {
