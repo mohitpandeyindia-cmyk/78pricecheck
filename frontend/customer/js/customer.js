@@ -83,8 +83,351 @@ const LayoutManager = {
   }
 };
 
-// Initialize Layout
+// Centralized DOM Render Queue
+const DOMRenderQueue = {
+  queue: [],
+  ticking: false,
+  
+  enqueue(fn) {
+    this.queue.push(fn);
+    if (!this.ticking) {
+      this.ticking = true;
+      requestAnimationFrame(() => this.flush());
+    }
+  },
+  
+  flush() {
+    while (this.queue.length > 0) {
+      const fn = this.queue.shift();
+      try {
+        fn();
+      } catch (err) {
+        console.error('[DOMRenderQueue] Execution error:', err);
+      }
+    }
+    this.ticking = false;
+  }
+};
+
+// Centralized UI State Machine
+const StateManager = {
+  currentState: 'BOOTING',
+  
+  transitionTo(newState, data = {}) {
+    console.log(`[StateManager] Transition: ${this.currentState} -> ${newState}`);
+    this.currentState = newState;
+    
+    DOMRenderQueue.enqueue(() => {
+      this.updateUI(newState, data);
+    });
+  },
+  
+  updateUI(state, data) {
+    switch (state) {
+      case 'BOOTING':
+      case 'INITIALIZING':
+        welcomeView.style.display = 'flex';
+        scannerView.style.display = 'none';
+        break;
+        
+      case 'READY':
+        welcomeView.style.display = 'flex';
+        scannerView.style.display = 'none';
+        break;
+        
+      case 'SCANNING':
+        welcomeView.style.display = 'none';
+        scannerView.style.display = 'flex';
+        showState('idle');
+        break;
+        
+      case 'LOOKUP':
+        welcomeView.style.display = 'none';
+        scannerView.style.display = 'flex';
+        showState('loading');
+        break;
+        
+      case 'DISPLAY_RESULT':
+        welcomeView.style.display = 'none';
+        scannerView.style.display = 'flex';
+        if (data.type === 'single') {
+          showState('single');
+        } else if (data.type === 'multiple') {
+          showState('multiple');
+        } else {
+          showState('idle');
+        }
+        break;
+        
+      case 'OFFLINE':
+        welcomeView.style.display = 'none';
+        scannerView.style.display = 'flex';
+        showState('networkError');
+        break;
+        
+      case 'ERROR':
+        welcomeView.style.display = 'none';
+        scannerView.style.display = 'flex';
+        if (data.type === 'cameraDenied') {
+          showState('cameraDenied');
+          const desc = states.cameraDenied.querySelector('.error-desc');
+          if (desc) {
+            desc.innerHTML = 'Camera permission is blocked or denied.<br><br>' +
+              '<strong>To allow access:</strong><br>' +
+              '1. Tap the lock icon (🔒) or settings icon in your Chrome address bar.<br>' +
+              '2. Select <strong>"Site settings"</strong>.<br>' +
+              '3. Locate <strong>"Camera"</strong> and change it to <strong>"Allow"</strong>, then reload the page.';
+          }
+          if (data.errorString) appendDebugInfo(states.cameraDenied, data.errorString);
+        } else if (data.type === 'cameraUnavailable') {
+          showState('cameraUnavailable');
+          const desc = states.cameraUnavailable.querySelector('.error-desc');
+          if (desc) {
+            desc.textContent = data.errorDesc || 'Unable to open camera hardware stream. Please check camera connections or restart browser.';
+          }
+          if (data.errorString) appendDebugInfo(states.cameraUnavailable, data.errorString);
+        } else if (data.type === 'notFound') {
+          showState('notFound');
+        } else {
+          showState('serverError');
+        }
+        break;
+    }
+  }
+};
+
+// Camera Lifecycle Abstraction Manager
+const CameraManager = {
+  state: 'IDLE',
+  html5Qrcode: null,
+  config: null,
+  isIOS: false,
+  activeTrack: null,
+  
+  init() {
+    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                 (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+                 
+    this.config = {
+      fps: 15,
+      qrbox: (width, height) => {
+        let boxWidth = Math.round(width * 0.80);
+        if (boxWidth < 280) boxWidth = 280;
+        if (boxWidth > 450) boxWidth = 450;
+        if (boxWidth > width) boxWidth = width;
+        
+        let boxHeight = Math.round(boxWidth / 2.2);
+        if (boxHeight > height) boxHeight = height;
+        
+        const reader = document.getElementById('reader');
+        if (reader) {
+          const domWidth = reader.clientWidth;
+          const domHeight = reader.clientHeight;
+          const scale = Math.max(domWidth / width, domHeight / height);
+          const visualWidth = Math.round(boxWidth * scale);
+          const visualHeight = Math.round(boxHeight * scale);
+          
+          const brackets = document.querySelector('.scanner-brackets');
+          if (brackets) {
+            brackets.style.width = `${visualWidth}px`;
+            brackets.style.height = `${visualHeight}px`;
+          }
+        }
+        return { width: boxWidth, height: boxHeight };
+      }
+    };
+    
+    // Auto-recovery Page Visibility listener
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible') {
+        if (this.state === 'READY') {
+          const video = document.querySelector('#reader video');
+          let isStreamActive = false;
+          if (video && video.srcObject) {
+            isStreamActive = video.srcObject.getTracks().some(track => track.readyState === 'live');
+          }
+          if (!isStreamActive) {
+            console.log('[CameraManager] Inactive stream recovered on visibility active');
+            await this.recover();
+          }
+        }
+      }
+    });
+  },
+  
+  async start() {
+    if (this.state === 'READY' || this.state === 'STARTING') {
+      return;
+    }
+    
+    // Check for Insecure Context / Missing MediaDevices (HTTP block)
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('[CameraManager] Secure context validation failed.');
+      StateManager.transitionTo('ERROR', {
+        type: 'cameraUnavailable',
+        errorString: 'Insecure Context / HTTPS Block',
+        errorDesc: 'WebRTC camera access requires a Secure Context (HTTPS). Mobile web browsers block camera access on plain HTTP connections.'
+      });
+      return;
+    }
+    
+    this.state = 'STARTING';
+    if (!this.html5Qrcode) {
+      this.html5Qrcode = new Html5Qrcode("reader");
+    }
+    
+    if (DEBUG_MODE) cameraStartTime = Date.now();
+    isCameraRunning = true;
+    lastScannedBarcode = "";
+    lastScanTime = 0;
+    firstDecodeTime = 0;
+    currentFps = 0;
+    frameCount = 0;
+    updateDebugOverlay();
+    
+    const oldDebugs = document.querySelectorAll('.error-debug-details');
+    oldDebugs.forEach(el => el.remove());
+    
+    try {
+      if (this.isIOS) {
+        console.log('[CameraManager] iOS device detected. Bypassing enumeration.');
+        await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+      } else {
+        let cameraIdToUse = null;
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            const backCam = devices.find(d => {
+              const label = (d.label || '').toLowerCase();
+              return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main');
+            });
+            cameraIdToUse = backCam ? backCam.deviceId : devices[0].deviceId;
+          }
+        } catch (e) {
+          console.warn('[CameraManager] Camera devices enumeration failed, falling back to environment constraints:', e);
+        }
+        
+        const cameraArg = cameraIdToUse ? cameraIdToUse : { facingMode: "environment" };
+        await this.html5Qrcode.start(cameraArg, this.config, onBarcodeDecoded, onBarcodeScanError);
+      }
+      
+      this.state = 'READY';
+      console.log('[CameraManager] Camera start succeeded.');
+      
+      if (DEBUG_MODE) {
+        cameraInitDuration = Date.now() - cameraStartTime;
+        console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
+        updateDebugOverlay();
+      }
+      
+      this.applyFocusConstraints();
+      startAmbientLightDetection();
+      
+    } catch (err) {
+      console.warn('[CameraManager] Main camera start path failed, attempting fallback...', err);
+      try {
+        await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+        this.state = 'READY';
+        this.applyFocusConstraints();
+        startAmbientLightDetection();
+      } catch (err2) {
+        console.warn('[CameraManager] Fallback environment camera failed, trying user camera...', err2);
+        try {
+          await this.html5Qrcode.start({ facingMode: "user" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+          this.state = 'READY';
+          startAmbientLightDetection();
+        } catch (err3) {
+          this.state = 'ERROR';
+          isCameraRunning = false;
+          console.error('[CameraManager] Camera start failed entirely:', err3);
+          logAndShowDeniedError(err3);
+          throw err3;
+        }
+      }
+    }
+  },
+  
+  async stop() {
+    if (this.state === 'STOPPED' || this.state === 'IDLE' || !this.html5Qrcode) {
+      return;
+    }
+    
+    try {
+      if (this.html5Qrcode.isScanning) {
+        await this.html5Qrcode.stop();
+      }
+      this.state = 'STOPPED';
+      isCameraRunning = false;
+      stopAmbientLightDetection();
+      console.log('[CameraManager] Camera stopped successfully.');
+    } catch (e) {
+      console.error('[CameraManager] Camera stop failed:', e);
+    }
+  },
+  
+  applyFocusConstraints() {
+    try {
+      const video = document.querySelector('#reader video');
+      if (video && video.srcObject) {
+        this.activeTrack = video.srcObject.getVideoTracks()[0];
+        if (this.activeTrack && typeof this.activeTrack.getCapabilities === 'function') {
+          const capabilities = this.activeTrack.getCapabilities();
+          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+            this.activeTrack.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
+          }
+        }
+      }
+    } catch (focusErr) {
+      console.warn('[CameraManager] Autofocus track capabilities validation failed:', focusErr);
+    }
+  },
+  
+  async setTorch(on) {
+    if (!this.activeTrack) {
+      const video = document.querySelector('#reader video');
+      if (video && video.srcObject) {
+        this.activeTrack = video.srcObject.getVideoTracks()[0];
+      }
+    }
+    
+    if (this.activeTrack && typeof this.activeTrack.getCapabilities === 'function') {
+      try {
+        const capabilities = this.activeTrack.getCapabilities();
+        if (capabilities.torch) {
+          await this.activeTrack.applyConstraints({
+            advanced: [{ torch: on }]
+          });
+          console.log(`[CameraManager] Torch set to: ${on}`);
+          return true;
+        }
+      } catch (err) {
+        console.warn('[CameraManager] Failed to apply torch constraint:', err);
+      }
+    }
+    return false;
+  },
+  
+  async recover() {
+    if (this.state !== 'READY' && this.state !== 'RECOVERING') {
+      return;
+    }
+    
+    console.log('[CameraManager] Recovering active stream due to visibility changes...');
+    this.state = 'RECOVERING';
+    try {
+      await this.stop();
+      await this.start();
+    } catch (e) {
+      console.error('[CameraManager] Stream recovery failed:', e);
+    }
+  }
+};
+
+// Initialize Layout and Camera Managers
 LayoutManager.init();
+CameraManager.init();
 
 // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
 setInterval(() => {
@@ -303,38 +646,7 @@ window.setScannerTorch = async function(enabled) {
   return false;
 };
 
-// Stop scanner without clearing active state trace
-async function stopCameraScannerSilent() {
-  if (html5QrcodeScanner) {
-    try {
-      if (html5QrcodeScanner.isScanning) {
-        await html5QrcodeScanner.stop();
-      }
-    } catch (err) {
-      console.warn('Failed to stop camera silently:', err);
-    }
-  }
-  stopAmbientLightDetection();
-}
 
-// Page Visibility API camera auto-recovery listener
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState === 'visible') {
-    if (isCameraRunning) {
-      const video = document.querySelector('#reader video');
-      let isStreamActive = false;
-      if (video && video.srcObject) {
-        isStreamActive = video.srcObject.getTracks().some(track => track.readyState === 'live');
-      }
-
-      if (!isStreamActive) {
-        if (DEBUG_MODE) console.log('[DEBUG] Camera stream inactive upon visibility recovery. Restarting...');
-        await stopCameraScannerSilent();
-        startCameraScanner();
-      }
-    }
-  }
-});
 
 // Reset barcode expand/collapse state to default collapsed
 function resetBarcodeCollapse() {
@@ -425,7 +737,6 @@ function formatPremiumPrice(val) {
 }
 
 // Fetch pricing values from endpoint
-// Fetch pricing values from endpoint
 async function lookupBarcode(barcode) {
   if (lookupInProgress) {
     if (DEBUG_MODE) console.log(`[DEBUG] Lookup request blocked: barcode ${barcode} is already in progress.`);
@@ -460,7 +771,7 @@ async function lookupBarcode(barcode) {
     }
   });
   if (!anyProductVisible) {
-    showState('loading');
+    StateManager.transitionTo('LOOKUP');
   }
   
   try {
@@ -484,7 +795,7 @@ async function lookupBarcode(barcode) {
         if (multiState) multiState.classList.remove('replacing');
         
         if (data.multipleMatches && data.products.length > 1) {
-          showState('multiple');
+          StateManager.transitionTo('DISPLAY_RESULT', { type: 'multiple' });
           const listContainer = document.getElementById('multi-list');
           listContainer.innerHTML = '';
           
@@ -538,11 +849,11 @@ async function lookupBarcode(barcode) {
               // Slide down transition
               if (singleState) singleState.classList.add('replacing');
               setTimeout(() => {
-                showState('single');
-                 document.getElementById('single-name').textContent = p.name;
-                 document.getElementById('single-barcode').textContent = p.barcode;
-                 document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
-                 document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+                StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
+                document.getElementById('single-name').textContent = p.name;
+                document.getElementById('single-barcode').textContent = p.barcode;
+                document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
+                document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
                 
                 const bulkContainer = document.getElementById('single-bulk-container');
                 if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
@@ -570,7 +881,7 @@ async function lookupBarcode(barcode) {
           const p = data.products[0];
           resetBarcodeCollapse();
           
-          showState('single');
+          StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
           document.getElementById('single-name').textContent = p.name;
           document.getElementById('single-barcode').textContent = p.barcode;
           document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
@@ -612,7 +923,7 @@ async function lookupBarcode(barcode) {
             isScanPaused = false;
           }, 1000);
         } else {
-          showState('notFound');
+          StateManager.transitionTo('ERROR', { type: 'notFound' });
           // Resume scanning after failure
           setTimeout(() => {
             resetScannerStatusLine();
@@ -651,11 +962,10 @@ function handleLookupFailure() {
   if (priceValEl) priceValEl.classList.remove('faded');
   
   // Revert back to previous displays if applicable, or stay idle
-  const isSingleActive = document.getElementById('single-name').textContent !== '-';
-  if (isSingleActive) {
-    showState('single');
+  if (!navigator.onLine) {
+    StateManager.transitionTo('OFFLINE');
   } else {
-    showState('idle');
+    StateManager.transitionTo('ERROR', { type: 'serverError' });
   }
   
   // Auto-resume scanner loop
@@ -679,292 +989,6 @@ function resetScannerStatusLine() {
 
 // Start camera scan stream
 // Start camera scan stream
-function startCameraScanner() {
-  console.log('[Camera Debug] Scan button clicked');
-  console.log('[Camera Debug] Camera initialization started');
-  
-  showState('idle');
-  isCameraRunning = true;
-  lastScannedBarcode = "";
-  lastScanTime = 0;
-  firstDecodeTime = 0;
-  currentFps = 0;
-  frameCount = 0;
-  updateDebugOverlay();
-
-  // Clear previous debug details if any
-  const oldDebugs = document.querySelectorAll('.error-debug-details');
-  oldDebugs.forEach(el => el.remove());
-
-  // 1. Log window.isSecureContext and navigator.mediaDevices diagnostics
-  console.log('[Camera Debug] window.isSecureContext:', window.isSecureContext);
-  console.log('[Camera Debug] navigator.mediaDevices:', !!navigator.mediaDevices);
-  if (navigator.mediaDevices) {
-    console.log('[Camera Debug] navigator.mediaDevices.getUserMedia:', !!navigator.mediaDevices.getUserMedia);
-  }
-
-  // 2. Check for Insecure Context / Missing MediaDevices (HTTP block)
-  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.error('[Camera Debug] Secure context validation failed.');
-    showState('cameraUnavailable');
-    const retryBtn = document.getElementById('retry-camera-unavailable-btn');
-    if (retryBtn) retryBtn.style.display = 'none';
-    const desc = states.cameraUnavailable.querySelector('.error-desc');
-    if (desc) {
-      desc.innerHTML = 'WebRTC camera access requires a <strong>Secure Context (HTTPS)</strong>.<br><br>' +
-        'Mobile web browsers block camera access on plain HTTP connections.<br><br>' +
-        '<strong>To fix this:</strong><br>' +
-        '1. Deploy the server behind an HTTPS reverse proxy (e.g. Certbot/Nginx/Caddy).<br>' +
-        '2. For local network testing on Android, open Chrome, go to <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>, add your server URL (e.g. <code>http://192.168.x.x:8080</code>), enable, and restart Chrome.';
-    }
-    return;
-  }
-
-  // 3. Query and Log Camera Permission State asynchronously (keeps thread synchronous)
-  if (navigator.permissions && navigator.permissions.query) {
-    navigator.permissions.query({ name: 'camera' })
-      .then(perm => {
-        console.log('[Camera Debug] Camera permission state:', perm.state);
-        // If state is already explicitly denied, trigger error guide
-        if (perm.state === 'denied') {
-          logAndShowDeniedError(new Error('Permission denied by browser settings (Permissions API reported denied).'));
-        }
-      })
-      .catch(permErr => {
-        console.warn('[Camera Debug] Failed to query camera permission state:', permErr.message || permErr);
-      });
-  }
-
-  // 4. Start scanner library directly to avoid camera hardware context lock race conditions
-  startScannerLibrary();
-}
-
-// Start html5-qrcode scanner loop
-function startScannerLibrary() {
-  if (!html5QrcodeScanner) {
-    html5QrcodeScanner = new Html5Qrcode("reader");
-  }
-
-  const config = {
-    fps: 15,
-    qrbox: (width, height) => {
-      // Dynamic bounds (preferred 80% width, clamped min: 280px, max: 450px)
-      let boxWidth = Math.round(width * 0.80);
-      if (boxWidth < 280) boxWidth = 280;
-      if (boxWidth > 450) boxWidth = 450;
-      if (boxWidth > width) boxWidth = width;
-      
-      let boxHeight = Math.round(boxWidth / 2.2);
-      if (boxHeight > height) boxHeight = height;
-      
-      // Calculate DOM scaled size to align CSS overlay brackets perfectly
-      const reader = document.getElementById('reader');
-      if (reader) {
-        const domWidth = reader.clientWidth;
-        const domHeight = reader.clientHeight;
-        const scale = Math.max(domWidth / width, domHeight / height);
-        const visualWidth = Math.round(boxWidth * scale);
-        const visualHeight = Math.round(boxHeight * scale);
-        
-        const brackets = document.querySelector('.scanner-brackets');
-        if (brackets) {
-          brackets.style.width = `${visualWidth}px`;
-          brackets.style.height = `${visualHeight}px`;
-        }
-      }
-      
-      return { width: boxWidth, height: boxHeight };
-    }
-  };
-
-  if (DEBUG_MODE) cameraStartTime = Date.now();
-  
-  // Detect iOS Safari or WebKit to bypass async enumeration and preserve user gesture context
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-
-  if (isIOS) {
-    console.log('[Camera Debug] iOS device detected. Bypassing enumeration to preserve user-gesture token.');
-    html5QrcodeScanner.start(
-      { facingMode: "environment" },
-      config,
-      onBarcodeDecoded,
-      onBarcodeScanError
-    ).then(() => {
-      console.log('[Camera Debug] iOS camera start succeeded.');
-      if (DEBUG_MODE) {
-        cameraInitDuration = Date.now() - cameraStartTime;
-        console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
-        updateDebugOverlay();
-      }
-      startAmbientLightDetection();
-      
-      // Safely apply continuous autofocus track constraints
-      try {
-        const video = document.querySelector('#reader video');
-        if (video && video.srcObject) {
-          const track = video.srcObject.getVideoTracks()[0];
-          if (track && typeof track.getCapabilities === 'function') {
-            const capabilities = track.getCapabilities();
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              track.applyConstraints({
-                advanced: [{ focusMode: 'continuous' }]
-              }).catch(e => console.log('[Camera Debug] Continuous autofocus track constraint failed:', e));
-            }
-          }
-        }
-      } catch (focusErr) {
-        console.warn('[Camera Debug] Autofocus track capabilities validation failed:', focusErr);
-      }
-    }).catch(startErr => {
-      console.warn('[Camera Debug] iOS environment start failed, trying user camera...', startErr);
-      html5QrcodeScanner.start(
-        { facingMode: "user" },
-        config,
-        onBarcodeDecoded,
-        onBarcodeScanError
-      ).then(() => {
-        console.log('[Camera Debug] iOS user camera succeeded.');
-        if (DEBUG_MODE) {
-          cameraInitDuration = Date.now() - cameraStartTime;
-          updateDebugOverlay();
-        }
-        startAmbientLightDetection();
-      }).catch(finalErr => {
-        console.error('[Camera Debug] iOS camera start failed entirely:', finalErr);
-        logAndShowDeniedError(finalErr);
-      });
-    });
-  } else {
-    // Non-iOS: Enumerate cameras via the library helper (requests permissions safely)
-    Html5Qrcode.getCameras().then(devices => {
-      let cameraIdToUse = null;
-      if (devices && devices.length > 0) {
-        // Find environment/rear camera device label
-        const backCam = devices.find(d => {
-          const label = (d.label || '').toLowerCase();
-          return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main');
-        });
-        // Ensure we only use it if deviceId is non-empty string
-        const candidateId = backCam ? backCam.deviceId : devices[0].deviceId;
-        if (candidateId) {
-          cameraIdToUse = candidateId;
-        }
-      }
-      
-      // Fall back to environment constraints object if device ID is missing
-      const cameraArg = cameraIdToUse ? cameraIdToUse : { facingMode: "environment" };
-      console.log('[Camera Debug] html5QrcodeScanner.start() with:', cameraArg);
-
-      html5QrcodeScanner.start(
-        cameraArg,
-        config,
-        onBarcodeDecoded,
-        onBarcodeScanError
-      ).then(() => {
-        console.log('[Camera Debug] Html5Qrcode.start() succeeded.');
-        if (DEBUG_MODE) {
-          cameraInitDuration = Date.now() - cameraStartTime;
-          console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
-          updateDebugOverlay();
-        }
-        startAmbientLightDetection();
-        
-        // Safely apply continuous autofocus tracks constraints
-        try {
-          const video = document.querySelector('#reader video');
-          if (video && video.srcObject) {
-            const track = video.srcObject.getVideoTracks()[0];
-            if (track && typeof track.getCapabilities === 'function') {
-              const capabilities = track.getCapabilities();
-              if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                track.applyConstraints({
-                  advanced: [{ focusMode: 'continuous' }]
-                }).catch(e => console.log('[Camera Debug] Continuous autofocus track constraint failed:', e));
-              }
-            }
-          }
-        } catch (focusErr) {
-          console.warn('[Camera Debug] Autofocus track capabilities validation failed:', focusErr);
-        }
-      }).catch(startErr => {
-        console.warn('[Camera Debug] html5QrcodeScanner.start() failed, trying environment constraints...', startErr);
-        
-        // Fallback 1: Force environment constraints
-        html5QrcodeScanner.start(
-          { facingMode: "environment" },
-          config,
-          onBarcodeDecoded,
-          onBarcodeScanError
-        ).then(() => {
-          console.log('[Camera Debug] Fallback environment camera succeeded.');
-          if (DEBUG_MODE) {
-            cameraInitDuration = Date.now() - cameraStartTime;
-            updateDebugOverlay();
-          }
-          startAmbientLightDetection();
-        }).catch(fallbackErr => {
-          console.warn('[Camera Debug] Fallback environment failed, trying user camera...', fallbackErr);
-          
-          // Fallback 2: Try front-facing camera
-          html5QrcodeScanner.start(
-            { facingMode: "user" },
-            config,
-            onBarcodeDecoded,
-            onBarcodeScanError
-          ).then(() => {
-            console.log('[Camera Debug] Fallback user camera succeeded.');
-            if (DEBUG_MODE) {
-              cameraInitDuration = Date.now() - cameraStartTime;
-              updateDebugOverlay();
-            }
-            startAmbientLightDetection();
-          }).catch(finalErr => {
-            console.error('[Camera Debug] Camera start failed entirely:', finalErr);
-            logAndShowDeniedError(finalErr);
-          });
-        });
-      });
-    }).catch(enumErr => {
-      console.warn('[Camera Debug] getCameras() failed, falling back directly to environment constraints:', enumErr);
-      
-      // Direct fallback to environment constraints if enumeration fails
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        config,
-        onBarcodeDecoded,
-        onBarcodeScanError
-      ).then(() => {
-        console.log('[Camera Debug] Direct environment constraints camera succeeded.');
-        if (DEBUG_MODE) {
-          cameraInitDuration = Date.now() - cameraStartTime;
-          updateDebugOverlay();
-        }
-        startAmbientLightDetection();
-      }).catch(directErr => {
-        console.error('[Camera Debug] Direct environment constraints failed, trying user camera...', directErr);
-        
-        html5QrcodeScanner.start(
-          { facingMode: "user" },
-          config,
-          onBarcodeDecoded,
-          onBarcodeScanError
-        ).then(() => {
-          console.log('[Camera Debug] Fallback user camera succeeded.');
-          if (DEBUG_MODE) {
-            cameraInitDuration = Date.now() - cameraStartTime;
-            updateDebugOverlay();
-          }
-          startAmbientLightDetection();
-        }).catch(finalErr => {
-          console.error('[Camera Debug] Camera start failed entirely:', finalErr);
-          logAndShowDeniedError(finalErr);
-        });
-      });
-    });
-  }
-}
-
 // Unified error handler displaying Chrome permission instructions & raw developer console details
 function logAndShowDeniedError(err) {
   const errName = err ? err.name : 'UnknownError';
@@ -980,23 +1004,9 @@ function logAndShowDeniedError(err) {
     errMsg.toLowerCase().includes('notallowed');
 
   if (isPermissionDenied) {
-    showState('cameraDenied');
-    const desc = states.cameraDenied.querySelector('.error-desc');
-    if (desc) {
-      desc.innerHTML = 'Camera permission is blocked or denied.<br><br>' +
-        '<strong>To allow access:</strong><br>' +
-        '1. Tap the lock icon (🔒) or settings icon in your Chrome address bar.<br>' +
-        '2. Select <strong>"Site settings"</strong>.<br>' +
-        '3. Locate <strong>"Camera"</strong> and change it to <strong>"Allow"</strong>, then reload the page.';
-    }
-    appendDebugInfo(states.cameraDenied, fullErrorString);
+    StateManager.transitionTo('ERROR', { type: 'cameraDenied', errorString: fullErrorString });
   } else {
-    showState('cameraUnavailable');
-    const desc = states.cameraUnavailable.querySelector('.error-desc');
-    if (desc) {
-      desc.textContent = 'Unable to open camera hardware stream. Please check camera connections or restart browser.';
-    }
-    appendDebugInfo(states.cameraUnavailable, fullErrorString);
+    StateManager.transitionTo('ERROR', { type: 'cameraUnavailable', errorString: fullErrorString });
   }
 }
 
@@ -1101,24 +1111,23 @@ function stopCameraScanner() {
 
 // UI Triggers & SPA screen toggles
 startScanBtn.addEventListener('click', () => {
-  welcomeView.style.display = 'none';
-  scannerView.style.display = 'flex';
-  startCameraScanner();
+  StateManager.transitionTo('SCANNING');
+  CameraManager.start().catch(err => {
+    console.error('Failed to start camera:', err);
+  });
 });
 
 backBtn.addEventListener('click', () => {
-  stopCameraScanner();
-  scannerView.style.display = 'none';
-  welcomeView.style.display = 'flex';
+  CameraManager.stop();
+  StateManager.transitionTo('READY');
 });
 
 // Brand Header Home navigation
 const headerBrandBtn = document.getElementById('header-brand-btn');
 if (headerBrandBtn) {
   headerBrandBtn.addEventListener('click', () => {
-    stopCameraScanner();
-    scannerView.style.display = 'none';
-    welcomeView.style.display = 'flex';
+    CameraManager.stop();
+    StateManager.transitionTo('READY');
   });
 }
 
