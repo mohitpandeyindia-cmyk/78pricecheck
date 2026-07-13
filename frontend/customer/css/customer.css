@@ -77,21 +77,13 @@ html, body {
   margin-bottom: 12px;
 }
 
-.welcome-greeting {
-  font-size: 1.5rem;
-  font-weight: 900;
-  color: #d84315; /* Orangish red */
-  letter-spacing: 2px;
-  line-height: 1.1;
-  margin-bottom: 2px;
-}
-
-.welcome-subgreeting {
-  font-size: 1.35rem;
+.welcome-greeting-hindi {
+  font-size: 2.25rem; /* Increased size */
   font-weight: 800;
-  color: #f9a825; /* Golden yellow */
-  letter-spacing: 1.5px;
-  line-height: 1.1;
+  color: #d84315; /* Orangish red */
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  margin-bottom: 12px;
 }
 
 .welcome-title {
@@ -293,22 +285,17 @@ html, body {
 }
 
 .header-logo {
-  height: 34px;
+  height: 28px;
   width: auto;
-  border-radius: 6px;
   object-fit: contain;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .welcome-logo {
-  height: 110px;
-  width: auto;
-  border-radius: 12px;
+  width: 100%;
+  max-width: 290px;
+  height: auto;
   object-fit: contain;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
-  background-color: #ffffff;
-  padding: 4px;
+  margin-bottom: 24px;
 }
 
 /* Scanner Area (Always Active with Device Adaptive Heights) */
