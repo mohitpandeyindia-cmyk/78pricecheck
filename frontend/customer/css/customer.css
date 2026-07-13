@@ -214,19 +214,30 @@ html, body {
 }
 
 .brand-line-1 {
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary-color);
   letter-spacing: 0.5px;
   line-height: 1.1;
 }
 
 .brand-line-2 {
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  color: var(--primary-color);
   letter-spacing: 1px;
   line-height: 1.1;
+  margin-top: 2px;
+}
+
+.brand-seventy {
+  color: #d84315; /* Premium orangish red */
+}
+
+.brand-eight {
+  color: #f9a825; /* Highly readable golden yellow */
+}
+
+.brand-supermaart {
+  color: var(--primary-color); /* Brand green */
 }
 
 .header-logo-placeholder {
