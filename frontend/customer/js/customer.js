@@ -700,13 +700,13 @@ function startScannerLibrary() {
   const config = {
     fps: 15,
     qrbox: (width, height) => {
-      // Dynamic bounds (preferred 70% width, clamped min: 240px, max: 340px)
-      let boxWidth = Math.round(width * 0.70);
-      if (boxWidth < 240) boxWidth = 240;
-      if (boxWidth > 340) boxWidth = 340;
+      // Dynamic bounds (preferred 80% width, clamped min: 280px, max: 450px)
+      let boxWidth = Math.round(width * 0.80);
+      if (boxWidth < 280) boxWidth = 280;
+      if (boxWidth > 450) boxWidth = 450;
       if (boxWidth > width) boxWidth = width;
       
-      let boxHeight = Math.round(boxWidth / 2.5);
+      let boxHeight = Math.round(boxWidth / 2.2);
       if (boxHeight > height) boxHeight = height;
       
       // Calculate DOM scaled size to align CSS overlay brackets perfectly
