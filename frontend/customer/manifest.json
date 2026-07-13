@@ -1,0 +1,18 @@
+{
+  "name": "78 PriceCheck",
+  "short_name": "78 PriceCheck",
+  "description": "78 Supermaart Barcode Pricing Smart Service",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#1b5e20",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

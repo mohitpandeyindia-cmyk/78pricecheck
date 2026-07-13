@@ -1213,3 +1213,49 @@ html, body {
   50% { transform: translate(-50%, 0) scale(1.02); background-color: rgba(217, 119, 6, 0.95); }
   100% { transform: translate(-50%, 0) scale(1); }
 }
+
+/* PWA Update Banner Styling */
+.pwa-banner-container {
+  position: fixed;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--primary-color);
+  color: #ffffff;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  z-index: 1100;
+  animation: slideUp 0.3s ease-out;
+}
+
+.pwa-banner-text {
+  font-family: var(--font-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.pwa-banner-btn {
+  background-color: #ffffff;
+  color: var(--primary-color);
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-primary);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease;
+}
+
+.pwa-banner-btn:active {
+  opacity: 0.9;
+}

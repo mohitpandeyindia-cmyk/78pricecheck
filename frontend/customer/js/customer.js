@@ -1371,3 +1371,38 @@ document.getElementById('retry-server-btn').addEventListener('click', () => {
     lookupBarcode(currentRecoveryBarcode);
   }
 });
+
+// Register PWA Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+      
+      // Force immediate check for updates
+      reg.update();
+      
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              const banner = document.getElementById('pwa-update-banner');
+              if (banner) {
+                banner.style.display = 'flex';
+              }
+            }
+          });
+        }
+      });
+    }).catch(err => {
+      console.warn('[PWA] Service Worker registration failed:', err);
+    });
+  });
+  
+  const reloadBtn = document.getElementById('pwa-reload-btn');
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', () => {
+      window.location.reload();
+    });
+  }
+}

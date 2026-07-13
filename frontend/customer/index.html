@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Welcome to 78 PriceCheck</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1b5e20">
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="https://unpkg.com/html5-qrcode"></script>
@@ -227,6 +229,12 @@
     </div>
     </div>
     
+  </div>
+  
+  <!-- PWA Update Notification Banner -->
+  <div id="pwa-update-banner" class="pwa-banner-container" style="display: none;">
+    <span class="pwa-banner-text">A new version is available!</span>
+    <button id="pwa-reload-btn" class="pwa-banner-btn">Reload</button>
   </div>
   
   <script src="js/customer.js?v=2.0.0"></script>
