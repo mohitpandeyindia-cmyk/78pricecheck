@@ -56,59 +56,111 @@ html, body {
   flex-direction: column;
   justify-content: space-between;
   height: 100%;
-  padding: 50px 30px;
+  padding: 24px 0 0 0; /* Zero padding on bottom and sides for mascot fit */
   text-align: center;
-  background: radial-gradient(circle at top, #e8f5e9 0%, var(--bg-light) 60%);
+  background: radial-gradient(circle at top, #f4fbf7 0%, var(--bg-light) 75%);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.brand-header {
-  margin-top: 30px;
+.welcome-content-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 24px;
+  text-align: center;
+  flex: 1;
+  justify-content: center;
 }
 
-.logo-icon {
-  font-size: 3.5rem;
-  margin-bottom: 15px;
+.welcome-greetings {
+  margin-bottom: 12px;
 }
 
-.brand-title {
-  font-size: 2.25rem;
+.welcome-greeting {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #d84315; /* Orangish red */
+  letter-spacing: 2px;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.welcome-subgreeting {
+  font-size: 1.35rem;
   font-weight: 800;
+  color: #f9a825; /* Golden yellow */
+  letter-spacing: 1.5px;
+  line-height: 1.1;
+}
+
+.welcome-title {
+  font-size: 2.1rem;
+  font-weight: 900;
   color: var(--primary-color);
   letter-spacing: -0.5px;
+  margin-top: 4px;
+  margin-bottom: 4px;
 }
 
-.brand-subtitle {
+.welcome-service-subtitle {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #868e96;
+  letter-spacing: 1px;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+.welcome-deals-text {
   font-size: 0.9rem;
-  color: var(--text-muted);
+  font-weight: 800;
+  color: #2e7d32;
+  letter-spacing: 0.5px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+}
+
+.welcome-scan-btn {
+  background-color: #2e7d32 !important;
+  border-color: #2e7d32 !important;
+  font-size: 1.25rem !important;
+  font-weight: 900 !important;
+  padding: 16px 40px !important;
+  border-radius: 50px !important;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-weight: 600;
+  color: #ffffff !important;
+  box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
-.welcome-card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 35px 25px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.welcome-scan-btn:hover {
+  background-color: #1b5e20 !important;
+  transform: translateY(-2px);
 }
 
-.welcome-heading {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 10px;
+.welcome-scan-btn:active {
+  transform: translateY(0);
 }
 
-.welcome-text {
-  font-size: 1rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 25px;
+.welcome-mascot-container {
+  width: 100%;
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
 }
 
-.welcome-footer {
-  font-size: 0.85rem;
+.welcome-mascot {
+  width: 100%;
+  max-width: 440px;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 /* Buttons */
