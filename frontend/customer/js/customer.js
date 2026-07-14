@@ -412,7 +412,7 @@ const CameraManager = {
       throw qrInitErr;
     }
     
-    if (DEBUG_MODE) cameraStartTime = Date.now();
+    cameraStartTime = performance.now();
     isCameraRunning = true;
     lastScannedBarcode = "";
     lastScanTime = 0;
@@ -450,13 +450,13 @@ const CameraManager = {
       this.state = 'READY';
       console.log('[CameraManager] Camera start succeeded.');
       
+      cameraInitDuration = Math.round(performance.now() - cameraStartTime);
       if (DEBUG_MODE) {
-        cameraInitDuration = Date.now() - cameraStartTime;
         console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
         updateDebugOverlay();
       }
       saveDiagnosticsTelemetry({ 
-        cameraStartupTime: cameraInitDuration || (Date.now() - cameraStartTime),
+        cameraStartupTime: cameraInitDuration,
         cameraPermission: 'Granted'
       });
       
@@ -470,7 +470,7 @@ const CameraManager = {
         await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
         this.state = 'READY';
         saveDiagnosticsTelemetry({ 
-          cameraStartupTime: Date.now() - cameraStartTime,
+          cameraStartupTime: Math.round(performance.now() - cameraStartTime),
           cameraPermission: 'Granted'
         });
         this.applyFocusConstraints();
@@ -482,7 +482,7 @@ const CameraManager = {
           await this.html5Qrcode.start({ facingMode: "user" }, this.config, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
           saveDiagnosticsTelemetry({ 
-            cameraStartupTime: Date.now() - cameraStartTime,
+            cameraStartupTime: Math.round(performance.now() - cameraStartTime),
             cameraPermission: 'Granted'
           });
           startAmbientLightDetection();
@@ -929,8 +929,8 @@ async function lookupBarcode(barcode) {
   // Dev metrics start
   const apiStart = Date.now();
   if (firstDecodeTime === 0) {
-    firstDecodeTime = apiStart;
-    if (DEBUG_MODE) console.log(`[METRICS] First successful decode at: ${apiStart - cameraStartTime}ms from camera start`);
+    firstDecodeTime = performance.now();
+    if (DEBUG_MODE) console.log(`[METRICS] First successful decode at: ${Math.round(firstDecodeTime - cameraStartTime)}ms from camera start`);
   }
   
   // Transition card out: add replacing class to single state or multi state

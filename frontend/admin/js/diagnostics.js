@@ -61,11 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return { top, bottom };
   }
 
-  async function runAcceptanceGateChecks(swBuild, apiHealthy) {
+  async function runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, serverBuild) {
     // 1. HTML Build
     const gateHtml = document.getElementById('gate-html');
     if (gateHtml) {
-      if (window.HTML_BUILD) {
+      if (htmlBuild && htmlBuild !== 'N/A' && htmlBuild === serverBuild) {
         gateHtml.textContent = 'PASS';
         gateHtml.style.color = 'var(--success-color)';
       } else {
@@ -77,13 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. JS Build
     const gateJs = document.getElementById('gate-js');
     if (gateJs) {
-      if (window.APP_BUILD && window.APP_BUILD.build) {
+      if (serverBuild && serverBuild !== 'N/A' && htmlBuild === serverBuild) {
         gateJs.textContent = 'PASS';
         gateJs.style.color = 'var(--success-color)';
       } else {
-        // Fallback for admin context where APP_BUILD might not be loaded on window
-        gateJs.textContent = 'PASS';
-        gateJs.style.color = 'var(--success-color)';
+        gateJs.textContent = 'FAIL';
+        gateJs.style.color = 'var(--danger-color)';
       }
     }
 
@@ -139,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function loadDiagnostics() {
     const startTime = Date.now();
     let apiHealthy = false;
+    let serverBuild = 'N/A';
     
     // 1. Fetch Server-side Health
     try {
@@ -149,7 +149,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (response && response.status === 200) {
         const data = await response.json();
         
-        if (diagBuild) diagBuild.textContent = data.build || 'N/A';
+        serverBuild = data.build || 'N/A';
+        if (diagBuild) diagBuild.textContent = serverBuild;
         if (diagVersion) diagVersion.textContent = data.version || 'N/A';
         if (diagCommit) diagCommit.textContent = data.commit || 'N/A';
         if (diagBranch) diagBranch.textContent = data.branch || 'N/A';
@@ -219,7 +220,22 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    if (statusCacheHtml) statusCacheHtml.textContent = window.HTML_BUILD || swBuild || 'N/A';
+    // 4.5 Fetch HTML Build ID from customer application index.html dynamically
+    let htmlBuild = 'N/A';
+    try {
+      const indexRes = await fetch('/');
+      if (indexRes.status === 200) {
+        const indexText = await indexRes.text();
+        const htmlBuildMatch = indexText.match(/window\.HTML_BUILD\s*=\s*"([^"]*)";/);
+        if (htmlBuildMatch) {
+          htmlBuild = htmlBuildMatch[1];
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch HTML Build ID:', e);
+    }
+    
+    if (statusCacheHtml) statusCacheHtml.textContent = htmlBuild;
     if (statusCacheSw) statusCacheSw.textContent = swBuild;
     if (statusCacheController) statusCacheController.textContent = navigator.serviceWorker.controller ? 'Active Controller' : 'Direct Network';
 
@@ -251,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6. Run Acceptance Gate Checklists
-    await runAcceptanceGateChecks(swBuild, apiHealthy);
+    await runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, serverBuild);
   }
 
   if (refreshBtn) {
