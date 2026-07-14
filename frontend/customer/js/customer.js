@@ -1335,15 +1335,15 @@ startScanBtn.addEventListener('click', (e) => {
   setTimeout(() => {
     console.log('[Diag] Scan button click delay timeout expired. Transitioning state to SCANNING...');
     StateManager.transitionTo('SCANNING');
-    console.log('[Diag] Enqueueing CameraManager.start() to DOMRenderQueue to ensure rendering layout flush...');
-    DOMRenderQueue.enqueue(async () => {
+    console.log('[Diag] Deferring camera start to allow browser layout reflow and display flex changes...');
+    setTimeout(async () => {
       try {
-        console.log('[Diag] Executing enqueued CameraManager.start() call...');
+        console.log('[Diag] Executing camera start after layout delay...');
         await CameraManager.start();
       } catch (err) {
-        console.error('[Diag] Camera startup task failed in execution queue:', err);
+        console.error('[Diag] Camera startup task failed:', err);
       }
-    });
+    }, 150);
   }, 150);
 });
 
@@ -1496,25 +1496,25 @@ function renderRecentScansBottomSheet() {
 document.getElementById('retry-camera-denied-btn').addEventListener('click', () => {
   console.log('[Diag] Retry Camera Denied clicked. Transitioning state to SCANNING...');
   StateManager.transitionTo('SCANNING');
-  DOMRenderQueue.enqueue(async () => {
+  setTimeout(async () => {
     try {
       await CameraManager.start();
     } catch (err) {
       console.error('[Diag] Retry camera startup failed:', err);
     }
-  });
+  }, 150);
 });
 
 document.getElementById('retry-camera-unavailable-btn').addEventListener('click', () => {
   console.log('[Diag] Retry Camera Unavailable clicked. Transitioning state to SCANNING...');
   StateManager.transitionTo('SCANNING');
-  DOMRenderQueue.enqueue(async () => {
+  setTimeout(async () => {
     try {
       await CameraManager.start();
     } catch (err) {
       console.error('[Diag] Retry camera startup failed:', err);
     }
-  });
+  }, 150);
 });
 
 document.getElementById('retry-network-btn').addEventListener('click', () => {
