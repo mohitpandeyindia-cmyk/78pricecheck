@@ -5,6 +5,17 @@ if (window.HTML_BUILD && window.APP_BUILD && window.HTML_BUILD !== window.APP_BU
   throw new Error('[Build Mismatch] Execution halted for reload.');
 }
 
+// Telemetry Diagnostics Saver
+function saveDiagnosticsTelemetry(metrics) {
+  try {
+    const existing = JSON.parse(localStorage.getItem('78pricecheck_telemetry') || '{}');
+    const updated = Object.assign(existing, metrics);
+    localStorage.setItem('78pricecheck_telemetry', JSON.stringify(updated));
+  } catch (e) {
+    // Fail silently
+  }
+}
+
 const startScanBtn = document.getElementById('start-scan-btn');
 const welcomeView = document.getElementById('welcome-view');
 const scannerView = document.getElementById('scanner-view');
@@ -155,6 +166,7 @@ const ErrorManager = {
         errMsg.toLowerCase().includes('notallowed');
         
       if (isPermissionDenied) {
+        saveDiagnosticsTelemetry({ cameraPermission: 'Denied' });
         StateManager.transitionTo('ERROR', {
           type: 'cameraDenied',
           errorDesc: 'Camera permission is blocked or denied.<br><br>' +
@@ -163,6 +175,7 @@ const ErrorManager = {
             '2. Select <strong>"Site settings"</strong> -> <strong>"Camera"</strong> -> <strong>"Allow"</strong>, then reload the page.'
         });
       } else {
+        saveDiagnosticsTelemetry({ cameraPermission: 'Failed / Unavailable' });
         StateManager.transitionTo('ERROR', {
           type: 'cameraUnavailable',
           errorDesc: 'Unable to open camera hardware stream.<br><br>Please check camera connections or restart your browser.'
@@ -419,6 +432,10 @@ const CameraManager = {
         console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
         updateDebugOverlay();
       }
+      saveDiagnosticsTelemetry({ 
+        cameraStartupTime: cameraInitDuration || (Date.now() - cameraStartTime),
+        cameraPermission: 'Granted'
+      });
       
       this.applyFocusConstraints();
       startAmbientLightDetection();
@@ -429,6 +446,10 @@ const CameraManager = {
       try {
         await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
         this.state = 'READY';
+        saveDiagnosticsTelemetry({ 
+          cameraStartupTime: Date.now() - cameraStartTime,
+          cameraPermission: 'Granted'
+        });
         this.applyFocusConstraints();
         startAmbientLightDetection();
         showState('idle');
@@ -437,6 +458,10 @@ const CameraManager = {
         try {
           await this.html5Qrcode.start({ facingMode: "user" }, this.config, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
+          saveDiagnosticsTelemetry({ 
+            cameraStartupTime: Date.now() - cameraStartTime,
+            cameraPermission: 'Granted'
+          });
           startAmbientLightDetection();
           showState('idle');
         } catch (err3) {
@@ -471,12 +496,38 @@ const CameraManager = {
       const video = document.querySelector('#reader video');
       if (video && video.srcObject) {
         this.activeTrack = video.srcObject.getVideoTracks()[0];
-        if (this.activeTrack && typeof this.activeTrack.getCapabilities === 'function') {
-          const capabilities = this.activeTrack.getCapabilities();
-          if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-            this.activeTrack.applyConstraints({
-              advanced: [{ focusMode: 'continuous' }]
-            }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
+        if (this.activeTrack) {
+          const label = this.activeTrack.label || 'Camera Stream';
+          let resolution = 'Unknown';
+          let hasTorch = 'Not Supported';
+          
+          if (typeof this.activeTrack.getSettings === 'function') {
+            const settings = this.activeTrack.getSettings();
+            if (settings.width && settings.height) {
+              resolution = `${settings.width} × ${settings.height}`;
+            }
+          }
+          
+          if (typeof this.activeTrack.getCapabilities === 'function') {
+            const capabilities = this.activeTrack.getCapabilities();
+            if (capabilities.torch) {
+              hasTorch = 'Supported';
+            }
+          }
+          
+          saveDiagnosticsTelemetry({
+            cameraLabel: label,
+            cameraResolution: resolution,
+            cameraTorch: hasTorch
+          });
+          
+          if (typeof this.activeTrack.getCapabilities === 'function') {
+            const capabilities = this.activeTrack.getCapabilities();
+            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+              this.activeTrack.applyConstraints({
+                advanced: [{ focusMode: 'continuous' }]
+              }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
+            }
           }
         }
       }
@@ -884,6 +935,7 @@ async function lookupBarcode(barcode) {
     const response = await fetch(`/api/products/lookup/${barcode}`);
     const apiEnd = Date.now();
     lastApiDuration = apiEnd - apiStart;
+    saveDiagnosticsTelemetry({ avgScanTime: lastApiDuration });
     if (DEBUG_MODE) {
       console.log(`[METRICS] API request duration: ${lastApiDuration}ms`);
       updateDebugOverlay();
