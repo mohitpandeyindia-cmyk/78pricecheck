@@ -144,8 +144,20 @@ app.use('/api', productsRouter);
 // Serve static frontend files if they exist
 const FRONTEND_PATH = path.resolve(__dirname, '../../frontend');
 
+// Dynamic PWA Cache-Busting static options configuration
+const customerStaticOptions = {
+  setHeaders: (res: any, filePath: string) => {
+    const filename = path.basename(filePath);
+    if (filename === 'sw.js' || filename === 'index.html') {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+};
+
 // Mount routes for Customer Application
-app.use('/', express.static(path.join(FRONTEND_PATH, 'customer')));
+app.use('/', express.static(path.join(FRONTEND_PATH, 'customer'), customerStaticOptions));
 
 // Serve admin static pages explicitly
 app.get('/admin', (req, res) => {
