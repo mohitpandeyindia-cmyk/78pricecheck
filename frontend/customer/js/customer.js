@@ -1425,37 +1425,25 @@ document.getElementById('retry-server-btn').addEventListener('click', () => {
   }
 });
 
-// Register PWA Service Worker
+// Register PWA Service Worker (TEMPORARILY DISABLED FOR LIFECYCLE DIAGNOSTIC AUDIT)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
-      
-      // Force immediate check for updates
-      reg.update();
-      
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        if (newWorker) {
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              const banner = document.getElementById('pwa-update-banner');
-              if (banner) {
-                banner.style.display = 'flex';
-              }
-            }
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    if (registrations.length > 0) {
+      console.log('[Diagnostic] Active Service Workers found. Unregistering all to clear cache holds...');
+      Promise.all(registrations.map(reg => reg.unregister())).then(() => {
+        console.log('[Diagnostic] Service Workers unregistered. Clearing caches and reloading...');
+        if ('caches' in window) {
+          caches.keys().then(keys => {
+            Promise.all(keys.map(key => caches.delete(key))).then(() => {
+              window.location.reload();
+            });
           });
+        } else {
+          window.location.reload();
         }
       });
-    }).catch(err => {
-      console.warn('[PWA] Service Worker registration failed:', err);
-    });
+    } else {
+      console.log('[Diagnostic] No active Service Workers. Loading page directly from network.');
+    }
   });
-  
-  const reloadBtn = document.getElementById('pwa-reload-btn');
-  if (reloadBtn) {
-    reloadBtn.addEventListener('click', () => {
-      window.location.reload();
-    });
-  }
 }
