@@ -140,10 +140,28 @@ const ErrorManager = {
     });
     
     if (managerName === 'CameraManager') {
-      StateManager.transitionTo('ERROR', {
-        type: 'cameraUnavailable',
-        errorString: error ? `${error.name}: ${error.message}` : 'Camera Stream Interrupted'
-      });
+      const errName = error ? error.name : '';
+      const errMsg = error ? (error.message || String(error)) : '';
+      const isPermissionDenied = 
+        errName === 'NotAllowedError' || 
+        errName === 'PermissionDeniedError' || 
+        errMsg.toLowerCase().includes('permission') || 
+        errMsg.toLowerCase().includes('notallowed');
+        
+      if (isPermissionDenied) {
+        StateManager.transitionTo('ERROR', {
+          type: 'cameraDenied',
+          errorDesc: 'Camera permission is blocked or denied.<br><br>' +
+            '<strong>To allow access:</strong><br>' +
+            '1. Tap the lock icon (🔒) or settings icon in your Chrome address bar.<br>' +
+            '2. Select <strong>"Site settings"</strong> -> <strong>"Camera"</strong> -> <strong>"Allow"</strong>, then reload the page.'
+        });
+      } else {
+        StateManager.transitionTo('ERROR', {
+          type: 'cameraUnavailable',
+          errorDesc: 'Unable to open camera hardware stream.<br><br>Please check camera connections or restart your browser.'
+        });
+      }
     }
   }
 };
@@ -252,8 +270,16 @@ const StateManager = {
         scannerView.classList.add('active');
         if (data.type === 'cameraDenied') {
           showState('cameraDenied');
+          const desc = states.cameraDenied.querySelector('.error-desc');
+          if (desc && data.errorDesc) {
+            desc.innerHTML = data.errorDesc;
+          }
         } else if (data.type === 'cameraUnavailable') {
           showState('cameraUnavailable');
+          const desc = states.cameraUnavailable.querySelector('.error-desc');
+          if (desc && data.errorDesc) {
+            desc.innerHTML = data.errorDesc;
+          }
         } else if (data.type === 'notFound') {
           showState('notFound');
         } else {
