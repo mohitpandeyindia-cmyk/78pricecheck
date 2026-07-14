@@ -198,6 +198,10 @@ app.get('/admin/history', (req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, 'admin/history.html'));
 });
 
+app.get('/admin/diagnostics', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PATH, 'admin/diagnostics.html'));
+});
+
 // Serve admin assets under '/admin' prefix
 app.use('/admin', express.static(path.join(FRONTEND_PATH, 'admin')));
 
