@@ -1,4 +1,10 @@
 // customer.js
+if (window.HTML_BUILD && window.APP_BUILD && window.HTML_BUILD !== window.APP_BUILD.build) {
+  console.warn(`[Build Mismatch] HTML expected ${window.HTML_BUILD}, but JS is ${window.APP_BUILD.build}. Forcing refresh...`);
+  window.location.reload();
+  throw new Error('[Build Mismatch] Execution halted for reload.');
+}
+
 const startScanBtn = document.getElementById('start-scan-btn');
 const welcomeView = document.getElementById('welcome-view');
 const scannerView = document.getElementById('scanner-view');
@@ -1425,25 +1431,86 @@ document.getElementById('retry-server-btn').addEventListener('click', () => {
   }
 });
 
-// Register PWA Service Worker (TEMPORARILY DISABLED FOR LIFECYCLE DIAGNOSTIC AUDIT)
+// Register PWA Service Worker with Environment Profiles & Update Manager
+const appBuild = window.APP_BUILD || { environment: 'production', serviceWorkerEnabled: true, build: 'v1.1.0' };
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    if (registrations.length > 0) {
-      console.log('[Diagnostic] Active Service Workers found. Unregistering all to clear cache holds...');
-      Promise.all(registrations.map(reg => reg.unregister())).then(() => {
-        console.log('[Diagnostic] Service Workers unregistered. Clearing caches and reloading...');
-        if ('caches' in window) {
-          caches.keys().then(keys => {
-            Promise.all(keys.map(key => caches.delete(key))).then(() => {
-              window.location.reload();
+  if (appBuild.environment === 'development' || appBuild.serviceWorkerEnabled === false) {
+    console.log('[PWA] Service Worker disabled in development or via Kill Switch. Cleaning up...');
+    navigator.serviceWorker.getRegistrations().then(registrations => {
+      if (registrations.length > 0) {
+        Promise.all(registrations.map(reg => reg.unregister())).then(() => {
+          if ('caches' in window) {
+            caches.keys().then(keys => {
+              Promise.all(keys.map(key => caches.delete(key))).then(() => {
+                window.location.reload();
+              });
             });
-          });
-        } else {
-          window.location.reload();
-        }
+          } else {
+            window.location.reload();
+          }
+        });
+      }
+    });
+  } else {
+    // Staging or Production: Register Service Worker
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        console.log('[PWA] Service Worker registered scope:', reg.scope);
+        
+        // Check for updates
+        reg.update();
+        
+        // Listen for new service worker installs
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              // If new worker is fully installed but waiting
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                const banner = document.getElementById('pwa-update-banner');
+                if (banner) {
+                  banner.style.display = 'flex';
+                }
+                
+                // Kiosk Auto-update timeout: 30 minutes
+                setTimeout(() => {
+                  if (newWorker.state === 'installed') {
+                    console.log('[PWA] Update banner ignored for 30 mins. Forcing background skipWaiting...');
+                    newWorker.postMessage('SKIP_WAITING');
+                  }
+                }, 30 * 60 * 1000);
+              }
+            });
+          }
+        });
+      }).catch(err => {
+        console.warn('[PWA] Service Worker registration failed:', err);
       });
-    } else {
-      console.log('[Diagnostic] No active Service Workers. Loading page directly from network.');
+    });
+    
+    // Listen for controller changes to trigger exactly one reload
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        console.log('[PWA] Service Worker controller changed. Reloading page...');
+        window.location.reload();
+      }
+    });
+    
+    // Bind banner click reload action
+    const reloadBtn = document.getElementById('pwa-reload-btn');
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', () => {
+        navigator.serviceWorker.ready.then(reg => {
+          if (reg.waiting) {
+            reg.waiting.postMessage('SKIP_WAITING');
+          } else {
+            window.location.reload();
+          }
+        });
+      });
     }
-  });
+  }
 }

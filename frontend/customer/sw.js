@@ -1,9 +1,10 @@
-const CACHE_NAME = '78pricecheck-v1.1.0';
+const CACHE_NAME = '78pricecheck-202607141523';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/customer.css',
   './js/customer.js',
+  './js/build-env.js',
   './assets/logo.png',
   './assets/mascot.png',
   './manifest.json'
@@ -15,18 +16,18 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache => {
       console.log('[Service Worker] Pre-caching app shell assets');
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// Activate Event - Clear old caches
+// Activate Event - Clear all old legacy caches completely
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
         keys.map(key => {
           if (key !== CACHE_NAME) {
-            console.log('[Service Worker] Removing old cache key:', key);
+            console.log('[Service Worker] Evicting legacy cache key:', key);
             return caches.delete(key);
           }
         })
@@ -35,28 +36,44 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch Event - Handle strategy based on endpoint rules
+// Production Update Manager: Listen for manual activation trigger
+self.addEventListener('message', event => {
+  if (event.data === 'SKIP_WAITING') {
+    console.log('[Service Worker] Received SKIP_WAITING trigger.');
+    self.skipWaiting();
+  }
+});
+
+// Fetch Event - Dynamic caching policy matching
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // 1. Network Only for API routes (exclusions list)
+  // 1. Network Only for API data routes & health checks
   if (
-    url.pathname.includes('/api/products/lookup/') || 
-    url.pathname.includes('/api/admin/upload') ||
-    url.pathname.includes('/api/auth/login') ||
-    url.pathname.includes('/api/version')
+    url.pathname.includes('/api/') || 
+    url.pathname.includes('/health') ||
+    url.pathname.includes('/version')
   ) {
     event.respondWith(fetch(event.request));
     return;
   }
   
-  // 2. Network First for main index.html document shell
-  if (url.pathname === '/' || url.pathname.endsWith('/index.html')) {
+  // 2. Network First for app logic, script files, CSS, manifest, and dynamic settings
+  if (
+    url.pathname === '/' || 
+    url.pathname.endsWith('.html') || 
+    url.pathname.endsWith('.js') || 
+    url.pathname.endsWith('.css') || 
+    url.pathname.endsWith('.json')
+  ) {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          // If request is successful, clone and put it in cache
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          }
           return response;
         })
         .catch(() => caches.match(event.request))
@@ -64,16 +81,26 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // 3. Cache First for static brand images
-  if (url.pathname.includes('/assets/')) {
+  // 3. Cache First for static images and typography fonts
+  if (
+    url.pathname.includes('/assets/') || 
+    url.pathname.endsWith('.png') || 
+    url.pathname.endsWith('.jpg') || 
+    url.pathname.endsWith('.jpeg') || 
+    url.pathname.endsWith('.woff') || 
+    url.pathname.endsWith('.woff2') || 
+    url.pathname.endsWith('.ttf')
+  ) {
     event.respondWith(
       caches.match(event.request).then(cachedResponse => {
         if (cachedResponse) {
           return cachedResponse;
         }
         return fetch(event.request).then(response => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
+          }
           return response;
         });
       })
@@ -81,25 +108,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  // 4. Stale-While-Revalidate for local JS/CSS files
-  if (url.pathname.endsWith('.css') || url.pathname.endsWith('.js') || url.pathname.endsWith('.json')) {
-    event.respondWith(
-      caches.match(event.request).then(cachedResponse => {
-        const fetchPromise = fetch(event.request).then(networkResponse => {
-          if (networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
-          }
-          return networkResponse;
-        }).catch(() => null);
-        
-        return cachedResponse || fetchPromise;
-      })
-    );
-    return;
-  }
-  
-  // Default fallback strategy
+  // Fallback: match cache first, then fetch
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request))
   );

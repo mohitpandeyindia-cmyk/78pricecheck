@@ -148,7 +148,7 @@ const FRONTEND_PATH = path.resolve(__dirname, '../../frontend');
 const customerStaticOptions = {
   setHeaders: (res: any, filePath: string) => {
     const filename = path.basename(filePath);
-    if (filename === 'sw.js' || filename === 'index.html') {
+    if (filename === 'sw.js' || filename === 'index.html' || filename === 'build-env.js') {
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     } else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
       res.setHeader('Cache-Control', 'no-cache');
@@ -158,6 +158,32 @@ const customerStaticOptions = {
 
 // Mount routes for Customer Application
 app.use('/', express.static(path.join(FRONTEND_PATH, 'customer'), customerStaticOptions));
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+  const uptime = process.uptime();
+  let buildInfo = {};
+  try {
+    const buildEnvPath = path.resolve(FRONTEND_PATH, 'customer/js/build-env.js');
+    if (fs.existsSync(buildEnvPath)) {
+      const fileContent = fs.readFileSync(buildEnvPath, 'utf8');
+      const jsonMatch = fileContent.match(/window\.APP_BUILD\s*=\s*({[\s\S]*?});/);
+      if (jsonMatch) {
+        // Safe evaluation of build object declaration
+        buildInfo = eval(`(${jsonMatch[1]})`);
+      }
+    }
+  } catch (e) {
+    // Fail silently
+  }
+  
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.json({
+    status: 'UP',
+    uptime: Math.floor(uptime),
+    ...buildInfo
+  });
+});
 
 // Serve admin static pages explicitly
 app.get('/admin', (req, res) => {
