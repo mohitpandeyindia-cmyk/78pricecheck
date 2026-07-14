@@ -369,13 +369,15 @@ const CameraManager = {
   },
   
   async start() {
+    console.log('[Diag] CameraManager.start() invoked. State:', this.state);
     if (this.state === 'READY' || this.state === 'STARTING') {
+      console.log('[Diag] Camera start rejected: already in state', this.state);
       return;
     }
     
     // Check for Insecure Context / Missing MediaDevices (HTTP block)
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      console.error('[CameraManager] Secure context validation failed.');
+      console.error('[Diag] Secure context validation failed. isSecureContext:', window.isSecureContext, 'mediaDevices:', !!navigator.mediaDevices);
       StateManager.transitionTo('ERROR', {
         type: 'cameraUnavailable',
         errorString: 'Insecure Context / HTTPS Block',
@@ -384,9 +386,30 @@ const CameraManager = {
       return;
     }
     
+    // Check container existence and dimensions
+    const readerEl = document.getElementById('reader');
+    if (readerEl) {
+      const rect = readerEl.getBoundingClientRect();
+      console.log(`[Diag] Container "#reader" dimensions: width=${rect.width}px, height=${rect.height}px, offsetWidth=${readerEl.offsetWidth}px, offsetHeight=${readerEl.offsetHeight}px, display=${window.getComputedStyle(readerEl).display}`);
+      if (rect.width === 0 || rect.height === 0) {
+        console.warn('[Diag] Warning: Container "#reader" has 0 width or height! This may cause html5-qrcode initialization to throw.');
+      }
+    } else {
+      console.error('[Diag] Error: Container "#reader" is missing from the DOM!');
+    }
+    
     this.state = 'STARTING';
-    if (!this.html5Qrcode) {
-      this.html5Qrcode = new Html5Qrcode("reader");
+    console.log('[Diag] Transitioned CameraManager state to STARTING. Initializing Html5Qrcode...');
+    
+    try {
+      if (!this.html5Qrcode) {
+        this.html5Qrcode = new Html5Qrcode("reader");
+      }
+      console.log('[Diag] Html5Qrcode instance initialized successfully.');
+    } catch (qrInitErr) {
+      console.error('[Diag] Failed to initialize Html5Qrcode instance:', qrInitErr);
+      this.state = 'IDLE';
+      throw qrInitErr;
     }
     
     if (DEBUG_MODE) cameraStartTime = Date.now();
@@ -1310,9 +1333,16 @@ startScanBtn.addEventListener('click', (e) => {
   setTimeout(() => ripple.remove(), 400);
   
   setTimeout(() => {
+    console.log('[Diag] Scan button click delay timeout expired. Transitioning state to SCANNING...');
     StateManager.transitionTo('SCANNING');
-    CameraManager.start().catch(err => {
-      console.error('Failed to start camera:', err);
+    console.log('[Diag] Enqueueing CameraManager.start() to DOMRenderQueue to ensure rendering layout flush...');
+    DOMRenderQueue.enqueue(async () => {
+      try {
+        console.log('[Diag] Executing enqueued CameraManager.start() call...');
+        await CameraManager.start();
+      } catch (err) {
+        console.error('[Diag] Camera startup task failed in execution queue:', err);
+      }
     });
   }, 150);
 });
@@ -1464,11 +1494,27 @@ function renderRecentScansBottomSheet() {
 }
 
 document.getElementById('retry-camera-denied-btn').addEventListener('click', () => {
-  CameraManager.start();
+  console.log('[Diag] Retry Camera Denied clicked. Transitioning state to SCANNING...');
+  StateManager.transitionTo('SCANNING');
+  DOMRenderQueue.enqueue(async () => {
+    try {
+      await CameraManager.start();
+    } catch (err) {
+      console.error('[Diag] Retry camera startup failed:', err);
+    }
+  });
 });
 
 document.getElementById('retry-camera-unavailable-btn').addEventListener('click', () => {
-  CameraManager.start();
+  console.log('[Diag] Retry Camera Unavailable clicked. Transitioning state to SCANNING...');
+  StateManager.transitionTo('SCANNING');
+  DOMRenderQueue.enqueue(async () => {
+    try {
+      await CameraManager.start();
+    } catch (err) {
+      console.error('[Diag] Retry camera startup failed:', err);
+    }
+  });
 });
 
 document.getElementById('retry-network-btn').addEventListener('click', () => {
