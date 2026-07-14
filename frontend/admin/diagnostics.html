@@ -6,6 +6,8 @@
   <title>78 PriceCheck - Diagnostics Dashboard</title>
   <link rel="stylesheet" href="/admin/css/style.css">
   <script src="/admin/js/auth.js"></script>
+  <!-- Load localized barcode decoding library for gate check -->
+  <script src="/js/libs/html5-qrcode.min.js"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -157,6 +159,7 @@
           </div>
         </div>
 
+        <!-- PWA Cache Diagnostics -->
         <div class="card status-card">
           <h2 class="card-title" style="font-weight: 600; font-size: 1.25rem;">Cache Diagnostics</h2>
           <div class="status-panel" style="margin-top: 15px;">
@@ -175,6 +178,37 @@
             <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
               <span class="status-label" style="color: var(--text-muted); font-weight: 500;">Cache Eviction:</span>
               <strong id="status-cache-eviction" style="font-weight: 600; color: var(--success-color);">Current</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acceptance Gate Checklist -->
+        <div class="card status-card">
+          <h2 class="card-title" style="font-weight: 600; font-size: 1.25rem;">Acceptance Gate Checklist</h2>
+          <div class="status-panel" style="margin-top: 15px;">
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ HTML Build:</span>
+              <strong id="gate-html" style="font-weight: 600; color: var(--text-muted);">-</strong>
+            </div>
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ JS Build:</span>
+              <strong id="gate-js" style="font-weight: 600; color: var(--text-muted);">-</strong>
+            </div>
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ Local Barcode Lib:</span>
+              <strong id="gate-lib" style="font-weight: 600; color: var(--text-muted);">-</strong>
+            </div>
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ StateManager:</span>
+              <strong id="gate-state" style="font-weight: 600; color: var(--text-muted);">-</strong>
+            </div>
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ API Health:</span>
+              <strong id="gate-api" style="font-weight: 600; color: var(--text-muted);">-</strong>
+            </div>
+            <div class="status-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+              <span class="status-label" style="color: var(--text-muted); font-weight: 500;">✓ Service Worker:</span>
+              <strong id="gate-sw" style="font-weight: 600; color: var(--text-muted);">-</strong>
             </div>
           </div>
         </div>

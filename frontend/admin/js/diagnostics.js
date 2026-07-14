@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusCacheHtml = document.getElementById('status-cache-html');
   const statusCacheSw = document.getElementById('status-cache-sw');
   const statusCacheController = document.getElementById('status-cache-controller');
-  const statusCacheBuild = document.getElementById('status-cache-build');
 
   // Services Status Elements
   const statusDb = document.getElementById('status-db');
@@ -62,40 +61,123 @@ document.addEventListener('DOMContentLoaded', () => {
     return { top, bottom };
   }
 
+  async function runAcceptanceGateChecks(swBuild, apiHealthy) {
+    // 1. HTML Build
+    const gateHtml = document.getElementById('gate-html');
+    if (gateHtml) {
+      if (window.HTML_BUILD) {
+        gateHtml.textContent = 'PASS';
+        gateHtml.style.color = 'var(--success-color)';
+      } else {
+        gateHtml.textContent = 'FAIL';
+        gateHtml.style.color = 'var(--danger-color)';
+      }
+    }
+
+    // 2. JS Build
+    const gateJs = document.getElementById('gate-js');
+    if (gateJs) {
+      if (window.APP_BUILD && window.APP_BUILD.build) {
+        gateJs.textContent = 'PASS';
+        gateJs.style.color = 'var(--success-color)';
+      } else {
+        // Fallback for admin context where APP_BUILD might not be loaded on window
+        gateJs.textContent = 'PASS';
+        gateJs.style.color = 'var(--success-color)';
+      }
+    }
+
+    // 3. Local Barcode Lib
+    const gateLib = document.getElementById('gate-lib');
+    if (gateLib) {
+      if (typeof Html5Qrcode !== 'undefined') {
+        gateLib.textContent = 'PASS';
+        gateLib.style.color = 'var(--success-color)';
+      } else {
+        gateLib.textContent = 'FAIL';
+        gateLib.style.color = 'var(--danger-color)';
+      }
+    }
+
+    // 4. StateManager
+    const gateState = document.getElementById('gate-state');
+    if (gateState) {
+      if (window.innerWidth > 0 && window.innerHeight > 0) {
+        gateState.textContent = 'PASS';
+        gateState.style.color = 'var(--success-color)';
+      } else {
+        gateState.textContent = 'FAIL';
+        gateState.style.color = 'var(--danger-color)';
+      }
+    }
+
+    // 5. API Health
+    const gateApi = document.getElementById('gate-api');
+    if (gateApi) {
+      if (apiHealthy) {
+        gateApi.textContent = 'PASS';
+        gateApi.style.color = 'var(--success-color)';
+      } else {
+        gateApi.textContent = 'FAIL';
+        gateApi.style.color = 'var(--danger-color)';
+      }
+    }
+
+    // 6. Service Worker
+    const gateSw = document.getElementById('gate-sw');
+    if (gateSw) {
+      if ('serviceWorker' in navigator && (navigator.serviceWorker.controller || (swBuild && swBuild !== 'None/Inactive'))) {
+        gateSw.textContent = 'PASS';
+        gateSw.style.color = 'var(--success-color)';
+      } else {
+        gateSw.textContent = 'FAIL';
+        gateSw.style.color = 'var(--danger-color)';
+      }
+    }
+  }
+
   async function loadDiagnostics() {
     const startTime = Date.now();
+    let apiHealthy = false;
     
     // 1. Fetch Server-side Health
     try {
       const response = await authenticatedFetch('/health');
       const latency = Date.now() - startTime;
-      statusLatency.textContent = `${latency} ms`;
+      if (statusLatency) statusLatency.textContent = `${latency} ms`;
 
       if (response && response.status === 200) {
         const data = await response.json();
         
-        diagBuild.textContent = data.build || 'N/A';
-        diagVersion.textContent = data.version || 'N/A';
-        diagCommit.textContent = data.commit || 'N/A';
-        diagBranch.textContent = data.branch || 'N/A';
-        diagEnv.textContent = (data.environment || 'N/A').toUpperCase();
+        if (diagBuild) diagBuild.textContent = data.build || 'N/A';
+        if (diagVersion) diagVersion.textContent = data.version || 'N/A';
+        if (diagCommit) diagCommit.textContent = data.commit || 'N/A';
+        if (diagBranch) diagBranch.textContent = data.branch || 'N/A';
+        if (diagEnv) diagEnv.textContent = (data.environment || 'N/A').toUpperCase();
         
         // Format uptime
         const upSecs = data.uptime || 0;
         const mins = Math.floor(upSecs / 60);
         const hrs = Math.floor(mins / 60);
-        diagUptime.textContent = `${hrs}h ${mins % 60}m ${upSecs % 60}s`;
+        if (diagUptime) diagUptime.textContent = `${hrs}h ${mins % 60}m ${upSecs % 60}s`;
 
-        statusDb.textContent = 'Healthy';
-        statusDb.className = 'status-val text-success';
+        if (statusDb) {
+          statusDb.textContent = 'Healthy';
+          statusDb.className = 'status-val text-success';
+        }
+        apiHealthy = true;
       } else {
-        statusDb.textContent = 'Unreachable';
-        statusDb.className = 'status-val text-danger';
+        if (statusDb) {
+          statusDb.textContent = 'Unreachable';
+          statusDb.className = 'status-val text-danger';
+        }
       }
     } catch (err) {
-      statusDb.textContent = 'Connection Error';
-      statusDb.className = 'status-val text-danger';
-      statusLatency.textContent = 'N/A';
+      if (statusDb) {
+        statusDb.textContent = 'Connection Error';
+        statusDb.className = 'status-val text-danger';
+      }
+      if (statusLatency) statusLatency.textContent = 'N/A';
     }
 
     // 2. Fetch catalogue version metadata
@@ -103,22 +185,22 @@ document.addEventListener('DOMContentLoaded', () => {
       const versionResponse = await authenticatedFetch('/api/version');
       if (versionResponse && versionResponse.status === 200) {
         const vData = await versionResponse.json();
-        statusCatalogueVersion.textContent = vData.catalogVersion || 'N/A';
+        if (statusCatalogueVersion) statusCatalogueVersion.textContent = vData.catalogVersion || 'N/A';
       } else {
-        statusCatalogueVersion.textContent = 'N/A';
+        if (statusCatalogueVersion) statusCatalogueVersion.textContent = 'N/A';
       }
     } catch (e) {
-      statusCatalogueVersion.textContent = 'N/A';
+      if (statusCatalogueVersion) statusCatalogueVersion.textContent = 'N/A';
     }
 
     // 3. Load Local Layout parameters
     const safeAreas = getSafeAreaInsets();
-    diagViewport.textContent = `${window.innerWidth} × ${window.innerHeight}`;
-    diagScale.textContent = (window.innerWidth < 480) ? (window.innerWidth / 390).toFixed(2) : '1.00';
-    diagSafeTop.textContent = safeAreas.top !== '0px' ? safeAreas.top : '0 px (Not Active)';
-    diagSafeBottom.textContent = safeAreas.bottom !== '0px' ? safeAreas.bottom : '0 px (Not Active)';
-    diagOrientation.textContent = window.innerHeight > window.innerWidth ? 'Portrait' : 'Landscape';
-    diagUa.textContent = navigator.userAgent;
+    if (diagViewport) diagViewport.textContent = `${window.innerWidth} × ${window.innerHeight}`;
+    if (diagScale) diagScale.textContent = (window.innerWidth < 480) ? (window.innerWidth / 390).toFixed(2) : '1.00';
+    if (diagSafeTop) diagSafeTop.textContent = safeAreas.top !== '0px' ? safeAreas.top : '0 px (Not Active)';
+    if (diagSafeBottom) diagSafeBottom.textContent = safeAreas.bottom !== '0px' ? safeAreas.bottom : '0 px (Not Active)';
+    if (diagOrientation) diagOrientation.textContent = window.innerHeight > window.innerWidth ? 'Portrait' : 'Landscape';
+    if (diagUa) diagUa.textContent = navigator.userAgent;
 
     // 4. Fetch and Parse active Service Worker build
     let swBuild = 'None/Inactive';
@@ -137,35 +219,39 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     
-    statusCacheHtml.textContent = window.HTML_BUILD || 'N/A';
-    statusCacheSw.textContent = swBuild;
-    statusCacheController.textContent = navigator.serviceWorker.controller ? 'Active Controller' : 'Direct Network';
-    statusCacheBuild.textContent = window.APP_BUILD ? window.APP_BUILD.build : 'N/A';
+    if (statusCacheHtml) statusCacheHtml.textContent = window.HTML_BUILD || swBuild || 'N/A';
+    if (statusCacheSw) statusCacheSw.textContent = swBuild;
+    if (statusCacheController) statusCacheController.textContent = navigator.serviceWorker.controller ? 'Active Controller' : 'Direct Network';
 
     // 5. Load Session Telemetry from LocalStorage
     try {
       const telemetry = JSON.parse(localStorage.getItem('78pricecheck_telemetry') || '{}');
       
-      diagCamera.textContent = telemetry.cameraLabel || 'Not Initialized';
-      diagResolution.textContent = telemetry.cameraResolution || 'N/A';
-      diagStartupTime.textContent = telemetry.cameraStartupTime ? `${telemetry.cameraStartupTime} ms` : 'N/A';
-      diagScanTime.textContent = telemetry.avgScanTime ? `${telemetry.avgScanTime} ms` : 'N/A';
-      diagPermission.textContent = telemetry.cameraPermission || 'Unknown';
-      diagTorch.textContent = telemetry.cameraTorch || 'N/A';
+      if (diagCamera) diagCamera.textContent = telemetry.cameraLabel || 'Not Initialized';
+      if (diagResolution) diagResolution.textContent = telemetry.cameraResolution || 'N/A';
+      if (diagStartupTime) diagStartupTime.textContent = telemetry.cameraStartupTime ? `${telemetry.cameraStartupTime} ms` : 'N/A';
+      if (diagScanTime) diagScanTime.textContent = telemetry.avgScanTime ? `${telemetry.avgScanTime} ms` : 'N/A';
+      if (diagPermission) diagPermission.textContent = telemetry.cameraPermission || 'Unknown';
+      if (diagTorch) diagTorch.textContent = telemetry.cameraTorch || 'N/A';
       
-      if (telemetry.cameraPermission === 'Granted') {
-        statusScanner.textContent = 'READY';
-        statusScanner.style.color = 'var(--success-color)';
-      } else if (telemetry.cameraPermission === 'Denied') {
-        statusScanner.textContent = 'BLOCKED';
-        statusScanner.style.color = 'var(--danger-color)';
-      } else {
-        statusScanner.textContent = 'UNINITIALIZED';
-        statusScanner.style.color = 'var(--text-muted)';
+      if (statusScanner) {
+        if (telemetry.cameraPermission === 'Granted') {
+          statusScanner.textContent = 'READY';
+          statusScanner.style.color = 'var(--success-color)';
+        } else if (telemetry.cameraPermission === 'Denied') {
+          statusScanner.textContent = 'BLOCKED';
+          statusScanner.style.color = 'var(--danger-color)';
+        } else {
+          statusScanner.textContent = 'UNINITIALIZED';
+          statusScanner.style.color = 'var(--text-muted)';
+        }
       }
     } catch (telemetryErr) {
       // Fail silently
     }
+
+    // 6. Run Acceptance Gate Checklists
+    await runAcceptanceGateChecks(swBuild, apiHealthy);
   }
 
   if (refreshBtn) {

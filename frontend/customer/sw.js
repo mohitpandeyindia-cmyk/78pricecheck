@@ -1,4 +1,4 @@
-const CACHE_NAME = '78pricecheck-202607141619';
+const CACHE_NAME = '78pricecheck-202607141635';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS_TO_CACHE = [
   './js/customer.js',
   './js/build-env.js',
   './js/libs/html5-qrcode.min.js',
+  './js/smoke-tests.js',
   './assets/logo.png',
   './assets/mascot.png',
   './manifest.json'

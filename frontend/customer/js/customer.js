@@ -1612,3 +1612,10 @@ if ('serviceWorker' in navigator) {
     }
   }
 }
+
+// Load Runtime Smoke Tests if requested in the URL
+if (window.location.search.includes('smoke=true')) {
+  const script = document.createElement('script');
+  script.src = 'js/smoke-tests.js';
+  document.body.appendChild(script);
+}
