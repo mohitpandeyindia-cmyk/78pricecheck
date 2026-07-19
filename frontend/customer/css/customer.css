@@ -289,27 +289,33 @@ html, body {
 
 /* Row 3: Scan button size requirements */
 .welcome-scan-btn {
-  width: 94%;
-  height: 76px;
+  width: 91%;
+  height: 90%;
   border-radius: 24px;
-  background-color: var(--success-color);
+  background-color: #2e7d32;
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.05rem, 3vh, 1.3rem);
+  font-size: clamp(1.2rem, 3.5vh, 1.55rem);
   font-weight: 800;
+  text-transform: uppercase;
   border: none;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
+  box-shadow: 0 6px 18px rgba(46, 125, 50, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
-  letter-spacing: 1px;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  letter-spacing: 1.5px;
+  outline: none;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.welcome-scan-btn:hover {
+  background-color: #25632a;
 }
 
 .welcome-scan-btn:active {
-  transform: scale(0.96) !important;
-  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
+  transform: scale(0.975) !important;
+  box-shadow: 0 3px 8px rgba(46, 125, 50, 0.15);
 }
 
 /* Ripple effect container styles */
