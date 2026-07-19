@@ -167,7 +167,7 @@ html, body {
   justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 0 var(--space-4);
+  padding: 0;
 }
 
 #welcome-row-3 {
@@ -231,45 +231,60 @@ html, body {
 }
 
 /* Row 2: Brand Identity inside wireframe */
+.brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-title-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .brand-seventy {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.1rem, 3.2vh, 1.5rem);
-  font-weight: 800;
+  font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+  font-weight: 500;
   color: var(--brand-orange);
   letter-spacing: 2px;
+  text-transform: uppercase;
   line-height: 1.0;
-  margin-bottom: 2px;
 }
 
 .brand-eight {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.1rem, 3.2vh, 1.5rem);
-  font-weight: 800;
-  color: #fbc02d;
+  font-size: clamp(1.2rem, 3.5vw, 1.5rem);
+  font-weight: 500;
+  color: var(--brand-yellow);
   letter-spacing: 2px;
+  text-transform: uppercase;
   line-height: 1.0;
-  margin-bottom: 8px;
 }
 
 .brand-hero {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(2.4rem, 7.5vh, 3.4rem);
-  font-weight: 800;
-  color: #212121;
-  letter-spacing: -1px;
-  line-height: 1.0;
+  font-size: clamp(2.4rem, 8vw, 3.2rem);
+  font-weight: 700;
+  color: var(--brand-green);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
   margin: 0;
 }
 
 .brand-tagline {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(0.7rem, 2vh, 0.85rem);
+  font-size: clamp(0.8rem, 2.5vw, 0.95rem);
   font-weight: 400;
-  color: var(--text-muted);
-  letter-spacing: 1px;
+  color: #888888;
+  letter-spacing: 1.5px;
   text-transform: lowercase;
-  margin-top: 6px;
-  margin-bottom: 20px; /* Spacing above CTA row */
+  margin-top: 10px;
+  line-height: 1.0;
 }
 
 /* Row 3: Scan button size requirements */
