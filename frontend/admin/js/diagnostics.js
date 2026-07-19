@@ -262,6 +262,59 @@ document.addEventListener('DOMContentLoaded', () => {
           statusScanner.style.color = 'var(--text-muted)';
         }
       }
+      
+      // Populate pipeline instrumentation elements
+      const pipeBarcode = document.getElementById('pipe-barcode');
+      const pipeUnicode = document.getElementById('pipe-unicode');
+      const pipeUrl = document.getElementById('pipe-url');
+      const pipeStatus = document.getElementById('pipe-status');
+      const pipeHeaders = document.getElementById('pipe-headers');
+      const pipeBody = document.getElementById('pipe-body');
+      const pipeErrorSection = document.getElementById('pipe-error-section');
+      const pipeErrorText = document.getElementById('pipe-error-text');
+
+      if (pipeBarcode) pipeBarcode.textContent = telemetry.lastInspectedBarcode || '-';
+      if (pipeUnicode) {
+        if (telemetry.lastInspectedBarcodeUnicode) {
+          pipeUnicode.textContent = `Length: ${telemetry.lastInspectedBarcodeLength || 0} | Points: ${telemetry.lastInspectedBarcodeUnicode}`;
+        } else {
+          pipeUnicode.textContent = '-';
+        }
+      }
+      if (pipeUrl) {
+        if (telemetry.lastLookupUrl) {
+          pipeUrl.textContent = `${telemetry.lastLookupMethod || 'GET'} ${telemetry.lastLookupUrl}`;
+        } else {
+          pipeUrl.textContent = '-';
+        }
+      }
+      if (pipeStatus) {
+        const stat = telemetry.lastLookupStatus;
+        pipeStatus.textContent = stat || '-';
+        if (stat === 200 || stat === '200') {
+          pipeStatus.style.color = 'var(--success-color)';
+        } else if (stat && stat !== 'Pending...') {
+          pipeStatus.style.color = 'var(--danger-color)';
+        } else {
+          pipeStatus.style.color = '';
+        }
+      }
+      if (pipeHeaders) pipeHeaders.textContent = telemetry.lastLookupHeaders || '-';
+      if (pipeBody) pipeBody.textContent = telemetry.lastLookupRawBody || '-';
+      
+      const hasError = telemetry.lastLookupError || telemetry.lastLookupJsonError || telemetry.lastLookupStack;
+      if (pipeErrorSection && pipeErrorText) {
+        if (hasError) {
+          let errText = '';
+          if (telemetry.lastLookupError) errText += `Fetch Error: ${telemetry.lastLookupError}\n`;
+          if (telemetry.lastLookupJsonError) errText += `JSON Parsing Error: ${telemetry.lastLookupJsonError}\n`;
+          if (telemetry.lastLookupStack) errText += `Stack Trace:\n${telemetry.lastLookupStack}\n`;
+          pipeErrorText.textContent = errText;
+          pipeErrorSection.style.display = 'block';
+        } else {
+          pipeErrorSection.style.display = 'none';
+        }
+      }
     } catch (telemetryErr) {
       // Fail silently
     }

@@ -323,6 +323,13 @@ const CameraManager = {
                  
     this.config = {
       fps: 15,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128
+      ],
       qrbox: (width, height) => {
         let boxWidth = Math.round(width * 0.80);
         if (boxWidth < 280) boxWidth = 280;
@@ -425,10 +432,24 @@ const CameraManager = {
     oldDebugs.forEach(el => el.remove());
     
     try {
+      // Build dynamic scanning configuration
+      const scanConfig = {
+        fps: this.config.fps,
+        formatsToSupport: this.config.formatsToSupport
+      };
+      
       if (this.isIOS) {
-        console.log('[CameraManager] iOS device detected. Bypassing enumeration.');
-        await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+        console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
+        // Request HD ideal constraints on iOS
+        const iosConstraints = {
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        };
+        // Disable qrbox on iOS so the decoder scans the full frame
+        await this.html5Qrcode.start(iosConstraints, scanConfig, onBarcodeDecoded, onBarcodeScanError);
       } else {
+        scanConfig.qrbox = this.config.qrbox;
         let cameraIdToUse = null;
         try {
           const devices = await Html5Qrcode.getCameras();
@@ -444,7 +465,7 @@ const CameraManager = {
         }
         
         const cameraArg = cameraIdToUse ? cameraIdToUse : { facingMode: "environment" };
-        await this.html5Qrcode.start(cameraArg, this.config, onBarcodeDecoded, onBarcodeScanError);
+        await this.html5Qrcode.start(cameraArg, scanConfig, onBarcodeDecoded, onBarcodeScanError);
       }
       
       this.state = 'READY';
@@ -466,8 +487,17 @@ const CameraManager = {
       
     } catch (err) {
       console.warn('[CameraManager] Main camera start path failed, attempting fallback...', err);
+      
+      const fallbackConfig = {
+        fps: this.config.fps,
+        formatsToSupport: this.config.formatsToSupport
+      };
+      if (!this.isIOS) {
+        fallbackConfig.qrbox = this.config.qrbox;
+      }
+      
       try {
-        await this.html5Qrcode.start({ facingMode: "environment" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+        await this.html5Qrcode.start({ facingMode: "environment" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
         this.state = 'READY';
         saveDiagnosticsTelemetry({ 
           cameraStartupTime: Math.round(performance.now() - cameraStartTime),
@@ -479,7 +509,7 @@ const CameraManager = {
       } catch (err2) {
         console.warn('[CameraManager] Fallback environment camera failed, trying user camera...', err2);
         try {
-          await this.html5Qrcode.start({ facingMode: "user" }, this.config, onBarcodeDecoded, onBarcodeScanError);
+          await this.html5Qrcode.start({ facingMode: "user" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
           saveDiagnosticsTelemetry({ 
             cameraStartupTime: Math.round(performance.now() - cameraStartTime),
@@ -517,42 +547,74 @@ const CameraManager = {
   applyFocusConstraints() {
     try {
       const video = document.querySelector('#reader video');
-      if (video && video.srcObject) {
-        this.activeTrack = video.srcObject.getVideoTracks()[0];
-        if (this.activeTrack) {
-          const label = this.activeTrack.label || 'Camera Stream';
-          let resolution = 'Unknown';
-          let hasTorch = 'Not Supported';
-          
-          if (typeof this.activeTrack.getSettings === 'function') {
-            const settings = this.activeTrack.getSettings();
-            if (settings.width && settings.height) {
-              resolution = `${settings.width} × ${settings.height}`;
+      if (video) {
+        const checkTrack = () => {
+          if (!video.srcObject) return;
+          this.activeTrack = video.srcObject.getVideoTracks()[0];
+          if (this.activeTrack) {
+            const label = this.activeTrack.label || 'Camera Stream';
+            let resolution = 'Unknown';
+            let hasTorch = 'Not Supported';
+            
+            if (typeof this.activeTrack.getSettings === 'function') {
+              const settings = this.activeTrack.getSettings();
+              console.log('[CameraManager] Deployed Video Track Settings:', JSON.stringify(settings));
+              if (settings.width && settings.height) {
+                resolution = `${settings.width} × ${settings.height}`;
+              }
+            }
+            
+            if (typeof this.activeTrack.getCapabilities === 'function') {
+              const capabilities = this.activeTrack.getCapabilities();
+              console.log('[CameraManager] Deployed Video Track Capabilities:', JSON.stringify(capabilities));
+              if (capabilities.torch) {
+                hasTorch = 'Supported';
+              }
+            }
+            
+            saveDiagnosticsTelemetry({
+              cameraLabel: label,
+              cameraResolution: resolution,
+              cameraTorch: hasTorch
+            });
+            
+            if (this.isIOS) {
+              // Manually adjust visual viewfinder brackets on iOS where qrbox cropping is disabled
+              const reader = document.getElementById('reader');
+              if (reader) {
+                const domWidth = reader.clientWidth;
+                const domHeight = reader.clientHeight;
+                let boxWidth = Math.round(domWidth * 0.80);
+                if (boxWidth < 280) boxWidth = 280;
+                if (boxWidth > 450) boxWidth = 450;
+                let boxHeight = Math.round(boxWidth / 2.2);
+                
+                const brackets = document.querySelector('.scanner-brackets');
+                if (brackets) {
+                  brackets.style.width = `${boxWidth}px`;
+                  brackets.style.height = `${boxHeight}px`;
+                  console.log(`[CameraManager] Visual brackets adjusted for iOS: ${boxWidth}px × ${boxHeight}px`);
+                }
+              }
+            }
+            
+            if (typeof this.activeTrack.getCapabilities === 'function') {
+              const capabilities = this.activeTrack.getCapabilities();
+              if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+                this.activeTrack.applyConstraints({
+                  advanced: [{ focusMode: 'continuous' }]
+                }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
+              }
             }
           }
-          
-          if (typeof this.activeTrack.getCapabilities === 'function') {
-            const capabilities = this.activeTrack.getCapabilities();
-            if (capabilities.torch) {
-              hasTorch = 'Supported';
-            }
-          }
-          
-          saveDiagnosticsTelemetry({
-            cameraLabel: label,
-            cameraResolution: resolution,
-            cameraTorch: hasTorch
-          });
-          
-          if (typeof this.activeTrack.getCapabilities === 'function') {
-            const capabilities = this.activeTrack.getCapabilities();
-            if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-              this.activeTrack.applyConstraints({
-                advanced: [{ focusMode: 'continuous' }]
-              }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
-            }
-          }
-        }
+        };
+        
+        // Execute immediately
+        checkTrack();
+        // Also bind to play event to ensure we log correctly after layout settles
+        video.addEventListener('playing', checkTrack, { once: true });
+        // Fail-safe timeout
+        setTimeout(checkTrack, 500);
       }
     } catch (focusErr) {
       console.warn('[CameraManager] Autofocus track capabilities validation failed:', focusErr);
@@ -954,8 +1016,71 @@ async function lookupBarcode(barcode) {
     StateManager.transitionTo('LOOKUP');
   }
   
+  // Barcode character and Unicode points inspection
+  const inspectPlatform = /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'iOS' : 'Android/Desktop';
+  const inspectBarcodeString = (bc, platform) => {
+    if (typeof bc !== 'string') return;
+    const len = bc.length;
+    const pts = [];
+    for (let i = 0; i < len; i++) {
+      pts.push(`U+${bc.charCodeAt(i).toString(16).padStart(4, '0')}`);
+    }
+    console.log(`[LookupPipeline] [${platform}] Decoded Barcode: "${bc}" (Length: ${bc.length})`);
+    console.log(`[LookupPipeline] [${platform}] Unicode points: ${pts.join(', ')}`);
+    saveDiagnosticsTelemetry({
+      lastInspectedBarcode: bc,
+      lastInspectedBarcodeLength: len,
+      lastInspectedBarcodeUnicode: pts.join(', ')
+    });
+  };
+  inspectBarcodeString(barcode, inspectPlatform);
+
+  const lookupUrl = `/api/products/lookup/${encodeURIComponent(barcode)}`;
+  console.log(`[LookupPipeline] URL before fetch: "${lookupUrl}"`);
+  console.log(`[LookupPipeline] HTTP Method: GET`);
+  
+  saveDiagnosticsTelemetry({
+    lastLookupUrl: lookupUrl,
+    lastLookupMethod: 'GET',
+    lastLookupStatus: 'Pending...',
+    lastLookupHeaders: '',
+    lastLookupRawBody: '',
+    lastLookupError: '',
+    lastLookupJsonError: '',
+    lastLookupStack: ''
+  });
+
   try {
-    const response = await fetch(`/api/products/lookup/${barcode}`);
+    console.log(`[LookupPipeline] Sending Network Request...`);
+    const response = await fetch(lookupUrl);
+    console.log(`[LookupPipeline] Network Request completed. Status: ${response.status}`);
+    
+    const headersObj = {};
+    response.headers.forEach((val, key) => {
+      headersObj[key] = val;
+    });
+    console.log(`[LookupPipeline] Response Headers:`, JSON.stringify(headersObj));
+    
+    saveDiagnosticsTelemetry({
+      lastLookupStatus: response.status,
+      lastLookupHeaders: JSON.stringify(headersObj)
+    });
+    
+    let rawText = '';
+    try {
+      rawText = await response.text();
+      console.log(`[LookupPipeline] Raw Response Body:`, rawText);
+      saveDiagnosticsTelemetry({
+        lastLookupRawBody: rawText.substring(0, 1000)
+      });
+    } catch (readErr) {
+      console.error(`[LookupPipeline] Failed to read raw response text:`, readErr);
+      saveDiagnosticsTelemetry({
+        lastLookupRawBody: `Error reading body: ${readErr.message}`
+      });
+      throw readErr;
+    }
+
     const apiEnd = Date.now();
     lastApiDuration = apiEnd - apiStart;
     saveDiagnosticsTelemetry({ avgScanTime: lastApiDuration });
@@ -969,7 +1094,17 @@ async function lookupBarcode(barcode) {
       const renderStart = Date.now();
       
       if (response.status === 200) {
-        const data = await response.json();
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (jsonErr) {
+          console.error(`[LookupPipeline] JSON Parsing Failed! Raw Text: "${rawText}"`, jsonErr);
+          saveDiagnosticsTelemetry({
+            lastLookupJsonError: jsonErr.message
+          });
+          handleLookupFailure();
+          return;
+        }
         
         // Remove old details layout styles
         if (singleState) singleState.classList.remove('replacing');
@@ -1128,13 +1263,19 @@ async function lookupBarcode(barcode) {
           }, 1000);
         }
       } else {
-        // Recovery trigger: handle bad responses
+        console.warn(`[LookupPipeline] Non-200 Response status: ${response.status}. Raw content:`, rawText);
         handleLookupFailure();
       }
     }, 150);
     
   } catch (err) {
-    if (DEBUG_MODE) console.error('[DEBUG] Lookup fetch error:', err);
+    console.error(`[LookupPipeline] Fetch Rejected Exception:`, err);
+    console.error(`[LookupPipeline] Stack Trace:`, err.stack);
+    saveDiagnosticsTelemetry({
+      lastLookupStatus: 'REJECTED',
+      lastLookupError: err.message,
+      lastLookupStack: err.stack
+    });
     handleLookupFailure();
   }
 }
