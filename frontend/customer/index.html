@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607141619";</script>
+  <script>window.HTML_BUILD = "202607191952";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -17,27 +17,35 @@
     
     <!-- State A: Welcome View -->
     <div id="welcome-view" class="welcome-container">
-      <div class="brand-ribbon-container">
+      <!-- SECTION 1 — Brand Ribbon -->
+      <div class="brand-ribbon-section">
         <img src="assets/logo.png" alt="78 Supermaart Ribbon" class="brand-ribbon-img">
       </div>
       
-      <div class="welcome-content-body">
-        <div class="greeting-container">
-          <span class="greeting-namaste">नमस्ते</span>
-          <span class="greeting-kanpur">कानपुर</span>
-        </div>
-        
-        <div class="product-identity">
-          <h1 class="product-title">78 PriceCheck</h1>
-          <span class="product-subtitle">A Smart Service</span>
-        </div>
-        
-        <div class="welcome-scan-btn-wrapper">
-          <button id="start-scan-btn" class="welcome-scan-btn">TAP TO SCAN</button>
-        </div>
+      <!-- SECTION 2 — Brand Identity -->
+      <div class="brand-identity-section">
+        <div class="brand-seventy">SEVENTY</div>
+        <div class="brand-eight">EIGHT</div>
+        <h1 class="brand-hero">PriceCheck</h1>
+        <div class="brand-tagline">a smart service</div>
       </div>
       
-      <div class="welcome-mascot-container">
+      <!-- SECTION 3 — CTA -->
+      <div class="cta-section">
+        <button id="start-scan-btn" class="welcome-scan-btn">
+          <span>TAP TO SCAN</span>
+          <svg class="scan-btn-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+            <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+            <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+            <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+            <line x1="3" y1="12" x2="21" y2="12" stroke="#ffffff" stroke-width="2.5"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- SECTION 4 — Mascot -->
+      <div class="mascot-section">
         <img class="welcome-mascot" src="assets/mascot.png" alt="78 Mascot">
       </div>
     </div>

@@ -110,11 +110,12 @@ html, body {
   align-items: center;
   height: 100%;
   width: 100%;
-  padding: 0;
+  padding: env(safe-area-inset-top, 15px) 0 env(safe-area-inset-bottom, 15px) 0;
   margin: 0;
-  background: radial-gradient(circle at top, #f4fbf7 0%, var(--bg-light) 75%);
+  background: #ffffff;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   animation: welcome-fade-in 0.4s ease-out forwards;
 }
@@ -128,149 +129,137 @@ html, body {
   }
 }
 
-.brand-ribbon-container {
-  width: 100vw;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
+/* SECTION 1 — Brand Ribbon */
+.brand-ribbon-section {
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow: hidden;
+  padding-top: clamp(10px, 2.5vh, 25px);
+  box-sizing: border-box;
 }
 
 .brand-ribbon-img {
   width: 100%;
   height: auto;
-  max-height: 25dvh;
+  max-height: clamp(80px, 15vh, 120px);
   object-fit: contain;
   display: block;
 }
 
-.welcome-content-body {
-  flex: 1;
+/* SECTION 2 — Brand Identity */
+.brand-identity-section {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
-  width: 100%;
-  max-width: 480px;
-  padding: var(--space-2) var(--space-4) 0 var(--space-4);
-  box-sizing: border-box;
-  z-index: 10;
-}
-
-/* Greeting (Hindi & Calligraphic Kanpur) */
-.greeting-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: var(--space-1);
-}
-
-.greeting-namaste {
-  font-family: 'Kalam', cursive, sans-serif;
-  font-size: clamp(2.4rem, 7vw, 3.6rem);
-  font-weight: 700;
-  color: #e65100; /* Rich saffron/reddish-orange */
-  -webkit-text-stroke: 1.5px #5d001e; /* Dark maroon stroke */
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  line-height: 1.0;
-  margin-bottom: 4px;
-}
-
-.greeting-kanpur {
-  font-family: 'Kalam', cursive, sans-serif;
-  font-size: clamp(1.6rem, 5vw, 2.4rem);
-  font-weight: 700;
-  color: #e65100; /* Rich saffron */
-  -webkit-text-stroke: 1.2px #5d001e; /* Dark maroon stroke */
-  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
-  line-height: 1.0;
-}
-
-/* Product Identity */
-.product-identity {
   text-align: center;
-  margin-top: var(--space-2);
-}
-
-.product-title {
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.8rem, 5.5vw, 2.4rem);
-  font-weight: 800;
-  color: #212121; /* Dark charcoal */
-  letter-spacing: -0.5px;
-  margin: 0;
-  line-height: 1.2;
-}
-
-.product-subtitle {
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
-  font-weight: 500;
-  color: #757575; /* Grey */
-  margin-top: 6px;
-  letter-spacing: 0.5px;
-  display: block;
-}
-
-/* Primary Action Button & Wrapper */
-.welcome-scan-btn-wrapper {
+  padding: clamp(8px, 2vh, 20px) 0;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.brand-seventy {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 800;
+  color: var(--brand-orange); /* Reddish orange */
+  letter-spacing: 2px;
+  line-height: 1.0;
+  margin-bottom: 2px;
+}
+
+.brand-eight {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 800;
+  color: #fbc02d; /* Bright yellow */
+  letter-spacing: 2px;
+  line-height: 1.0;
+  margin-bottom: 12px;
+}
+
+.brand-hero {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(2.4rem, 8vw, 3.2rem);
+  font-weight: 800;
+  color: #212121; /* Hero Text */
+  letter-spacing: -1px;
+  line-height: 1.0;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.brand-tagline {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+  font-weight: 400;
+  color: var(--text-muted); /* grey, light weight */
+  letter-spacing: 1px;
+  text-transform: lowercase;
+  margin-top: 8px;
+  margin-bottom: clamp(5px, 1.5vh, 15px);
+}
+
+/* SECTION 3 — CTA */
+.cta-section {
+  width: 100%;
+  max-width: 440px;
+  padding: 0 clamp(20px, 5vw, 30px);
+  margin: clamp(10px, 2.5vh, 25px) 0;
   display: flex;
   justify-content: center;
-  align-items: center;
-  animation: button-breathe 5.5s infinite ease-in-out;
-  margin-top: var(--space-2);
-}
-
-@keyframes button-breathe {
-  0%, 100% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.01);
-  }
-  55% {
-    transform: scale(1);
-  }
+  box-sizing: border-box;
 }
 
 .welcome-scan-btn {
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: clamp(60px, 8vh, 64px);
-  border-radius: 19px;
-  background-color: var(--primary-color); /* Deep supermarket green */
+  height: clamp(56px, 7.5vh, 64px);
+  border-radius: clamp(16px, 2.2vh, 20px);
+  background-color: var(--success-color); /* Supermarket green */
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-size: var(--text-md);
+  font-size: clamp(0.95rem, 3vw, 1.1rem);
   font-weight: 700;
   border: none;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(27, 94, 32, 0.15);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
   letter-spacing: 0.5px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+  animation: button-pulse 3s infinite ease-in-out;
+}
+
+@keyframes button-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 12px 32px rgba(46, 125, 50, 0.35);
+  }
+}
+
+.welcome-scan-btn:hover {
+  background-color: var(--primary-hover);
+  box-shadow: 0 12px 28px rgba(20, 68, 23, 0.35);
 }
 
 .welcome-scan-btn:active {
-  transform: scale(0.98);
-  box-shadow: 0 3px 8px rgba(27, 94, 32, 0.1);
+  transform: scale(0.96) !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.15);
 }
 
 /* Ripple effect container styles */
 .ripple-effect {
   position: absolute;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.3);
   transform: scale(0);
   animation: ripple-animation 0.4s linear;
   pointer-events: none;
@@ -283,8 +272,8 @@ html, body {
   }
 }
 
-/* Mascot Container Layout */
-.welcome-mascot-container {
+/* SECTION 4 — Mascot */
+.mascot-section {
   width: 100%;
   display: flex;
   align-items: flex-end;
@@ -292,11 +281,12 @@ html, body {
   margin-top: auto;
   line-height: 0;
   z-index: 5;
+  box-sizing: border-box;
 }
 
 .welcome-mascot {
   width: 100%;
-  max-width: clamp(280px, 85vw, 420px);
+  max-width: clamp(260px, 75vw, 360px);
   height: auto;
   object-fit: contain;
   vertical-align: bottom;
