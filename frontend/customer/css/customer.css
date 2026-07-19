@@ -118,7 +118,7 @@ html, body {
 .welcome-layout {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, 1.8fr) minmax(0, 1.8fr) minmax(0, 1.2fr) minmax(0, 1.6fr);
+  grid-template-rows: minmax(0, 1.6fr) minmax(0, 1.6fr) minmax(0, 1.3fr) minmax(0, 1.9fr);
   width: 100%;
   height: 100%;
   box-sizing: border-box;
