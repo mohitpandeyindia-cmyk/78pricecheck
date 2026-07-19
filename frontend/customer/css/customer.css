@@ -118,7 +118,7 @@ html, body {
 .welcome-layout {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1.8fr 1.8fr 1.2fr 1.6fr;
+  grid-template-rows: minmax(0, 1.8fr) minmax(0, 1.8fr) minmax(0, 1.2fr) minmax(0, 1.6fr);
   width: 100%;
   height: 100%;
   box-sizing: border-box;
@@ -182,7 +182,19 @@ html, body {
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: env(safe-area-inset-bottom, 0px);
+  margin-bottom: 0;
+  padding: 0;
+  position: relative;
+}
+
+.welcome-mascot {
+  width: 98%;
+  height: auto;
+  max-height: 120%;
+  object-fit: contain;
+  display: block;
+  border: none;
+  margin: 0;
 }
 
 /* Wireframe Placeholder Colors */
