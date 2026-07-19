@@ -106,14 +106,14 @@ html, body {
 .welcome-container {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 14vh 20vh 14vh 1fr;
+  grid-template-rows: 1fr 1.4fr 1.2fr 2.8fr;
   width: 100%;
   height: 100dvh;
   padding: 0;
   margin: 0;
   background: #ffffff;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
   position: relative;
   animation: welcome-fade-in 0.4s ease-out forwards;
 }
@@ -130,14 +130,40 @@ html, body {
 .welcome-row {
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+}
+
+/* Individual Row Alignment Control */
+#welcome-row-1 {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
+#welcome-row-2 {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  box-sizing: border-box;
-  overflow: hidden;
-  padding: 0;
-  margin: 0;
+  text-align: center;
+  padding: 0 var(--space-4);
+}
+
+#welcome-row-3 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#welcome-row-4 {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Wireframe Placeholder Colors */
@@ -176,7 +202,7 @@ html, body {
 /* Row 2: Brand Identity inside wireframe */
 .brand-seventy {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1rem, 3.2vh, 1.4rem);
+  font-size: clamp(1.1rem, 3.2vh, 1.5rem);
   font-weight: 800;
   color: var(--brand-orange);
   letter-spacing: 2px;
@@ -186,7 +212,7 @@ html, body {
 
 .brand-eight {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1rem, 3.2vh, 1.4rem);
+  font-size: clamp(1.1rem, 3.2vh, 1.5rem);
   font-weight: 800;
   color: #fbc02d;
   letter-spacing: 2px;
@@ -196,7 +222,7 @@ html, body {
 
 .brand-hero {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(2.2rem, 7vh, 3.2rem);
+  font-size: clamp(2.4rem, 7.5vh, 3.4rem);
   font-weight: 800;
   color: #212121;
   letter-spacing: -1px;
@@ -206,27 +232,28 @@ html, body {
 
 .brand-tagline {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(0.7rem, 2vh, 0.8rem);
+  font-size: clamp(0.7rem, 2vh, 0.85rem);
   font-weight: 400;
   color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: lowercase;
   margin-top: 6px;
+  margin-bottom: 20px; /* Spacing above CTA row */
 }
 
 /* Row 3: Scan button size requirements */
 .welcome-scan-btn {
-  width: 92%;
-  height: 72px;
-  border-radius: 22px;
+  width: 94%;
+  height: 76px;
+  border-radius: 24px;
   background-color: var(--success-color);
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1rem, 3vh, 1.2rem);
+  font-size: clamp(1.05rem, 3vh, 1.3rem);
   font-weight: 800;
   border: none;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.2);
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
