@@ -105,7 +105,7 @@ html, body {
 /* Welcome Page Layout */
 .welcome-container {
   display: grid;
-  grid-template-rows: 18vh 22vh 16vh 44vh;
+  grid-template-rows: 18vh 22vh 16vh 1fr;
   grid-template-columns: 100%;
   height: 100dvh;
   width: 100%;
@@ -127,43 +127,58 @@ html, body {
   }
 }
 
-/* SECTION 1 — Brand Ribbon */
-.brand-ribbon-section {
+.welcome-row {
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 10px);
-}
-
-.brand-ribbon-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* SECTION 2 — Brand Identity */
-.brand-identity-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  height: 100%;
-  width: 100%;
-  text-align: center;
+  align-items: center;
   box-sizing: border-box;
-  padding: 0 var(--space-4);
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
 }
 
+/* Wireframe Placeholder Colors */
+.row-red {
+  background-color: #ffeaea;
+  border: 3px dashed #f44336;
+  color: #d32f2f;
+  font-weight: 700;
+}
+
+.row-blue {
+  background-color: #e8f4fd;
+  border: 3px dashed #2196f3;
+  color: #0b7dda;
+}
+
+.row-green {
+  background-color: #e8f8f5;
+  border: 3px dashed #2ec4b6;
+}
+
+.row-yellow {
+  background-color: #fef9e7;
+  border: 3px dashed #f1c40f;
+  color: #d4ac0d;
+  font-weight: 700;
+}
+
+.wireframe-label {
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(0.9rem, 2.5vh, 1.2rem);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Row 2: Brand Identity inside wireframe */
 .brand-seventy {
   font-family: 'Poppins', sans-serif;
   font-size: clamp(1rem, 3.2vh, 1.4rem);
   font-weight: 800;
-  color: var(--brand-orange); /* Reddish orange */
+  color: var(--brand-orange);
   letter-spacing: 2px;
   line-height: 1.0;
   margin-bottom: 2px;
@@ -173,7 +188,7 @@ html, body {
   font-family: 'Poppins', sans-serif;
   font-size: clamp(1rem, 3.2vh, 1.4rem);
   font-weight: 800;
-  color: #fbc02d; /* Bright yellow */
+  color: #fbc02d;
   letter-spacing: 2px;
   line-height: 1.0;
   margin-bottom: 8px;
@@ -183,7 +198,7 @@ html, body {
   font-family: 'Poppins', sans-serif;
   font-size: clamp(2.2rem, 7vh, 3.2rem);
   font-weight: 800;
-  color: #212121; /* Hero Text */
+  color: #212121;
   letter-spacing: -1px;
   line-height: 1.0;
   margin: 0;
@@ -193,60 +208,30 @@ html, body {
   font-family: 'Outfit', sans-serif;
   font-size: clamp(0.7rem, 2vh, 0.8rem);
   font-weight: 400;
-  color: var(--text-muted); /* grey, light weight */
+  color: var(--text-muted);
   letter-spacing: 1px;
   text-transform: lowercase;
   margin-top: 6px;
 }
 
-/* SECTION 3 — CTA */
-.cta-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  width: 100%;
-  padding: 0 clamp(16px, 4vw, 24px);
-  box-sizing: border-box;
-}
-
+/* Row 3: Scan button size requirements */
 .welcome-scan-btn {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: clamp(56px, 8.5vh, 64px);
-  border-radius: clamp(14px, 2.2vh, 18px);
-  background-color: var(--success-color); /* Supermarket green */
+  width: 92%;
+  height: 72px;
+  border-radius: 22px;
+  background-color: var(--success-color);
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(0.95rem, 2.8vh, 1.1rem);
-  font-weight: 700;
+  font-size: clamp(1rem, 3vh, 1.2rem);
+  font-weight: 800;
   border: none;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
+  box-shadow: 0 8px 24px rgba(46, 125, 50, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  letter-spacing: 0.5px;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease;
-  animation: button-pulse 3s infinite ease-in-out;
-}
-
-@keyframes button-pulse {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 8px 24px rgba(46, 125, 50, 0.22);
-  }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 12px 32px rgba(46, 125, 50, 0.35);
-  }
-}
-
-.welcome-scan-btn:hover {
-  background-color: var(--primary-hover);
-  box-shadow: 0 12px 28px rgba(20, 68, 23, 0.35);
+  letter-spacing: 1px;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
 .welcome-scan-btn:active {
@@ -269,26 +254,6 @@ html, body {
     transform: scale(4);
     opacity: 0;
   }
-}
-
-/* SECTION 4 — Mascot */
-.mascot-section {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  margin-top: auto;
-  line-height: 0;
-  z-index: 5;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-
-.welcome-mascot {
-  width: 100%;
-  height: auto;
-  display: block;
 }
 
 /* Camera Opening Loading State Card */
