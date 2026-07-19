@@ -185,12 +185,13 @@ html, body {
   margin-bottom: 0;
   padding: 0;
   position: relative;
+  overflow: hidden;
 }
 
 .welcome-mascot {
   width: 98%;
   height: auto;
-  max-height: 120%;
+  max-height: 100%;
   object-fit: contain;
   display: block;
   border: none;
@@ -241,7 +242,7 @@ html, body {
 
 .brand-seventy {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.9rem, 5.5vw, 2.3rem);
+  font-size: clamp(2.1rem, 6.2vw, 2.6rem);
   font-weight: 700;
   color: var(--brand-orange);
   letter-spacing: 2px;
@@ -252,7 +253,7 @@ html, body {
 
 .brand-eight {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.9rem, 5.5vw, 2.3rem);
+  font-size: clamp(2.1rem, 6.2vw, 2.6rem);
   font-weight: 700;
   color: var(--brand-yellow);
   letter-spacing: 2px;
@@ -263,7 +264,7 @@ html, body {
 
 .brand-hero {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(3.6rem, 10.5vw, 4.3rem);
+  font-size: clamp(3.1rem, 9.2vw, 3.7rem);
   font-weight: 800;
   color: var(--brand-green);
   letter-spacing: -0.5px;
@@ -292,7 +293,6 @@ html, body {
   font-family: 'Poppins', sans-serif;
   font-size: clamp(1.2rem, 3.5vh, 1.55rem);
   font-weight: 800;
-  text-transform: uppercase;
   border: none;
   cursor: pointer;
   box-shadow: 0 6px 18px rgba(46, 125, 50, 0.22);
