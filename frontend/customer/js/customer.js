@@ -440,14 +440,14 @@ const CameraManager = {
       
       if (this.isIOS) {
         console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
-        // Request HD ideal constraints on iOS
-        const iosConstraints = {
+        // Request HD ideal constraints on iOS within videoConstraints configuration object
+        scanConfig.videoConstraints = {
           facingMode: "environment",
           width: { ideal: 1280 },
           height: { ideal: 720 }
         };
         // Disable qrbox on iOS so the decoder scans the full frame
-        await this.html5Qrcode.start(iosConstraints, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        await this.html5Qrcode.start({ facingMode: "environment" }, scanConfig, onBarcodeDecoded, onBarcodeScanError);
       } else {
         scanConfig.qrbox = this.config.qrbox;
         let cameraIdToUse = null;
@@ -497,6 +497,9 @@ const CameraManager = {
       }
       
       try {
+        // Recreate Html5Qrcode to clear any stuck internal state
+        this.html5Qrcode = new Html5Qrcode("reader");
+        
         await this.html5Qrcode.start({ facingMode: "environment" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
         this.state = 'READY';
         saveDiagnosticsTelemetry({ 
@@ -509,6 +512,9 @@ const CameraManager = {
       } catch (err2) {
         console.warn('[CameraManager] Fallback environment camera failed, trying user camera...', err2);
         try {
+          // Recreate Html5Qrcode to clear any stuck internal state
+          this.html5Qrcode = new Html5Qrcode("reader");
+          
           await this.html5Qrcode.start({ facingMode: "user" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
           saveDiagnosticsTelemetry({ 
