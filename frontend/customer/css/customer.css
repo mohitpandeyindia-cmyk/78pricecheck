@@ -104,18 +104,25 @@ html, body {
 
 /* Welcome Page Layout */
 .welcome-container {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr 1.4fr 1.2fr 2.8fr;
   width: 100%;
   height: 100dvh;
   padding: 0;
   margin: 0;
   background: #ffffff;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
   animation: welcome-fade-in 0.4s ease-out forwards;
+}
+
+.welcome-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1.4fr 1.2fr 2.8fr;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 @keyframes welcome-fade-in {
