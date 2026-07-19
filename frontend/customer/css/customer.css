@@ -104,18 +104,16 @@ html, body {
 
 /* Welcome Page Layout */
 .welcome-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-  height: 100%;
+  display: grid;
+  grid-template-rows: 18vh 22vh 16vh 44vh;
+  grid-template-columns: 100%;
+  height: 100dvh;
   width: 100%;
-  padding: env(safe-area-inset-top, 15px) 0 env(safe-area-inset-bottom, 15px) 0;
+  padding: 0;
   margin: 0;
   background: #ffffff;
   box-sizing: border-box;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   position: relative;
   animation: welcome-fade-in 0.4s ease-out forwards;
 }
@@ -132,18 +130,19 @@ html, body {
 /* SECTION 1 — Brand Ribbon */
 .brand-ribbon-section {
   width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-top: clamp(10px, 2.5vh, 25px);
+  overflow: hidden;
   box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 10px);
 }
 
 .brand-ribbon-img {
   width: 100%;
-  height: auto;
-  max-height: clamp(80px, 15vh, 120px);
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
@@ -152,15 +151,17 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  padding: clamp(8px, 2vh, 20px) 0;
+  justify-content: center;
+  height: 100%;
   width: 100%;
+  text-align: center;
   box-sizing: border-box;
+  padding: 0 var(--space-4);
 }
 
 .brand-seventy {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-size: clamp(1rem, 3.2vh, 1.4rem);
   font-weight: 800;
   color: var(--brand-orange); /* Reddish orange */
   letter-spacing: 2px;
@@ -170,44 +171,42 @@ html, body {
 
 .brand-eight {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-size: clamp(1rem, 3.2vh, 1.4rem);
   font-weight: 800;
   color: #fbc02d; /* Bright yellow */
   letter-spacing: 2px;
   line-height: 1.0;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .brand-hero {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(2.4rem, 8vw, 3.2rem);
+  font-size: clamp(2.2rem, 7vh, 3.2rem);
   font-weight: 800;
   color: #212121; /* Hero Text */
   letter-spacing: -1px;
   line-height: 1.0;
   margin: 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 .brand-tagline {
   font-family: 'Outfit', sans-serif;
-  font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+  font-size: clamp(0.7rem, 2vh, 0.8rem);
   font-weight: 400;
   color: var(--text-muted); /* grey, light weight */
   letter-spacing: 1px;
   text-transform: lowercase;
-  margin-top: 8px;
-  margin-bottom: clamp(5px, 1.5vh, 15px);
+  margin-top: 6px;
 }
 
 /* SECTION 3 — CTA */
 .cta-section {
-  width: 100%;
-  max-width: 440px;
-  padding: 0 clamp(20px, 5vw, 30px);
-  margin: clamp(10px, 2.5vh, 25px) 0;
   display: flex;
+  align-items: center;
   justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 0 clamp(16px, 4vw, 24px);
   box-sizing: border-box;
 }
 
@@ -215,12 +214,12 @@ html, body {
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: clamp(56px, 7.5vh, 64px);
-  border-radius: clamp(16px, 2.2vh, 20px);
+  height: clamp(56px, 8.5vh, 64px);
+  border-radius: clamp(14px, 2.2vh, 18px);
   background-color: var(--success-color); /* Supermarket green */
   color: #ffffff;
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(0.95rem, 3vw, 1.1rem);
+  font-size: clamp(0.95rem, 2.8vh, 1.1rem);
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -275,6 +274,7 @@ html, body {
 /* SECTION 4 — Mascot */
 .mascot-section {
   width: 100%;
+  height: 100%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -282,14 +282,12 @@ html, body {
   line-height: 0;
   z-index: 5;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .welcome-mascot {
   width: 100%;
-  max-width: clamp(260px, 75vw, 360px);
   height: auto;
-  object-fit: contain;
-  vertical-align: bottom;
   display: block;
 }
 
