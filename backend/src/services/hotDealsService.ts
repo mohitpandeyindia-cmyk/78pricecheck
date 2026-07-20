@@ -24,7 +24,7 @@ export async function refreshHotDeals(db: Database): Promise<void> {
 
     // 2. Fetch the top 20 ranked deals based on the promotional algorithm
     const topDeals = await db.all(`
-      SELECT barcode 
+      SELECT id 
       FROM products 
       ORDER BY discount_percent DESC, (mrp - sale_price) DESC, name ASC, barcode ASC 
       LIMIT 20
@@ -32,12 +32,12 @@ export async function refreshHotDeals(db: Database): Promise<void> {
 
     // 3. Insert ranked references into the precomputed cache table with 1-based position numbers
     const insertStmt = await db.prepare(
-      `INSERT INTO hot_deals (barcode, position) VALUES (?, ?)`
+      `INSERT INTO hot_deals (product_id, position) VALUES (?, ?)`
     );
 
     for (let index = 0; index < topDeals.length; index++) {
       const position = index + 1; // 1-based ranking position (1-20)
-      await insertStmt.run(topDeals[index].barcode, position);
+      await insertStmt.run(topDeals[index].id, position);
     }
 
     await insertStmt.finalize();

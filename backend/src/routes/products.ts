@@ -122,7 +122,7 @@ router.get('/products/hot-deals', async (req: Request, res: Response): Promise<v
     const deals = await db.all(
       `SELECT p.barcode, p.name, p.mrp, p.sale_price as salePrice, p.discount_percent as discountPercent
        FROM hot_deals hd
-       JOIN products p ON hd.barcode = p.barcode
+       JOIN products p ON hd.product_id = p.id
        ORDER BY hd.position ASC`
     );
     res.json({

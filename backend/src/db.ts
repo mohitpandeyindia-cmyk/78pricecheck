@@ -53,7 +53,7 @@ export async function initializeDatabase(seedData = false): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      barcode TEXT UNIQUE NOT NULL,
+      barcode TEXT NOT NULL,
       name TEXT NOT NULL,
       mrp REAL NOT NULL,
       sale_price REAL NOT NULL,
@@ -64,9 +64,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     );
 
     CREATE TABLE IF NOT EXISTS hot_deals (
-      barcode TEXT PRIMARY KEY,
+      product_id INTEGER PRIMARY KEY,
       position INTEGER NOT NULL,
-      FOREIGN KEY (barcode) REFERENCES products(barcode) ON DELETE CASCADE
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS upload_history (
