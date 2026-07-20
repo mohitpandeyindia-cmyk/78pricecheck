@@ -1869,6 +1869,10 @@ if (window.location.search.includes('smoke=true')) {
   
   if (!laserLine || !statusDot || !statusText) return;
   
+  // Keep laser line continuously moving and visible
+  laserLine.style.animationPlayState = 'running';
+  laserLine.style.display = 'block';
+  
   let lastState = null;
   
   setInterval(() => {
@@ -1877,21 +1881,15 @@ if (window.location.search.includes('smoke=true')) {
     lastState = state;
     
     if (state === 'SCANNING') {
-      laserLine.style.animationPlayState = 'running';
-      laserLine.style.display = 'block';
       statusDot.className = 'status-dot scanning';
       statusText.textContent = 'ALIGN BARCODE WITHIN THE FRAME';
     } else if (state === 'LOOKUP') {
-      laserLine.style.animationPlayState = 'paused';
       statusDot.className = 'status-dot loading';
       statusText.textContent = 'Looking up...';
     } else if (state === 'DISPLAY_RESULT') {
-      laserLine.style.animationPlayState = 'paused';
-      laserLine.style.display = 'none';
       statusDot.className = 'status-dot ready';
       statusText.textContent = 'Ready to scan';
     } else {
-      laserLine.style.animationPlayState = 'paused';
       statusDot.className = 'status-dot offline';
       statusText.textContent = 'Offline';
     }

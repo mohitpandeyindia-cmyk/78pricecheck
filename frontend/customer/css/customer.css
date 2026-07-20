@@ -588,7 +588,6 @@ html, body {
 }
 
 .scanner-brackets.flash-green .scanner-glow-line {
-  animation-play-state: paused !important;
   background: linear-gradient(90deg, rgba(76, 175, 80, 0), rgba(76, 175, 80, 1) 30%, rgba(255, 255, 255, 0.9) 50%, rgba(76, 175, 80, 1) 70%, rgba(76, 175, 80, 0));
   box-shadow: 0 0 10px 2px rgba(76, 175, 80, 0.7);
 }
