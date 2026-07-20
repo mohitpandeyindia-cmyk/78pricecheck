@@ -163,7 +163,7 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
     }
 
     const errors: { row: number; barcode: string; name: string; error: string }[] = [];
-    const validatedProducts: { barcode: string; name: string; mrp: number; salePrice: number; wholesalePrice: number | null; wholesaleQty: number | null }[] = [];
+    const validatedProducts: { barcode: string; name: string; mrp: number; salePrice: number; wholesalePrice: number | null; wholesaleQty: number | null; discountPercent: number }[] = [];
     const seenBarcodes = new Map<string, number>(); // barcode -> row index (1-based)
     
     const validationStart = Date.now();
@@ -331,7 +331,8 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
         }
       }
 
-      validatedProducts.push({ barcode, name, mrp, salePrice, wholesalePrice, wholesaleQty });
+      const discountPercent = mrp > 0 ? Math.round(((mrp - salePrice) / mrp) * 100 * 10) / 10 : 0.0;
+      validatedProducts.push({ barcode, name, mrp, salePrice, wholesalePrice, wholesaleQty, discountPercent });
     }
 
     const validationTime = Date.now() - validationStart;
@@ -382,16 +383,20 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
       await db.run('DELETE FROM products');
 
       const insertStmt = await db.prepare(
-        `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty, updated_at) 
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+        `INSERT INTO products (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty, discount_percent, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
       );
 
       for (const p of validatedProducts) {
-        await insertStmt.run(p.barcode, p.name, p.salePrice, p.mrp, p.wholesalePrice, p.wholesaleQty);
+        await insertStmt.run(p.barcode, p.name, p.salePrice, p.mrp, p.wholesalePrice, p.wholesaleQty, p.discountPercent);
       }
 
       await insertStmt.finalize();
       await db.run('COMMIT');
+
+      // Refresh the precomputed hot deals cache table after successful transaction commit
+      const { refreshHotDeals } = require('../services/hotDealsService');
+      await refreshHotDeals(db);
     } catch (txError: any) {
       await db.run('ROLLBACK');
       throw txError;

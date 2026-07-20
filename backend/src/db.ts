@@ -35,6 +35,7 @@ export async function initializeDatabase(seedData = false): Promise<void> {
   // Drop old tables to apply schema updates
   await db.exec('DROP TABLE IF EXISTS products;');
   await db.exec('DROP TABLE IF EXISTS upload_history;');
+  await db.exec('DROP TABLE IF EXISTS hot_deals;');
 
   // Create tables
   await db.exec(`
@@ -52,13 +53,20 @@ export async function initializeDatabase(seedData = false): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      barcode TEXT NOT NULL,
+      barcode TEXT UNIQUE NOT NULL,
       name TEXT NOT NULL,
       mrp REAL NOT NULL,
       sale_price REAL NOT NULL,
       wholesale_price REAL NULL,
       wholesale_qty INTEGER NULL,
+      discount_percent REAL NOT NULL DEFAULT 0.0,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS hot_deals (
+      barcode TEXT PRIMARY KEY,
+      position INTEGER NOT NULL,
+      FOREIGN KEY (barcode) REFERENCES products(barcode) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS upload_history (
@@ -95,6 +103,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
 
   if (seedData) {
     await seedSampleData(db);
+    // Dynamic import to avoid circular dependency
+    const { refreshHotDeals } = require('./services/hotDealsService');
+    await refreshHotDeals(db);
   }
 }
 
@@ -136,14 +147,16 @@ async function seedSampleData(db: Database): Promise<void> {
   try {
 
     for (const p of sampleProducts) {
+      const discountPercent = p.mrp > 0 ? Math.round(((p.mrp - p.sale_price) / p.mrp) * 100 * 10) / 10 : 0.0;
       await db.run(
         `INSERT INTO products 
-         (barcode, name, sale_price, mrp, updated_at) 
-         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+         (barcode, name, sale_price, mrp, discount_percent, updated_at) 
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
         p.barcode,
         p.name,
         p.sale_price,
-        p.mrp
+        p.mrp,
+        discountPercent
       );
     }
 

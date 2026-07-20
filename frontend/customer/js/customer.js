@@ -668,9 +668,72 @@ const CameraManager = {
   }
 };
 
+// Global promotions state variable and fetchers
+let cachedHotDeals = [];
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+}
+
+function renderHotDealsCarousel() {
+  const track = document.getElementById('promo-carousel-track');
+  if (!track) return;
+  
+  track.innerHTML = '';
+  
+  if (cachedHotDeals.length === 0) {
+    const fallbackSlide = document.createElement('div');
+    fallbackSlide.className = 'promo-slide active';
+    fallbackSlide.innerHTML = `
+      <div class="promo-details" style="text-align: center;">
+        <span class="promo-name" style="font-style: italic; color: var(--text-muted);">No offers available today.</span>
+      </div>
+    `;
+    track.appendChild(fallbackSlide);
+    return;
+  }
+  
+  cachedHotDeals.forEach((p, index) => {
+    const slide = document.createElement('div');
+    slide.className = index === 0 ? 'promo-slide active' : 'promo-slide';
+    slide.innerHTML = `
+      <div class="promo-details">
+        <span class="promo-name">${escapeHtml(p.name)}</span>
+        <div class="promo-price-row">
+          <span class="promo-mrp">MRP <span class="mrp-strike">₹${p.mrp}</span></span>
+          <span class="promo-sale">₹${p.salePrice}</span>
+          <span class="promo-save">SAVE ${p.discountPercent}%</span>
+        </div>
+      </div>
+    `;
+    track.appendChild(slide);
+  });
+}
+
+async function fetchHotDeals() {
+  try {
+    const response = await fetch('/api/products/hot-deals');
+    if (!response.ok) throw new Error('Hot deals API response failed');
+    const data = await response.json();
+    if (data.success && Array.isArray(data.products)) {
+      cachedHotDeals = data.products;
+    }
+  } catch (err) {
+    console.warn('[HotDeals] Failed to load precomputed hot deals, using fallback:', err);
+    cachedHotDeals = [];
+  }
+  renderHotDealsCarousel();
+}
+
 // Initialize Layout and Camera Managers
 LayoutManager.init();
 CameraManager.init();
+fetchHotDeals();
 
 // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
 setInterval(() => {
@@ -1851,13 +1914,16 @@ if (window.location.search.includes('smoke=true')) {
   if (!track) return;
   
   let currentSlideIndex = 0;
-  const slides = track.querySelectorAll('.promo-slide');
-  if (slides.length <= 1) return;
   
   setInterval(() => {
+    const slides = track.querySelectorAll('.promo-slide');
+    if (slides.length <= 1) return;
+    
     slides[currentSlideIndex].classList.remove('active');
     currentSlideIndex = (currentSlideIndex + 1) % slides.length;
-    slides[currentSlideIndex].classList.add('active');
+    if (slides[currentSlideIndex]) {
+      slides[currentSlideIndex].classList.add('active');
+    }
   }, 4000); // Transitions every 4 seconds
 })();
 

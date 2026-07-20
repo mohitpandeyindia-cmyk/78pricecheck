@@ -115,4 +115,27 @@ router.get('/products/search', async (req: Request, res: Response): Promise<void
   }
 });
 
+// GET /api/products/hot-deals - Fetch precomputed top 20 hot deals (joined query)
+router.get('/products/hot-deals', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const db = await getDb();
+    const deals = await db.all(
+      `SELECT p.barcode, p.name, p.mrp, p.sale_price as salePrice, p.discount_percent as discountPercent
+       FROM hot_deals hd
+       JOIN products p ON hd.barcode = p.barcode
+       ORDER BY hd.position ASC`
+    );
+    res.json({
+      success: true,
+      products: deals
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve hot deals',
+      error: error.message || error
+    });
+  }
+});
+
 export default router;
