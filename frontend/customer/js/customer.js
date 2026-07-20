@@ -1698,35 +1698,82 @@ if ('serviceWorker' in navigator) {
       }
     });
   } else {
+    // Helper to display the update banner
+    const showUpdateBanner = (reg) => {
+      const banner = document.getElementById('pwa-update-banner');
+      if (banner) {
+        banner.style.display = 'flex';
+      }
+      
+      // Auto-update fallback after 30 minutes
+      if (!window.pwaUpdateTimeout) {
+        window.pwaUpdateTimeout = setTimeout(() => {
+          if (reg && reg.waiting) {
+            console.log('[PWA] Update banner ignored for 30 mins. Forcing background skipWaiting...');
+            reg.waiting.postMessage('SKIP_WAITING');
+          }
+        }, 30 * 60 * 1000);
+      }
+    };
+
+    // Track state changes of the service worker currently installing
+    const trackInstalling = (reg, worker) => {
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed') {
+          console.log('[PWA] Service Worker successfully installed.');
+          if (navigator.serviceWorker.controller) {
+            showUpdateBanner(reg);
+          }
+        }
+      });
+    };
+
+    // Main registration controller to monitor state
+    const trackSWRegistration = (reg) => {
+      // Scenario A: Worker is already waiting to activate from a previous visit
+      if (reg.waiting) {
+        console.log('[PWA] Service Worker waiting to activate detected.');
+        showUpdateBanner(reg);
+        return;
+      }
+
+      // Scenario B: Worker is currently installing
+      if (reg.installing) {
+        console.log('[PWA] Service Worker currently installing detected.');
+        trackInstalling(reg, reg.installing);
+        return;
+      }
+
+      // Scenario C: Listen for new installations (future updates)
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          console.log('[PWA] New Service Worker installing detected.');
+          trackInstalling(reg, newWorker);
+        }
+      });
+    };
+
     // Staging or Production: Register Service Worker
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js').then(reg => {
         console.log('[PWA] Service Worker registered scope:', reg.scope);
         
-        // Check for updates
-        reg.update();
-        
-        // Listen for new service worker installs
-        reg.addEventListener('updatefound', () => {
-          const newWorker = reg.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              // If new worker is fully installed but waiting
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                const banner = document.getElementById('pwa-update-banner');
-                if (banner) {
-                  banner.style.display = 'flex';
-                }
-                
-                // Kiosk Auto-update timeout: 30 minutes
-                setTimeout(() => {
-                  if (newWorker.state === 'installed') {
-                    console.log('[PWA] Update banner ignored for 30 mins. Forcing background skipWaiting...');
-                    newWorker.postMessage('SKIP_WAITING');
-                  }
-                }, 30 * 60 * 1000);
-              }
-            });
+        trackSWRegistration(reg);
+
+        // Check for updates immediately on register
+        reg.update().catch(err => console.debug('[PWA] Initial update check failed:', err));
+
+        // Periodic background checks: every 5 minutes
+        setInterval(() => {
+          reg.update().catch(err => console.debug('[PWA] Periodic background update check failed:', err));
+        }, 5 * 60 * 1000);
+
+        // Check when window becomes visible or gets focus
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            console.log('[PWA] Application visible. Checking for updates...');
+            reg.update().catch(err => console.debug('[PWA] Visibility update check failed:', err));
           }
         });
       }).catch(err => {
