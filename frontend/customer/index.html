@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607202035";</script>
+  <script>window.HTML_BUILD = "202607202116";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -45,11 +45,15 @@
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="view-panel" style="display: none;">
-      <!-- Row 1: Navigation Bar (10%) -->
+      <!-- Row 1: Navigation Bar (5%) -->
       <header class="top-header" id="scan-row-1">
-        <button id="back-btn" class="header-back-btn">&larr; Back</button>
+        <button id="back-btn" class="header-back-btn">&lt; BACK</button>
         <div class="header-brand" id="header-brand-btn">
-          <div class="brand-line-1"><span class="brand-seventy">78</span> <span class="brand-eight">SUPERMAART</span></div>
+          <div class="brand-line-1">
+            <span class="brand-seventy">SEVENTY</span>
+            <span class="brand-eight">EIGHT</span>
+            <span class="brand-supermaart">SUPERMAART</span>
+          </div>
         </div>
         <img class="header-logo" src="assets/logo.png" alt="78 Supermaart Logo">
       </header>
@@ -66,7 +70,7 @@
         </div>
         <div class="scanner-status" id="scan-status-indicator">
           <span class="status-dot scanning"></span>
-          <span class="status-text">Scanning...</span>
+          <span class="status-text">ALIGN BARCODE WITHIN THE FRAME</span>
         </div>
         
         <!-- Dev-only performance overlay -->
@@ -261,7 +265,7 @@
       <div class="recently-scanned-handle-area" id="scan-row-5">
         <button id="open-history-btn" class="sheet-handle-btn">
           <span class="handle-line"></span>
-          <span class="handle-text">Recently Scanned ▲</span>
+          <span class="handle-text">Recently Scanned</span>
         </button>
       </div>
 

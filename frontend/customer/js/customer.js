@@ -917,6 +917,7 @@ function triggerFeedbackPopup(productName) {
   // Format the name slightly to fit within the pill nicely
   const displayName = productName.length > 18 ? productName.slice(0, 18) + '...' : productName;
   scanFeedback.textContent = `✓ ${displayName} recognised`;
+  scanFeedback.classList.remove('error-feedback');
   scanFeedback.classList.add('visible');
   
   // Morph to "✓ Price Updated" after 250ms
@@ -1318,9 +1319,11 @@ async function lookupBarcode(barcode) {
 function handleLookupFailure() {
   if (scanFeedback) {
     scanFeedback.textContent = "Unable to retrieve price. Please try again.";
+    scanFeedback.classList.add('error-feedback');
     scanFeedback.classList.add('visible');
     setTimeout(() => {
       scanFeedback.classList.remove('visible');
+      scanFeedback.classList.remove('error-feedback');
     }, 2000);
   }
   
@@ -1877,7 +1880,7 @@ if (window.location.search.includes('smoke=true')) {
       laserLine.style.animationPlayState = 'running';
       laserLine.style.display = 'block';
       statusDot.className = 'status-dot scanning';
-      statusText.textContent = 'Scanning...';
+      statusText.textContent = 'ALIGN BARCODE WITHIN THE FRAME';
     } else if (state === 'LOOKUP') {
       laserLine.style.animationPlayState = 'paused';
       statusDot.className = 'status-dot loading';
