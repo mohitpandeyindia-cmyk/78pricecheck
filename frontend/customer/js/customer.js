@@ -1182,6 +1182,20 @@ async function lookupBarcode(barcode) {
                 document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
                 document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
                 
+                // Calculate discount percent
+                const discountBadge = document.getElementById('single-discount-badge');
+                if (discountBadge) {
+                  const mrpVal = Number(p.mrp);
+                  const saleVal = Number(p.salePrice);
+                  if (mrpVal > saleVal && mrpVal > 0) {
+                    const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+                    discountBadge.textContent = `SAVE ${discountPercent}%`;
+                    discountBadge.style.display = 'inline-block';
+                  } else {
+                    discountBadge.style.display = 'none';
+                  }
+                }
+                
                 const bulkContainer = document.getElementById('single-bulk-container');
                 if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
                   document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
@@ -1217,6 +1231,20 @@ async function lookupBarcode(barcode) {
           document.getElementById('single-barcode').textContent = p.barcode;
           document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
           document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+          
+          // Calculate discount percent
+          const discountBadge = document.getElementById('single-discount-badge');
+          if (discountBadge) {
+            const mrpVal = Number(p.mrp);
+            const saleVal = Number(p.salePrice);
+            if (mrpVal > saleVal && mrpVal > 0) {
+              const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+              discountBadge.textContent = `SAVE ${discountPercent}%`;
+              discountBadge.style.display = 'inline-block';
+            } else {
+              discountBadge.style.display = 'none';
+            }
+          }
           
           const bulkContainer = document.getElementById('single-bulk-container');
           if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
@@ -1813,3 +1841,56 @@ if (window.location.search.includes('smoke=true')) {
   script.src = 'js/smoke-tests.js';
   document.body.appendChild(script);
 }
+
+// Auto-playing promotions carousel runner
+(function initPromotionsCarousel() {
+  const track = document.getElementById('promo-carousel-track');
+  if (!track) return;
+  
+  let currentSlideIndex = 0;
+  const slides = track.querySelectorAll('.promo-slide');
+  if (slides.length <= 1) return;
+  
+  setInterval(() => {
+    slides[currentSlideIndex].classList.remove('active');
+    currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+    slides[currentSlideIndex].classList.add('active');
+  }, 4000); // Transitions every 4 seconds
+})();
+
+// Scanner state visual updates (laser control, scanning status text)
+(function monitorScannerState() {
+  const laserLine = document.querySelector('.scanner-glow-line');
+  const statusDot = document.querySelector('.status-dot');
+  const statusText = document.querySelector('.status-text');
+  
+  if (!laserLine || !statusDot || !statusText) return;
+  
+  let lastState = null;
+  
+  setInterval(() => {
+    const state = StateManager.currentState;
+    if (state === lastState) return;
+    lastState = state;
+    
+    if (state === 'SCANNING') {
+      laserLine.style.animationPlayState = 'running';
+      laserLine.style.display = 'block';
+      statusDot.className = 'status-dot scanning';
+      statusText.textContent = 'Scanning...';
+    } else if (state === 'LOOKUP') {
+      laserLine.style.animationPlayState = 'paused';
+      statusDot.className = 'status-dot loading';
+      statusText.textContent = 'Looking up...';
+    } else if (state === 'DISPLAY_RESULT') {
+      laserLine.style.animationPlayState = 'paused';
+      laserLine.style.display = 'none';
+      statusDot.className = 'status-dot ready';
+      statusText.textContent = 'Ready to scan';
+    } else {
+      laserLine.style.animationPlayState = 'paused';
+      statusDot.className = 'status-dot offline';
+      statusText.textContent = 'Offline';
+    }
+  }, 100);
+})();

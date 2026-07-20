@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607202000";</script>
+  <script>window.HTML_BUILD = "202607202035";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -45,18 +45,17 @@
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="view-panel" style="display: none;">
-      <!-- Premium Supermarket Header -->
-      <header class="top-header">
+      <!-- Row 1: Navigation Bar (10%) -->
+      <header class="top-header" id="scan-row-1">
         <button id="back-btn" class="header-back-btn">&larr; Back</button>
         <div class="header-brand" id="header-brand-btn">
-          <div class="brand-line-1"><span class="brand-seventy">SEVENTY</span> <span class="brand-eight">EIGHT</span></div>
-          <div class="brand-line-2"><span class="brand-supermaart">SUPERMAART</span></div>
+          <div class="brand-line-1"><span class="brand-seventy">78</span> <span class="brand-eight">SUPERMAART</span></div>
         </div>
         <img class="header-logo" src="assets/logo.png" alt="78 Supermaart Logo">
       </header>
-      
-      <!-- Scanner Area (Always Active) -->
-      <div class="scanner-area">
+
+      <!-- Row 2: Scanner Area (30%) -->
+      <div class="scanner-area" id="scan-row-2">
         <div id="reader"></div>
         <div class="scanner-brackets">
           <div class="bracket bracket-tl"></div>
@@ -65,9 +64,9 @@
           <div class="bracket bracket-br"></div>
           <div class="scanner-glow-line"></div>
         </div>
-        <div class="scanner-status">
-          <span class="status-dot"></span>
-          <span class="status-text">Align barcode inside the frame</span>
+        <div class="scanner-status" id="scan-status-indicator">
+          <span class="status-dot scanning"></span>
+          <span class="status-text">Scanning...</span>
         </div>
         
         <!-- Dev-only performance overlay -->
@@ -78,9 +77,9 @@
           Lighting is low. Move to a brighter area for faster scanning.
         </div>
       </div>
-      
-      <!-- Sliding Result Card Panel -->
-      <div id="result-panel" class="details-panel">
+
+      <!-- Row 3: Dynamic Product Information Card (30%) -->
+      <div class="product-info-area" id="scan-row-3">
         <!-- Barcode Detected Success Flash Bubble -->
         <div id="scan-feedback" class="scan-feedback-popup">
           ✓ Price Updated
@@ -135,6 +134,7 @@
                 </span>
                 <span class="price-val" id="single-sale-price">-</span>
               </div>
+              <div id="single-discount-badge" class="discount-badge" style="display: none;">SAVE 0%</div>
             </div>
             
             <!-- Bulk Offer Card (Premium Promotional Panel) -->
@@ -210,13 +210,61 @@
             <button id="retry-server-btn" class="btn btn-outline">Retry</button>
           </div>
         </div>
-        
-        <!-- Centered Recently Scanned Link -->
-        <div class="recently-scanned-trigger-container">
-          <button id="open-history-btn" class="recently-scanned-link">Recently scanned &gt;</button>
+      </div>
+
+      <!-- Row 4: Promotions Carousel (25%) -->
+      <div class="promotions-area" id="scan-row-4">
+        <div class="promo-title-row">
+          <span class="promo-hot-badge">🔥 HOT DEAL</span>
+          <span class="promo-section-title">Today's Best Deals</span>
+        </div>
+        <div class="promo-carousel-container">
+          <div class="promo-carousel-track" id="promo-carousel-track">
+            <!-- Slide 1 -->
+            <div class="promo-slide active">
+              <div class="promo-details">
+                <span class="promo-name">Surf Excel Quick Wash</span>
+                <div class="promo-price-row">
+                  <span class="promo-mrp">MRP <span class="mrp-strike">₹320</span></span>
+                  <span class="promo-sale">₹249</span>
+                  <span class="promo-save">SAVE 22%</span>
+                </div>
+              </div>
+            </div>
+            <!-- Slide 2 -->
+            <div class="promo-slide">
+              <div class="promo-details">
+                <span class="promo-name">78 Premium Butter</span>
+                <div class="promo-price-row">
+                  <span class="promo-mrp">MRP <span class="mrp-strike">₹110</span></span>
+                  <span class="promo-sale">₹88</span>
+                  <span class="promo-save">SAVE 20%</span>
+                </div>
+              </div>
+            </div>
+            <!-- Slide 3 -->
+            <div class="promo-slide">
+              <div class="promo-details">
+                <span class="promo-name">Organic Basmati Rice</span>
+                <div class="promo-price-row">
+                  <span class="promo-mrp">MRP <span class="mrp-strike">₹150</span></span>
+                  <span class="promo-sale">₹120</span>
+                  <span class="promo-save">SAVE 20%</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      
+
+      <!-- Row 5: Recently Scanned Handle (5%) -->
+      <div class="recently-scanned-handle-area" id="scan-row-5">
+        <button id="open-history-btn" class="sheet-handle-btn">
+          <span class="handle-line"></span>
+          <span class="handle-text">Recently Scanned ▲</span>
+        </button>
+      </div>
+
       <!-- Recently Scanned Bottom Sheet Overlay -->
       <div id="history-sheet-overlay" class="sheet-overlay" style="display: none;"></div>
       <div id="history-sheet" class="bottom-sheet" style="display: none;">
@@ -227,9 +275,10 @@
         </div>
         <div class="sheet-divider"></div>
         <div class="sheet-list" id="sheet-list-container">
-          <!-- Populated dynamically with max 2 items -->
+          <!-- Populated dynamically -->
         </div>
       </div>
+    </div>
     </div>
     </div>
     
