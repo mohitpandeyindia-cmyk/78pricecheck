@@ -244,29 +244,46 @@ html, body {
 
 /* Row 3: Scan button size requirements */
 .welcome-scan-btn {
-  width: 95.5%;
-  height: 91%;
-  border-radius: 28px;
-  background: linear-gradient(to bottom, #388e3c, #2e7d32);
+  width: 91%;
+  height: 95%;
+  border-radius: 32px;
+  background: linear-gradient(to bottom, #43a047, #2e7d32);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
-  box-shadow: 0 5px 15px rgba(46, 125, 50, 0.22), 0 2px 4px rgba(0, 0, 0, 0.08), inset 0 1.5px 0 rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
+  box-shadow: 
+    0 10px 24px rgba(27, 94, 32, 0.4), 
+    0 3px 6px rgba(0, 0, 0, 0.25), 
+    inset 0 2px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -4px 0 #1b5e20;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 18px;
+  padding: 0 24px;
   outline: none;
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms ease, background 150ms ease;
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms ease-out, background 150ms ease-out, border-color 150ms ease-out;
 }
 
 .welcome-scan-btn:hover {
-  background: linear-gradient(to bottom, #3c9b40, #318535);
+  background: linear-gradient(to bottom, #4caf50, #388e3c);
+  box-shadow: 
+    0 12px 28px rgba(27, 94, 32, 0.45), 
+    0 4px 8px rgba(0, 0, 0, 0.28), 
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -4px 0 #154e19;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, background 180ms ease-out, border-color 180ms ease-out;
 }
 
 .welcome-scan-btn:active {
   transform: scale(0.98) !important;
-  box-shadow: 0 2px 6px rgba(46, 125, 50, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 4px 8px rgba(27, 94, 32, 0.22), 
+    0 1px 3px rgba(0, 0, 0, 0.15), 
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -2px 0 #123e15;
+  transition: transform 120ms ease-out, box-shadow 120ms ease-out, background 120ms ease-out, border-color 120ms ease-out;
 }
 
 .scan-btn-icon {
@@ -279,19 +296,20 @@ html, body {
 
 .scan-btn-divider {
   width: 1px;
-  height: 32px;
-  background-color: rgba(255, 255, 255, 0.3);
+  height: 34px;
+  background-color: rgba(164, 230, 164, 0.4);
   display: block;
   flex-shrink: 0;
 }
 
 .scan-btn-text {
   font-family: 'Poppins', sans-serif;
-  font-size: clamp(1.15rem, 3.2vh, 1.4rem);
-  font-weight: 700;
-  letter-spacing: 0.8px;
+  font-size: clamp(1.2rem, 3.5vh, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 1px;
   line-height: 1.0;
   color: #ffffff;
+  text-shadow: 0 1.5px 2px rgba(0, 0, 0, 0.35);
 }
 
 /* Ripple effect container styles */
