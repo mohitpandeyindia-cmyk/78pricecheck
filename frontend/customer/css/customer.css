@@ -618,6 +618,10 @@ html, body {
   gap: 6px;
   z-index: 15;
   pointer-events: none;
+  white-space: nowrap;
+  width: max-content;
+  max-width: 90%;
+  box-sizing: border-box;
 }
 
 .status-dot {
@@ -655,12 +659,13 @@ html, body {
 }
 
 .status-text {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #ffffff;
   font-weight: 600;
   letter-spacing: 0.2px;
   text-transform: uppercase;
   font-family: var(--font-family);
+  white-space: nowrap;
 }
 
 /* Row 3: Dynamic Product Information Card (40% height) */
