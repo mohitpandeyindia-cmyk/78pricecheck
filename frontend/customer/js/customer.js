@@ -1318,7 +1318,7 @@ async function lookupBarcode(barcode) {
 // Graceful lookup error fallback
 function handleLookupFailure() {
   if (scanFeedback) {
-    scanFeedback.textContent = "Unable to retrieve price. Please try again.";
+    scanFeedback.textContent = "Unable to retrieve price, please try again.";
     scanFeedback.classList.add('error-feedback');
     scanFeedback.classList.add('visible');
     setTimeout(() => {

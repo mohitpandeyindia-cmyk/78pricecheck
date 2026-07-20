@@ -673,11 +673,12 @@ html, body {
   height: 40%;
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   background-color: var(--bg-light);
   box-sizing: border-box;
-  padding: 8px var(--space-4);
+  padding: 4px var(--space-4) 8px var(--space-4);
   position: relative;
   overflow: hidden;
 }
@@ -689,12 +690,12 @@ html, body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border-color);
   width: 95%;
-  height: 78%; /* Adjusted to prevent top dialogue overlap */
+  height: calc(100% - 32px); /* Consume remaining space in flex container */
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin-top: 18px; /* Top space for scan-feedback-popup */
+  margin-top: 0;
 }
 
 .details-state {
@@ -1334,26 +1335,34 @@ html, body {
 
 /* Feedback bubble popup */
 .scan-feedback-popup {
-  position: absolute;
-  top: -8px; /* Positioned elegantly above the floating card */
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  margin: 3px auto;
   background-color: #e8f5e9;
   color: #1b5e20;
   border: 1px solid #c8e6c9;
   font-weight: 700;
-  font-size: 0.75rem;
-  padding: 4px 12px;
-  border-radius: 20px;
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border-radius: 12px;
   z-index: 50;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  max-width: 95%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+  text-align: center;
+  height: 22px;
+  line-height: 14px;
 }
 
 .scan-feedback-popup.visible {
   opacity: 1;
+  visibility: visible;
 }
 
 /* Recently Scanned Trigger */
