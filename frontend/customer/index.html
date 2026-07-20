@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607201543";</script>
+  <script>window.HTML_BUILD = "202607201604";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -31,7 +31,16 @@
         <!-- Row 3: CTA -->
         <div id="welcome-row-3" class="welcome-row">
           <button id="start-scan-btn" class="welcome-scan-btn">
-            <span>Click to Scan</span>
+            <svg class="scan-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <!-- Corner brackets / scan frame -->
+              <path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M4 16v2a2 2 0 0 0 2 2h2M16 20h2a2 2 0 0 0 2-2v-2" />
+              <!-- Barcode vertical lines -->
+              <line x1="8" y1="8" x2="8" y2="16" />
+              <line x1="12" y1="8" x2="12" y2="16" />
+              <line x1="16" y1="8" x2="16" y2="16" />
+            </svg>
+            <span class="scan-btn-divider"></span>
+            <span class="scan-btn-text">Click to Scan</span>
           </button>
         </div>
         
