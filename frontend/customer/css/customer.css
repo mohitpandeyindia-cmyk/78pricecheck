@@ -233,13 +233,13 @@ html, body {
 
 /* Row 2: Brand Identity inside wireframe */
 .welcome-brand-img {
-  width: auto;
-  max-width: 96%;
+  width: 99%;
   height: auto;
-  max-height: 94%;
+  max-height: 98%;
   object-fit: contain;
   display: block;
   border: none;
+  margin: 0 auto;
 }
 
 /* Row 3: Scan button size requirements */
