@@ -232,55 +232,14 @@ html, body {
 }
 
 /* Row 2: Brand Identity inside wireframe */
-.brand-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.brand-seventy {
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(2.1rem, 6.2vw, 2.6rem);
-  font-weight: 700;
-  color: var(--brand-orange);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  line-height: 0.95;
-  margin-bottom: 2px;
-}
-
-.brand-eight {
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(2.1rem, 6.2vw, 2.6rem);
-  font-weight: 700;
-  color: var(--brand-yellow);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  line-height: 0.95;
-  margin-bottom: 4px;
-}
-
-.brand-hero {
-  font-family: 'Poppins', sans-serif;
-  font-size: clamp(3.1rem, 9.2vw, 3.7rem);
-  font-weight: 800;
-  color: var(--brand-green);
-  letter-spacing: -0.5px;
-  line-height: 0.95;
-  margin: 0;
-}
-
-.brand-tagline {
-  font-family: 'Outfit', sans-serif;
-  font-size: clamp(0.85rem, 2.5vw, 1.0rem);
-  font-weight: 500;
-  color: #888888;
-  letter-spacing: 1.5px;
-  text-transform: lowercase;
-  margin-top: 4px;
-  line-height: 1.0;
+.welcome-brand-img {
+  width: auto;
+  max-width: 96%;
+  height: auto;
+  max-height: 94%;
+  object-fit: contain;
+  display: block;
+  border: none;
 }
 
 /* Row 3: Scan button size requirements */
