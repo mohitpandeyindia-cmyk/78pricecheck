@@ -246,8 +246,7 @@ html, body {
 /* Row 3: Interactive image scan button */
 .welcome-scan-btn {
   width: 91%;
-  height: auto;
-  max-height: 98%;
+  height: 95%;
   background: transparent;
   border: none;
   padding: 0;
@@ -267,7 +266,9 @@ html, body {
 }
 
 .scan-button-face-img {
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
   height: auto;
   display: block;
   object-fit: contain;
