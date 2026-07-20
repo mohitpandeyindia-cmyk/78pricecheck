@@ -1,4 +1,4 @@
-const CACHE_NAME = '78pricecheck-202607192132';
+const CACHE_NAME = '78pricecheck-202607201616';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,16 +8,18 @@ const ASSETS_TO_CACHE = [
   './js/libs/html5-qrcode.min.js',
   './js/smoke-tests.js',
   './assets/logo.png',
+  './assets/brand.png',
   './assets/mascot.png',
   './manifest.json'
 ];
 
-// Install Event - Pre-cache shell assets
+// Install Event - Pre-cache shell assets with HTTP cache bypass
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('[Service Worker] Pre-caching app shell assets');
-      return cache.addAll(ASSETS_TO_CACHE);
+      console.log('[Service Worker] Pre-caching app shell assets (bypassing HTTP cache)');
+      const requests = ASSETS_TO_CACHE.map(url => new Request(url, { cache: 'reload' }));
+      return cache.addAll(requests);
     })
   );
 });
@@ -68,8 +70,10 @@ self.addEventListener('fetch', event => {
     url.pathname.endsWith('.css') || 
     url.pathname.endsWith('.json')
   ) {
+    // Bypass HTTP cache to avoid caching outdated locally cached files
+    const fetchRequest = new Request(event.request, { cache: 'reload' });
     event.respondWith(
-      fetch(event.request)
+      fetch(fetchRequest)
         .then(response => {
           // If request is successful, clone and put it in cache
           if (response.status === 200) {
