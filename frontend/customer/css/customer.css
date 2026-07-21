@@ -274,16 +274,34 @@ html, body {
   display: block;
   object-fit: contain;
   transition: filter 180ms ease-out, transform 180ms ease-out;
+  animation: button-breath 3s ease-in-out infinite;
+}
+
+@keyframes button-breath {
+  0% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 2px 4px rgba(27, 85, 9, 0.1));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: brightness(1.04) drop-shadow(0 6px 12px rgba(27, 85, 9, 0.2));
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1) drop-shadow(0 2px 4px rgba(27, 85, 9, 0.1));
+  }
 }
 
 .welcome-scan-btn:hover .scan-button-face-img {
-  filter: brightness(1.03) drop-shadow(0 4px 8px rgba(27, 85, 9, 0.18));
+  animation-play-state: paused;
+  transform: scale(1.03);
+  filter: brightness(1.05) drop-shadow(0 6px 14px rgba(27, 85, 9, 0.25));
 }
 
 .welcome-scan-btn:active .scan-button-face-img {
-  transform: scale(0.98) translateY(1.5px);
-  filter: brightness(0.97) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
-  transition: transform 120ms ease-out, filter 120ms ease-out;
+  animation: none;
+  transform: scale(0.97) translateY(1px);
+  filter: brightness(0.96) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
 }
 
 /* Ripple effect container styles */
