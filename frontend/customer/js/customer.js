@@ -15,6 +15,24 @@ function saveDiagnosticsTelemetry(metrics) {
     // Fail silently
   }
 }
+// Initialize client-side runtime scanning diagnostics metrics
+window.ScannerMetrics = {
+  attempts: 0,
+  successes: 0,
+  attemptsLastSecond: 0,
+  attemptsWindow: [],
+  recordAttempt(isSuccess) {
+    this.attempts++;
+    if (isSuccess) this.successes++;
+    const now = performance.now();
+    this.attemptsWindow.push(now);
+    this.attemptsWindow = this.attemptsWindow.filter(t => now - t < 1000);
+    this.attemptsLastSecond = this.attemptsWindow.length;
+  }
+};
+
+window.activeTrackSettings = {};
+window.activeTrackCapabilities = {};
 
 const startScanBtn = document.getElementById('start-scan-btn');
 const welcomeView = document.getElementById('welcome-view');
@@ -573,6 +591,7 @@ const CameraManager = {
             
             if (typeof this.activeTrack.getSettings === 'function') {
               const settings = this.activeTrack.getSettings();
+              window.activeTrackSettings = settings;
               console.log('[CameraManager] Deployed Video Track Settings:', JSON.stringify(settings));
               if (settings.width && settings.height) {
                 resolution = `${settings.width} × ${settings.height}`;
@@ -581,6 +600,7 @@ const CameraManager = {
             
             if (typeof this.activeTrack.getCapabilities === 'function') {
               const capabilities = this.activeTrack.getCapabilities();
+              window.activeTrackCapabilities = capabilities;
               console.log('[CameraManager] Deployed Video Track Capabilities:', JSON.stringify(capabilities));
               if (capabilities.torch) {
                 hasTorch = 'Supported';
@@ -878,13 +898,34 @@ function updateDebugOverlay() {
     resStr = `${video.videoWidth}×${video.videoHeight}`;
   }
 
+  // Capabilities & Settings string
+  const settings = window.activeTrackSettings ? JSON.stringify(window.activeTrackSettings) : '{}';
+  const capabilities = window.activeTrackCapabilities ? JSON.stringify(window.activeTrackCapabilities) : '{}';
+  const zxingConfig = JSON.stringify({
+    fps: CameraManager.config ? CameraManager.config.fps : 15,
+    formats: CameraManager.config ? CameraManager.config.formatsToSupport : []
+  });
+  
+  const attemptsSec = window.ScannerMetrics ? window.ScannerMetrics.attemptsLastSecond : 0;
+  const successRate = window.ScannerMetrics && window.ScannerMetrics.attempts > 0 
+    ? Math.round((window.ScannerMetrics.successes / window.ScannerMetrics.attempts) * 100) 
+    : 0;
+
   overlay.innerHTML = `
-    Camera Start: ${camStart}<br>
-    First Decode: ${firstDec}<br>
-    API: ${apiTime}<br>
-    Render: ${renderTime}<br>
-    FPS: ${currentFps}<br>
-    Resolution: ${resStr}
+    <div style="font-size: 0.7rem; line-height: 1.25; font-family: monospace; background: rgba(0,0,0,0.85); padding: 8px; border-radius: 6px; color: #fff; max-width: 320px; border: 1px solid #333;">
+      <b>--- SCANNER INSTRUMENTATION ---</b><br>
+      Cam Start: ${camStart} | First Decode: ${firstDec}<br>
+      API: ${apiTime} | Render: ${renderTime}<br>
+      FPS (Delivered): ${currentFps} | Resolution: ${resStr}<br>
+      Decode Attempts/sec: ${attemptsSec}<br>
+      Success Rate: ${successRate}% (Attempts: ${window.ScannerMetrics ? window.ScannerMetrics.attempts : 0})<br>
+      <b>html5-qrcode Config:</b><br>
+      <span style="font-size: 0.62rem; color: #a5d6a7; display: block; word-break: break-all;">${zxingConfig}</span>
+      <b>Track Settings:</b><br>
+      <span style="font-size: 0.62rem; color: #90caf9; display: block; word-break: break-all;">${settings}</span>
+      <b>Track Capabilities:</b><br>
+      <span style="font-size: 0.62rem; color: #ffcc80; display: block; word-break: break-all;">${capabilities}</span>
+    </div>
   `;
 }
 
@@ -1430,6 +1471,10 @@ function appendDebugInfo(container, errText) {
 
 // Handler functions
 function onBarcodeDecoded(decodedText) {
+  // Track metrics
+  if (window.ScannerMetrics) {
+    window.ScannerMetrics.recordAttempt(true);
+  }
   const now = Date.now();
   
   // Track last seen timestamp to calculate disappearance intervals for anti-double scans
@@ -1508,6 +1553,10 @@ function onBarcodeDecoded(decodedText) {
 function onBarcodeScanError(errorMessage) {
   // Increment frames for real-time FPS overlay calculation
   registerFrameForFps();
+  // Track metrics
+  if (window.ScannerMetrics) {
+    window.ScannerMetrics.recordAttempt(false);
+  }
 }
 
 // Stop camera scan stream
