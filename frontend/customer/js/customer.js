@@ -1281,7 +1281,14 @@ async function lookupBarcode(barcode) {
           });
           
           addToHistory(data.products[0]);
-          lookupInProgress = false;
+          lastScannedBarcode = barcode;
+          
+          // Resume decoding after 1.0s debounce pause
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
         } else if (data.products && data.products.length > 0) {
           const p = data.products[0];
           resetBarcodeCollapse();
