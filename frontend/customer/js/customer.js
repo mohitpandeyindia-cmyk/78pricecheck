@@ -1548,6 +1548,11 @@ function onBarcodeDecoded(decodedText) {
   
   // 5. Lookup details from backend catalog
   lookupBarcode(decodedText);
+
+  // Custom diagnostics hook
+  if (typeof window.onDiagnosticsScanDecoded === 'function') {
+    window.onDiagnosticsScanDecoded(decodedText);
+  }
 }
 
 function onBarcodeScanError(errorMessage) {
@@ -1556,6 +1561,11 @@ function onBarcodeScanError(errorMessage) {
   // Track metrics
   if (window.ScannerMetrics) {
     window.ScannerMetrics.recordAttempt(false);
+  }
+
+  // Custom diagnostics hook
+  if (typeof window.onDiagnosticsScanError === 'function') {
+    window.onDiagnosticsScanError(errorMessage);
   }
 }
 
