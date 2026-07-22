@@ -1,13 +1,13 @@
 // diagnostics.js - Temporary Scanner Diagnostics Mode for iOS/Android Comparative Analysis
 
 (function initDiagnostics() {
-  console.log('[Diagnostics] Initializing temporary scanner diagnostics mode...');
+  console.log('[Diagnostics] Initializing temporary scanner diagnostics mode with lens switching checks...');
 
   // State Containers
   let totalAttempts = 0;
   let successAttempts = 0;
   let failedAttempts = 0;
-  let currentFailedAttemptsCount = 0; // count failed frames before a successful decode
+  let currentFailedAttemptsCount = 0;
   let sessionStartTime = performance.now();
   
   let latencies = [];
@@ -18,13 +18,14 @@
   let isDecoding = false;
   let lastLatency = 0;
 
-  // Frame processed/delivered stats
+  // Frame stats
   let processedFramesCount = 0;
   let processedFps = 0;
-  let lastFpsCalcTime = performance.now();
   let frameTimestamps = [];
   
   let barcodeTests = [];
+  let availableCameras = [];
+  let selectedCameraId = '';
 
   // 1. Hook Canvas getContext/getImageData to calculate ZXing decode latency
   const originalGetImageData = CanvasRenderingContext2D.prototype.getImageData;
@@ -34,7 +35,6 @@
     processedFramesCount++;
     frameTimestamps.push(lastGetImageDataTime);
     
-    // Slide processed frame rates
     const now = performance.now();
     frameTimestamps = frameTimestamps.filter(t => now - t < 1000);
     processedFps = frameTimestamps.length;
@@ -63,13 +63,12 @@
     const now = performance.now();
     const timeToSuccess = Math.round(now - sessionStartTime);
 
-    // Save test result entry with manual test variables
     const distanceVal = document.getElementById('diag-distance-select')?.value || '20 cm';
     const pkgVal = document.getElementById('diag-package-select')?.value || 'Flat Glossy';
 
     const testEntry = {
       barcode: barcodeValue,
-      format: 'EAN_13', // Standard format supported
+      format: 'EAN_13',
       distance: distanceVal,
       packageType: pkgVal,
       decodeTimeMs: Math.round(lastLatency),
@@ -79,8 +78,6 @@
     };
     
     barcodeTests.push(testEntry);
-    
-    // Reset transient session stats
     currentFailedAttemptsCount = 0;
     sessionStartTime = performance.now();
     
@@ -196,38 +193,81 @@
     };
   }
 
-  // 5. Update HTML Panel values
+  // 5. Enumerate Cameras
+  async function loadCameras() {
+    try {
+      if (typeof Html5Qrcode !== 'undefined') {
+        const devices = await Html5Qrcode.getCameras();
+        availableCameras = devices || [];
+        updatePanel();
+      }
+    } catch (err) {
+      console.warn('[Diagnostics] Failed to load cameras list:', err);
+    }
+  }
+
+  // Handle active track polling to detect lens changes
+  setInterval(() => {
+    const video = document.querySelector('#reader video');
+    if (video && video.srcObject) {
+      const track = video.srcObject.getVideoTracks()[0];
+      if (track) {
+        const currentLabel = track.label || 'Unknown';
+        const currentSettings = track.getSettings ? track.getSettings() : {};
+        const currentCaps = track.getCapabilities ? track.getCapabilities() : {};
+        
+        // Log changes if any values shift dynamically
+        if (window.activeTrackSettings && window.activeTrackSettings.width !== currentSettings.width) {
+          console.log('[Diagnostics] Camera settings dynamically changed! Old width:', window.activeTrackSettings.width, 'New width:', currentSettings.width);
+        }
+
+        window.activeTrackSettings = currentSettings;
+        window.activeTrackCapabilities = currentCaps;
+      }
+    }
+  }, 500);
+
+  // 6. Update HTML Panel values
   function updatePanel() {
     const settings = window.activeTrackSettings || {};
     const caps = getCapabilitiesFormatted();
     
     const successRate = totalAttempts > 0 ? ((successAttempts / totalAttempts) * 100).toFixed(1) : '0.0';
-    
-    const avgLatency = latencies.length > 0 
-      ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) 
-      : 0;
-
+    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
     const resolutionStr = settings.width ? `${settings.width} × ${settings.height}` : 'Unknown';
     const facingModeStr = settings.facingMode || 'Unknown';
     const settingsFps = settings.frameRate ? Math.round(settings.frameRate) : 'Unknown';
-
-    // Mask device ID if present
     const devId = settings.deviceId ? `${settings.deviceId.substring(0, 8)}...` : 'Unknown';
+    const trackLabel = settings.label || 'Unknown';
 
     const currentBarcode = barcodeTests.length > 0 ? barcodeTests[barcodeTests.length - 1].barcode : 'None';
+
+    // Populate camera selector options
+    let cameraOptionsHtml = `<option value="">-- Auto Back Camera --</option>`;
+    availableCameras.forEach((cam, idx) => {
+      const selected = selectedCameraId === cam.deviceId ? 'selected' : '';
+      cameraOptionsHtml += `<option value="${cam.deviceId}" ${selected}>Cam ${idx + 1}: ${cam.label}</option>`;
+    });
 
     panel.innerHTML = `
       <h3>Scanner Diagnostics</h3>
       
       <div class="diag-section">
+        <span class="diag-label">Active Lens Label:</span> <span class="diag-value" style="color: #64b5f6;">${trackLabel}</span><br>
         <span class="diag-label">Camera Resolution:</span> <span class="diag-value">${resolutionStr}</span><br>
         <span class="diag-label">Delivered FPS:</span> <span class="diag-value">${settingsFps}</span><br>
         <span class="diag-label">Processed FPS:</span> <span class="diag-value">${processedFps}</span><br>
-        <span class="diag-label">Decode Attempts/s:</span> <span class="diag-value">${processedFps}</span><br>
         <span class="diag-label">Successful Decodes:</span> <span class="diag-value">${successAttempts}</span><br>
         <span class="diag-label">Failed Decodes:</span> <span class="diag-value">${failedAttempts}</span><br>
         <span class="diag-label">Success Rate:</span> <span class="diag-value">${successRate}%</span><br>
         <span class="diag-label">Avg Decode Time:</span> <span class="diag-value">${avgLatency} ms</span>
+      </div>
+
+      <div class="diag-section">
+        <strong>Hardware Camera Selector:</strong>
+        <select id="diag-camera-select" class="diag-select">
+          ${cameraOptionsHtml}
+        </select>
       </div>
 
       <div class="diag-section">
@@ -277,15 +317,32 @@
       <button id="diag-export-btn" class="diag-button">Export Report</button>
     `;
 
-    // Bind Export Button
+    // Bind Event Listeners
     document.getElementById('diag-export-btn')?.addEventListener('click', exportReport);
+    
+    const camSelect = document.getElementById('diag-camera-select');
+    if (camSelect) {
+      camSelect.addEventListener('change', async (e) => {
+        const forcedId = e.target.value;
+        selectedCameraId = forcedId;
+        console.log('[Diagnostics] Switching camera output to device ID:', forcedId);
+        
+        if (typeof CameraManager !== 'undefined') {
+          await CameraManager.stop();
+          sessionStartTime = performance.now();
+          currentFailedAttemptsCount = 0;
+          
+          setTimeout(async () => {
+            await CameraManager.start(forcedId || null);
+          }, 300);
+        }
+      });
+    }
   }
 
-  // 6. Generate JSON Report Download
+  // 7. Generate JSON Report Download
   function exportReport() {
-    const avgLatency = latencies.length > 0 
-      ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) 
-      : 0;
+    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
 
     const report = {
       device: navigator.userAgent,
@@ -328,6 +385,11 @@
   setInterval(() => {
     updatePanel();
   }, 1000);
+
+  // Enumerate cameras once after load delay
+  setTimeout(() => {
+    loadCameras();
+  }, 1500);
 
   updatePanel();
 })();

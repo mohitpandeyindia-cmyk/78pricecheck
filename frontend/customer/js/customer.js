@@ -393,8 +393,8 @@ const CameraManager = {
     });
   },
   
-  async start() {
-    console.log('[Diag] CameraManager.start() invoked. State:', this.state);
+  async start(forcedDeviceId = null) {
+    console.log('[Diag] CameraManager.start() invoked. State:', this.state, 'forcedDeviceId:', forcedDeviceId);
     
     // Reset scanning lock flags on session start
     isScanPaused = false;
@@ -461,7 +461,20 @@ const CameraManager = {
         formatsToSupport: this.config.formatsToSupport
       };
       
-      if (this.isIOS) {
+      if (forcedDeviceId) {
+        console.log('[CameraManager] Forcing camera device ID:', forcedDeviceId);
+        if (this.isIOS) {
+          scanConfig.videoConstraints = {
+            deviceId: { exact: forcedDeviceId },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
+          await this.html5Qrcode.start({ deviceId: { exact: forcedDeviceId } }, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        } else {
+          scanConfig.qrbox = this.config.qrbox;
+          await this.html5Qrcode.start(forcedDeviceId, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        }
+      } else if (this.isIOS) {
         console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
         // Request HD ideal constraints on iOS within videoConstraints configuration object
         scanConfig.videoConstraints = {
