@@ -444,15 +444,38 @@ const CameraManager = {
       };
       
       if (this.isIOS) {
-        console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
-        // Request HD ideal constraints on iOS within videoConstraints configuration object
-        scanConfig.videoConstraints = {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        };
-        // Disable qrbox on iOS so the decoder scans the full frame
-        await this.html5Qrcode.start({ facingMode: "environment" }, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        console.log('[CameraManager] iOS device detected. Enumerating physical rear cameras for explicit selection...');
+        let cameraIdToUse = null;
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            const backCam = devices.find(d => {
+              const label = (d.label || '').toLowerCase();
+              return label.includes('back') || label.includes('rear') || label.includes('environment') || label.includes('main');
+            });
+            cameraIdToUse = backCam ? backCam.deviceId : devices[0].deviceId;
+          }
+        } catch (e) {
+          console.warn('[CameraManager] Camera devices enumeration failed on iOS, falling back to facingMode:', e);
+        }
+
+        if (cameraIdToUse) {
+          console.log('[CameraManager] Starting iOS camera with explicit deviceId:', cameraIdToUse);
+          scanConfig.videoConstraints = {
+            deviceId: { exact: cameraIdToUse },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
+          await this.html5Qrcode.start(cameraIdToUse, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        } else {
+          console.log('[CameraManager] Starting iOS camera with facingMode fallback');
+          const constraintsArg = {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          };
+          await this.html5Qrcode.start(constraintsArg, scanConfig, onBarcodeDecoded, onBarcodeScanError);
+        }
       } else {
         scanConfig.qrbox = this.config.qrbox;
         let cameraIdToUse = null;
