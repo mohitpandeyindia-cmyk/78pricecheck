@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607221904";</script>
+  <script>window.HTML_BUILD = "202607222007";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -269,13 +269,5 @@
   
   <script src="js/build-env.js"></script>
   <script src="js/customer.js"></script>
-  <script>
-    if (new URLSearchParams(window.location.search).has('diagnostics') || window.location.hash.includes('diagnostics')) {
-      const script = document.createElement('script');
-      script.src = 'js/diagnostics.js';
-      script.defer = true;
-      document.body.appendChild(script);
-    }
-  </script>
 </body>
 </html>
