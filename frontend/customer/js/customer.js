@@ -1241,63 +1241,19 @@ async function lookupBarcode(barcode) {
                 ${bulkHtml}
               </div>
             `;
-            
-             card.addEventListener('click', () => {
-              addToHistory(p);
-              resetBarcodeCollapse();
-              
-              // Slide down transition
-              if (singleState) singleState.classList.add('replacing');
-              setTimeout(() => {
-                StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
-                document.getElementById('single-name').textContent = p.name;
-                document.getElementById('single-barcode').textContent = p.barcode;
-                document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
-                document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
-                
-                // Calculate discount percent
-                const discountBadge = document.getElementById('single-discount-badge');
-                if (discountBadge) {
-                  const mrpVal = Number(p.mrp);
-                  const saleVal = Number(p.salePrice);
-                  if (mrpVal > saleVal && mrpVal > 0) {
-                    const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-                    discountBadge.textContent = `SAVE ${discountPercent}%`;
-                    discountBadge.style.display = 'inline-block';
-                  } else {
-                    discountBadge.style.display = 'none';
-                  }
-                }
-                
-                const bulkContainer = document.getElementById('single-bulk-container');
-                if (p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-                  document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
-                  document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
-                  const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-                  document.getElementById('single-bulk-savings').textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
-                  bulkContainer.style.display = 'flex';
-                } else {
-                  bulkContainer.style.display = 'none';
-                }
-                
-                if (singleState) singleState.classList.remove('replacing');
-                if (priceValEl) priceValEl.classList.remove('faded');
-                applyCardHighlight();
-              }, 150);
-
-              // Resume decoding after 1.0s debounce pause from the moment of variant selection
-              setTimeout(() => {
-                resetScannerStatusLine();
-                isScanPaused = false;
-              }, 1000);
-            });
-            
+            // Product cards are informational only and never clickable.
             listContainer.appendChild(card);
           });
           
           addToHistory(data.products[0]);
           lastScannedBarcode = barcode;
-          lookupInProgress = false;
+          
+          // Resume decoding after 1.0s debounce pause
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
         } else if (data.products && data.products.length > 0) {
           const p = data.products[0];
           resetBarcodeCollapse();
