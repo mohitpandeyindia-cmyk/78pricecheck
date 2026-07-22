@@ -1233,7 +1233,7 @@ async function lookupBarcode(barcode) {
               </div>
             `;
             
-            card.addEventListener('click', () => {
+             card.addEventListener('click', () => {
               addToHistory(p);
               resetBarcodeCollapse();
               
@@ -1275,6 +1275,12 @@ async function lookupBarcode(barcode) {
                 if (priceValEl) priceValEl.classList.remove('faded');
                 applyCardHighlight();
               }, 150);
+
+              // Resume decoding after 1.0s debounce pause from the moment of variant selection
+              setTimeout(() => {
+                resetScannerStatusLine();
+                isScanPaused = false;
+              }, 1000);
             });
             
             listContainer.appendChild(card);
@@ -1282,13 +1288,7 @@ async function lookupBarcode(barcode) {
           
           addToHistory(data.products[0]);
           lastScannedBarcode = barcode;
-          
-          // Resume decoding after 1.0s debounce pause
-          setTimeout(() => {
-            resetScannerStatusLine();
-            lookupInProgress = false;
-            isScanPaused = false;
-          }, 1000);
+          lookupInProgress = false;
         } else if (data.products && data.products.length > 0) {
           const p = data.products[0];
           resetBarcodeCollapse();
