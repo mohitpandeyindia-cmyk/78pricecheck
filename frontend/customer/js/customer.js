@@ -377,6 +377,11 @@ const CameraManager = {
   
   async start() {
     console.log('[Diag] CameraManager.start() invoked. State:', this.state);
+    
+    // Reset scanning lock flags on session start
+    isScanPaused = false;
+    lookupInProgress = false;
+    
     if (this.state === 'READY' || this.state === 'STARTING') {
       console.log('[Diag] Camera start rejected: already in state', this.state);
       return;
@@ -533,6 +538,10 @@ const CameraManager = {
   },
   
   async stop() {
+    // Reset scanning lock flags on session stop/exit
+    isScanPaused = false;
+    lookupInProgress = false;
+    
     if (this.state === 'STOPPED' || this.state === 'IDLE' || !this.html5Qrcode) {
       return;
     }
