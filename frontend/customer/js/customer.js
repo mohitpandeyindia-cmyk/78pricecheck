@@ -5,8 +5,17 @@ if (window.HTML_BUILD && window.APP_BUILD && window.HTML_BUILD !== window.APP_BU
   throw new Error('[Build Mismatch] Execution halted for reload.');
 }
 
+// Dev-mode performance metrics and overlay variables
+const DEBUG_MODE = 
+  window.location.hostname === 'localhost' || 
+  window.location.hostname === '127.0.0.1' || 
+  window.location.hostname.startsWith('192.168.') || 
+  window.location.hostname.startsWith('10.') || 
+  window.location.hostname.startsWith('172.');
+
 // Telemetry Diagnostics Saver
 function saveDiagnosticsTelemetry(metrics) {
+  if (!DEBUG_MODE) return;
   try {
     const existing = JSON.parse(localStorage.getItem('78pricecheck_telemetry') || '{}');
     const updated = Object.assign(existing, metrics);
@@ -68,13 +77,6 @@ let recentScans = [];
 let currentRecoveryBarcode = null;
 let cameraPermissionGranted = false;
 
-// Dev-mode performance metrics and overlay variables
-const DEBUG_MODE = 
-  window.location.hostname === 'localhost' || 
-  window.location.hostname === '127.0.0.1' || 
-  window.location.hostname.startsWith('192.168.') || 
-  window.location.hostname.startsWith('10.') || 
-  window.location.hostname.startsWith('172.');
 let cameraStartTime = 0;
 let firstDecodeTime = 0;
 let lastApiDuration = 0;
@@ -1181,59 +1183,71 @@ async function lookupBarcode(barcode) {
     for (let i = 0; i < len; i++) {
       pts.push(`U+${bc.charCodeAt(i).toString(16).padStart(4, '0')}`);
     }
-    console.log(`[LookupPipeline] [${platform}] Decoded Barcode: "${bc}" (Length: ${bc.length})`);
-    console.log(`[LookupPipeline] [${platform}] Unicode points: ${pts.join(', ')}`);
-    saveDiagnosticsTelemetry({
-      lastInspectedBarcode: bc,
-      lastInspectedBarcodeLength: len,
-      lastInspectedBarcodeUnicode: pts.join(', ')
-    });
+    if (DEBUG_MODE) {
+      console.log(`[LookupPipeline] [${platform}] Decoded Barcode: "${bc}" (Length: ${bc.length})`);
+      console.log(`[LookupPipeline] [${platform}] Unicode points: ${pts.join(', ')}`);
+      saveDiagnosticsTelemetry({
+        lastInspectedBarcode: bc,
+        lastInspectedBarcodeLength: len,
+        lastInspectedBarcodeUnicode: pts.join(', ')
+      });
+    }
   };
   inspectBarcodeString(barcode, inspectPlatform);
 
   const lookupUrl = `/api/products/lookup/${encodeURIComponent(barcode)}`;
-  console.log(`[LookupPipeline] URL before fetch: "${lookupUrl}"`);
-  console.log(`[LookupPipeline] HTTP Method: GET`);
-  
-  saveDiagnosticsTelemetry({
-    lastLookupUrl: lookupUrl,
-    lastLookupMethod: 'GET',
-    lastLookupStatus: 'Pending...',
-    lastLookupHeaders: '',
-    lastLookupRawBody: '',
-    lastLookupError: '',
-    lastLookupJsonError: '',
-    lastLookupStack: ''
-  });
-
-  try {
-    console.log(`[LookupPipeline] Sending Network Request...`);
-    const response = await fetch(lookupUrl);
-    console.log(`[LookupPipeline] Network Request completed. Status: ${response.status}`);
-    
-    const headersObj = {};
-    response.headers.forEach((val, key) => {
-      headersObj[key] = val;
-    });
-    console.log(`[LookupPipeline] Response Headers:`, JSON.stringify(headersObj));
+  if (DEBUG_MODE) {
+    console.log(`[LookupPipeline] URL before fetch: "${lookupUrl}"`);
+    console.log(`[LookupPipeline] HTTP Method: GET`);
     
     saveDiagnosticsTelemetry({
-      lastLookupStatus: response.status,
-      lastLookupHeaders: JSON.stringify(headersObj)
+      lastLookupUrl: lookupUrl,
+      lastLookupMethod: 'GET',
+      lastLookupStatus: 'Pending...',
+      lastLookupHeaders: '',
+      lastLookupRawBody: '',
+      lastLookupError: '',
+      lastLookupJsonError: '',
+      lastLookupStack: ''
     });
+  }
+
+  try {
+    if (DEBUG_MODE) {
+      console.log(`[LookupPipeline] Sending Network Request...`);
+    }
+    const response = await fetch(lookupUrl);
+    if (DEBUG_MODE) {
+      console.log(`[LookupPipeline] Network Request completed. Status: ${response.status}`);
+      
+      const headersObj = {};
+      response.headers.forEach((val, key) => {
+        headersObj[key] = val;
+      });
+      console.log(`[LookupPipeline] Response Headers:`, JSON.stringify(headersObj));
+      
+      saveDiagnosticsTelemetry({
+        lastLookupStatus: response.status,
+        lastLookupHeaders: JSON.stringify(headersObj)
+      });
+    }
     
     let rawText = '';
     try {
       rawText = await response.text();
-      console.log(`[LookupPipeline] Raw Response Body:`, rawText);
-      saveDiagnosticsTelemetry({
-        lastLookupRawBody: rawText.substring(0, 1000)
-      });
+      if (DEBUG_MODE) {
+        console.log(`[LookupPipeline] Raw Response Body:`, rawText);
+        saveDiagnosticsTelemetry({
+          lastLookupRawBody: rawText.substring(0, 1000)
+        });
+      }
     } catch (readErr) {
-      console.error(`[LookupPipeline] Failed to read raw response text:`, readErr);
-      saveDiagnosticsTelemetry({
-        lastLookupRawBody: `Error reading body: ${readErr.message}`
-      });
+      if (DEBUG_MODE) {
+        console.error(`[LookupPipeline] Failed to read raw response text:`, readErr);
+        saveDiagnosticsTelemetry({
+          lastLookupRawBody: `Error reading body: ${readErr.message}`
+        });
+      }
       throw readErr;
     }
 
@@ -1410,19 +1424,23 @@ async function lookupBarcode(barcode) {
           }, 1000);
         }
       } else {
-        console.warn(`[LookupPipeline] Non-200 Response status: ${response.status}. Raw content:`, rawText);
+        if (DEBUG_MODE) {
+          console.warn(`[LookupPipeline] Non-200 Response status: ${response.status}. Raw content:`, rawText);
+        }
         handleLookupFailure();
       }
     }, 150);
     
   } catch (err) {
-    console.error(`[LookupPipeline] Fetch Rejected Exception:`, err);
-    console.error(`[LookupPipeline] Stack Trace:`, err.stack);
-    saveDiagnosticsTelemetry({
-      lastLookupStatus: 'REJECTED',
-      lastLookupError: err.message,
-      lastLookupStack: err.stack
-    });
+    if (DEBUG_MODE) {
+      console.error(`[LookupPipeline] Fetch Rejected Exception:`, err);
+      console.error(`[LookupPipeline] Stack Trace:`, err.stack);
+      saveDiagnosticsTelemetry({
+        lastLookupStatus: 'REJECTED',
+        lastLookupError: err.message,
+        lastLookupStack: err.stack
+      });
+    }
     handleLookupFailure();
   }
 }

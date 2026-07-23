@@ -12,6 +12,18 @@ import productsRouter from './routes/products';
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// Authoritative version loaded once from package.json at startup
+let packageVersion = '0.1.0';
+try {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../package.json'), 'utf8')
+  );
+  packageVersion = packageJson.version || '0.1.0';
+} catch (e) {
+  // Suppress trace logs
+}
+export { packageVersion };
+
 // Trust reverse proxies for client IP rate limiting and secure context evaluation
 app.set('trust proxy', true);
 
@@ -87,7 +99,7 @@ app.get('/api/health', async (req, res) => {
   
   res.json({
     status: 'healthy',
-    version: '1.0.0',
+    version: packageVersion,
     uptime: process.uptime(),
     database: dbConnected ? 'connected' : 'disconnected'
   });
@@ -95,6 +107,10 @@ app.get('/api/health', async (req, res) => {
 
 // Diagnostic path debug endpoint
 app.get('/api/debug-paths', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    res.status(403).json({ success: false, message: 'Forbidden in production' });
+    return;
+  }
   try {
     const fs = require('fs');
     const { getDb } = require('./db');
@@ -180,6 +196,7 @@ app.get('/health', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
   res.json({
     status: 'UP',
+    version: packageVersion,
     uptime: Math.floor(uptime),
     ...buildInfo
   });

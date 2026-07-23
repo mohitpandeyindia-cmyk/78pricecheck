@@ -1,7 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { getDb } from '../db';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
+
+// Authoritative version loaded dynamically from package.json
+let packageVersion = '0.1.0';
+try {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../package.json'), 'utf8')
+  );
+  packageVersion = packageJson.version || '0.1.0';
+} catch (e) {
+  // Suppress trace logs
+}
 
 // GET /api/version - Returns application and system versions
 router.get('/version', async (req: Request, res: Response): Promise<void> => {
@@ -32,7 +45,7 @@ router.get('/version', async (req: Request, res: Response): Promise<void> => {
 
     res.json({
       application: '78 PriceCheck',
-      version: '0.3.0',
+      version: packageVersion,
       databaseVersion: '3',
       catalogVersion,
       lastCatalogUpload,
@@ -43,26 +56,6 @@ router.get('/version', async (req: Request, res: Response): Promise<void> => {
       success: false,
       message: 'Failed to retrieve version info',
       error: error.message || error
-    });
-  }
-});
-
-// GET /api/health - Returns system health status
-router.get('/health', async (req: Request, res: Response): Promise<void> => {
-  try {
-    const db = await getDb();
-    await db.get('SELECT 1');
-    
-    res.json({
-      status: "ok",
-      database: "connected",
-      version: "1.0.0"
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      database: "disconnected",
-      version: "1.0.0"
     });
   }
 });
