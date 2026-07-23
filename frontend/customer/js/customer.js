@@ -739,8 +739,97 @@ async function fetchHotDeals() {
   renderHotDealsCarousel();
 }
 
+// Theme Manager - Decoupled asset mapper for design system themes (Layer 1)
+const ThemeManager = {
+  getTheme() {
+    // 1. Check for manual query parameter override
+    const urlParams = new URLSearchParams(window.location.search);
+    const forcedTheme = urlParams.get('theme');
+    if (forcedTheme) {
+      return forcedTheme.toLowerCase();
+    }
+
+    // 2. Check date-based rules
+    const now = new Date();
+    const month = now.getMonth(); // 0-indexed
+    const date = now.getDate();
+
+    if (month === 11 && date >= 20) {
+      return 'christmas';
+    } else if (month === 0 && date <= 3) {
+      return 'newyear';
+    } else if (month === 0 && date === 26) {
+      return 'republicday';
+    } else if (month === 7 && date === 15) {
+      return 'independence';
+    } else if ((month === 9 && date >= 28) || (month === 10 && date <= 5)) {
+      return 'diwali';
+    } else if (month === 2 && date >= 15 && date <= 25) {
+      return 'holi';
+    } else if (month === 7 && date >= 18 && date <= 22) {
+      return 'rakshabandhan';
+    } else if (month === 7 && date >= 25 && date <= 30) {
+      return 'janmashtami';
+    } else if (month === 8 && date === 15) {
+      return 'anniversary';
+    } else if (month === 6 || month === 7) {
+      return 'monsoon';
+    } else if (month === 11 || month === 0) {
+      return 'winter';
+    } else if (month >= 3 && month <= 5) {
+      return 'summer';
+    }
+
+    // 3. Fallback to Time-of-Day
+    const hours = now.getHours();
+    if (hours >= 6 && hours < 12) {
+      return 'morning';
+    } else if (hours >= 12 && hours < 17) {
+      return 'afternoon';
+    } else if (hours >= 17 && hours < 20) {
+      return 'evening';
+    } else {
+      return 'night';
+    }
+  },
+
+  getBackgroundAsset(themeName) {
+    const mapping = {
+      morning: 'assets/backgrounds/morning.webp',
+      afternoon: 'assets/backgrounds/afternoon.webp',
+      evening: 'assets/backgrounds/evening.webp',
+      night: 'assets/backgrounds/night.webp',
+      holi: 'assets/backgrounds/holi.webp',
+      diwali: 'assets/backgrounds/diwali.webp',
+      rakshabandhan: 'assets/backgrounds/rakshabandhan.webp',
+      independence: 'assets/backgrounds/independence.webp',
+      republicday: 'assets/backgrounds/republicday.webp',
+      janmashtami: 'assets/backgrounds/janmashtami.webp',
+      christmas: 'assets/backgrounds/christmas.webp',
+      newyear: 'assets/backgrounds/newyear.webp',
+      anniversary: 'assets/backgrounds/anniversary.webp',
+      monsoon: 'assets/backgrounds/monsoon.webp',
+      winter: 'assets/backgrounds/winter.webp',
+      summer: 'assets/backgrounds/summer.webp'
+    };
+    return mapping[themeName] || 'assets/backgrounds/morning.webp';
+  }
+};
+
+// Scoped Scanner background initializer
+function initScannerBackground() {
+  const bgEl = document.getElementById('scanner-background');
+  if (bgEl) {
+    const theme = ThemeManager.getTheme();
+    const asset = ThemeManager.getBackgroundAsset(theme);
+    console.log(`[ScannerPage] Loaded background asset: ${asset} for theme: ${theme}`);
+    bgEl.style.backgroundImage = `url(${asset})`;
+  }
+}
+
 // Initialize Layout and Camera Managers
 LayoutManager.init();
+initScannerBackground();
 CameraManager.init();
 fetchHotDeals();
 

@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607222007";</script>
+  <script>window.HTML_BUILD = "202607231655";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -45,7 +45,9 @@
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="view-panel" style="display: none;">
-      <!-- Row 1: Navigation Bar (5%) -->
+      <div id="scanner-background" class="dynamic-background-layer"></div>
+      <div id="scanner-content">
+        <!-- Row 1: Navigation Bar (5%) -->
       <header class="top-header" id="scan-row-1">
         <button id="back-btn" class="header-back-btn">&lt; BACK</button>
         <div class="header-brand" id="header-brand-btn">
@@ -255,6 +257,7 @@
           <!-- Populated dynamically -->
         </div>
       </div>
+    </div>
     </div>
     </div>
     </div>
