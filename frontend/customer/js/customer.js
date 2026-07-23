@@ -246,6 +246,7 @@ const StateManager = {
       case 'BOOTING':
       case 'INITIALIZING':
       case 'READY':
+        CameraManager.stop();
         showPage('welcome-view');
         break;
         
@@ -1656,7 +1657,6 @@ startScanBtn.addEventListener('click', (e) => {
 });
 
 backBtn.addEventListener('click', () => {
-  CameraManager.stop();
   StateManager.transitionTo('READY');
 });
 
@@ -1664,7 +1664,6 @@ backBtn.addEventListener('click', () => {
 const headerBrandBtn = document.getElementById('header-brand-btn');
 if (headerBrandBtn) {
   headerBrandBtn.addEventListener('click', () => {
-    CameraManager.stop();
     StateManager.transitionTo('READY');
   });
 }
