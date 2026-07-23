@@ -111,12 +111,7 @@ html, body {
   height: 100%;
   z-index: 1; /* Underneath content */
   pointer-events: none;
-  background-size: cover;
-  background-position: center;
-  filter: blur(16px) brightness(0.95);
-  -webkit-filter: blur(16px) brightness(0.95);
-  transform: scale(1.08); /* Avoid white bleed from blur radius */
-  transition: background 1.0s ease-in-out, filter 1.0s ease-in-out;
+  background-color: #eaeaea;
 }
 
 #scanner-content {
@@ -127,6 +122,67 @@ html, body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+/* Phase 1 Wireframe Layout Specifications */
+#scan-row-1, 
+.scanner-area, 
+.product-info-area, 
+.promotions-area, 
+.recently-scanned-handle-area {
+  border: 2px dashed #999999 !important;
+  position: relative;
+  box-sizing: border-box;
+}
+
+#scan-row-1::after, 
+.scanner-area::after, 
+.product-info-area::after, 
+.promotions-area::after, 
+.recently-scanned-handle-area::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-family);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  letter-spacing: 2px;
+  z-index: 5;
+}
+
+#scan-row-1::after { content: 'HEADER'; }
+.scanner-area::after { content: 'SCANNER'; }
+.product-info-area::after { content: 'PRODUCT'; }
+.promotions-area::after { content: 'PROMOTIONS'; }
+.recently-scanned-handle-area::after { content: 'RECENT SCANS'; }
+
+/* Strip layouts/aesthetics on Scanner Page for Phase 1 Wireframe */
+#scanner-view, 
+#scanner-view * {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+#scanner-view .top-header,
+#scanner-view .product-info-area,
+#scanner-view .promotions-area,
+#scanner-view .recently-scanned-handle-area,
+#scanner-view .product-card,
+#scanner-view .bottom-sheet,
+#scanner-view .sheet-grab-handle,
+#scanner-view .sheet-header {
+  background: transparent !important;
+  border-radius: 0 !important;
+  border-color: #999999 !important;
+}
+
+#scanner-view .product-card {
+  border: 1px dashed #999999 !important;
 }
 
 /* Welcome Page Layout */
