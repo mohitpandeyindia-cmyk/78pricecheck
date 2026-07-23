@@ -9,14 +9,14 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607231655";</script>
+  <script>window.HTML_BUILD = "202607231934";</script>
 </head>
 <body>
   <div class="app-shell">
     <div id="a11y-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     
     <!-- State A: Welcome View -->
-    <div id="welcome-view" class="welcome-container">
+    <div id="welcome-view" class="welcome-container app-page active-page">
       <div class="welcome-layout">
         <!-- Row 1: Ribbon -->
         <div id="welcome-row-1" class="welcome-row">
@@ -44,7 +44,7 @@
     
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
-    <div id="scanner-view" class="view-panel" style="display: none;">
+    <div id="scanner-view" class="app-page">
       <div id="scanner-background" class="dynamic-background-layer"></div>
       <div id="scanner-content">
         <!-- Row 1: Navigation Bar (5%) -->

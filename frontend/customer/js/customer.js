@@ -21,6 +21,21 @@ const welcomeView = document.getElementById('welcome-view');
 const scannerView = document.getElementById('scanner-view');
 const backBtn = document.getElementById('back-btn');
 
+// Page Switcher Navigation Abstraction
+function showPage(pageId) {
+  const pages = ['welcome-view', 'scanner-view'];
+  pages.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === pageId) {
+        el.classList.add('active-page');
+      } else {
+        el.classList.remove('active-page');
+      }
+    }
+  });
+}
+
 const resultPanel = document.getElementById('result-panel');
 const scanFeedback = document.getElementById('scan-feedback');
 const recentScansList = document.getElementById('recent-scans-list');
@@ -228,45 +243,22 @@ const StateManager = {
     switch (state) {
       case 'BOOTING':
       case 'INITIALIZING':
-        welcomeView.style.display = 'flex';
-        scannerView.classList.remove('active');
-        setTimeout(() => {
-          if (this.currentState === 'BOOTING' || this.currentState === 'INITIALIZING') {
-            scannerView.style.display = 'none';
-          }
-        }, 400);
-        break;
-        
       case 'READY':
-        welcomeView.style.display = 'flex';
-        scannerView.classList.remove('active');
-        setTimeout(() => {
-          if (this.currentState === 'READY') {
-            scannerView.style.display = 'none';
-          }
-        }, 400);
+        showPage('welcome-view');
         break;
         
       case 'SCANNING':
-        welcomeView.style.display = 'flex';
-        scannerView.style.display = 'flex';
-        setTimeout(() => {
-          scannerView.classList.add('active');
-        }, 20);
+        showPage('scanner-view');
         showState('camera-opening'); // Show premium custom Opening Camera state first
         break;
         
       case 'LOOKUP':
-        welcomeView.style.display = 'flex';
-        scannerView.style.display = 'flex';
-        scannerView.classList.add('active');
+        showPage('scanner-view');
         showState('loading');
         break;
         
       case 'DISPLAY_RESULT':
-        welcomeView.style.display = 'flex';
-        scannerView.style.display = 'flex';
-        scannerView.classList.add('active');
+        showPage('scanner-view');
         if (data.type === 'single') {
           showState('single');
         } else if (data.type === 'multiple') {
@@ -277,16 +269,12 @@ const StateManager = {
         break;
         
       case 'OFFLINE':
-        welcomeView.style.display = 'flex';
-        scannerView.style.display = 'flex';
-        scannerView.classList.add('active');
+        showPage('scanner-view');
         showState('networkError');
         break;
         
       case 'ERROR':
-        welcomeView.style.display = 'flex';
-        scannerView.style.display = 'flex';
-        scannerView.classList.add('active');
+        showPage('scanner-view');
         if (data.type === 'cameraDenied') {
           showState('cameraDenied');
           const desc = states.cameraDenied.querySelector('.error-desc');
