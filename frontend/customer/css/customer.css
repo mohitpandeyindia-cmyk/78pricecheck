@@ -23,6 +23,7 @@
   --brand-dark-red: #7f0000;
 
   --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --content-inset: clamp(16px, 5vw, 24px);
   
   /* Spacing Tokens */
   --space-1: calc(4px * var(--responsive-scale, 1));
@@ -122,7 +123,7 @@ html, body {
   position: relative;
   z-index: 10; /* Above background */
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -449,14 +450,15 @@ html, body {
 /* Premium Supermarket Header */
 .top-header {
   height: calc(56px + env(safe-area-inset-top, 0px));
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  align-items: end;
   padding: env(safe-area-inset-top, 0px) var(--space-4) 0 var(--space-4);
   background-color: var(--card-bg);
   position: relative;
   user-select: none;
   z-index: 100;
+  box-sizing: border-box;
 }
 
 .header-back-btn {
@@ -493,6 +495,54 @@ html, body {
   justify-content: center;
 }
 
+/* Grid columns for Scanner Header */
+#scanner-view .header-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  height: 100%;
+}
+
+#scanner-view .header-center {
+  display: flex;
+  justify-content: center;
+  align-items: end;
+  height: 100%;
+  overflow: visible;
+}
+
+#scanner-view .header-mascot-img {
+  height: 100%;
+  max-height: 56px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+#scanner-view .header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 100%;
+}
+
+#scanner-view .header-brand {
+  position: static;
+  transform: none;
+  left: auto;
+  pointer-events: none;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+#header-brand-btn {
+  pointer-events: none;
+  cursor: default;
+}
+
 .brand-line-1 {
   font-size: 1.15rem;
   font-weight: 800;
@@ -527,8 +577,7 @@ html, body {
 }
 
 #scan-row-1 {
-  height: 5%;
-  min-height: 48px;
+  height: calc(56px + env(safe-area-inset-top, 0px));
   box-shadow: none !important;
   border-bottom: 1px solid var(--border-color);
   padding: 0 var(--space-4);
@@ -539,11 +588,13 @@ html, body {
 
 /* Scanner Area Row 2 (30% of screen height) */
 .scanner-area {
-  height: 30%;
+  flex: 30 1 0;
   position: relative;
   background-color: #0c150c;
   overflow: hidden;
   width: 100%;
+  padding: 0 var(--content-inset);
+  box-sizing: border-box;
 }
 
 #reader {
@@ -712,7 +763,7 @@ html, body {
 
 /* Row 3: Dynamic Product Information Card (40% height) */
 .product-info-area {
-  height: 40%;
+  flex: 40 1 0;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -720,7 +771,7 @@ html, body {
   justify-content: flex-start;
   background-color: var(--bg-light);
   box-sizing: border-box;
-  padding: 4px var(--space-4) 8px var(--space-4);
+  padding: 4px var(--content-inset) 8px var(--content-inset);
   position: relative;
   overflow: hidden;
 }
@@ -806,12 +857,12 @@ html, body {
 
 /* Row 4: Promotions Carousel (20% height) */
 .promotions-area {
-  height: 20%;
+  flex: 22 1 0;
   width: 100%;
   background-color: #ffffff;
   border-top: 1px solid var(--border-color);
   box-sizing: border-box;
-  padding: 6px var(--space-4);
+  padding: 6px var(--content-inset);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -929,7 +980,7 @@ html, body {
 
 /* Row 5: Recently Scanned Handle (5% height) */
 .recently-scanned-handle-area {
-  height: 5%;
+  flex: 3 1 0;
   width: 100%;
   display: flex;
   align-items: center;

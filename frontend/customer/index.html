@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607231934";</script>
+  <script>window.HTML_BUILD = "202607232231";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -49,15 +49,22 @@
       <div id="scanner-content">
         <!-- Row 1: Navigation Bar (5%) -->
       <header class="top-header" id="scan-row-1">
-        <button id="back-btn" class="header-back-btn">&lt; BACK</button>
-        <div class="header-brand" id="header-brand-btn">
-          <div class="brand-line-1">
-            <span class="brand-seventy">SEVENTY</span>
-            <span class="brand-eight">EIGHT</span>
-            <span class="brand-supermaart">SUPERMAART</span>
+        <div class="header-left">
+          <button id="back-btn" class="header-back-btn">&lsaquo;</button>
+        </div>
+        <div class="header-center">
+          <img src="assets/mascot.png" class="header-mascot-img" alt="78 PriceCheck Mascot Greeting">
+        </div>
+        <div class="header-right">
+          <div class="header-brand" id="header-brand-btn">
+            <div class="brand-line-1">
+              <span class="brand-seventy">SEVENTY</span>
+              <span class="brand-eight">EIGHT</span>
+              <span class="brand-supermaart">SUPERMAART</span>
+            </div>
+            <img class="header-logo" src="assets/scan-logo.jpg" alt="78 Supermaart Logo">
           </div>
         </div>
-        <img class="header-logo" src="assets/scan-logo.jpg" alt="78 Supermaart Logo">
       </header>
 
       <!-- Row 2: Scanner Area (30%) -->
