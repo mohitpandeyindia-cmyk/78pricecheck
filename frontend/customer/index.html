@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607241640";</script>
+  <script>window.HTML_BUILD = "202607242124";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -115,49 +115,61 @@
             <p class="state-instruction">Looking up price...</p>
           </div>
           
-          <!-- State 3: Single Match Display -->
-          <div id="state-single" class="details-state" style="display: none;">
-            <!-- Product Title naturally styled -->
-            <div class="product-title-row">
-              <h2 id="single-name" class="product-title">-</h2>
-            </div>
-            
-            <!-- Barcode Interactive Toggle Trigger -->
-            <div class="barcode-toggle-container" id="single-barcode-toggle">
-              <span class="barcode-toggle-label">View Barcode</span>
-              <span class="barcode-toggle-chevron">▼</span>
-            </div>
-            
-            <!-- Barcode Collapsible Area -->
-            <div class="barcode-collapsible" id="single-barcode-area">
-              <span class="barcode-val monospace" id="single-barcode">-</span>
-            </div>
-            
-            <div class="price-section">
-              <div class="price-container">
-                <span class="mrp-wrapper" id="single-mrp-container">
-                  MRP <span class="mrp-strikethrough" id="single-mrp">-</span>
-                </span>
-                <span class="price-val" id="single-sale-price">-</span>
+          <!-- State 3: Single Match Display (ProductCard.Single v1.0) -->
+          <div id="state-single" class="details-state product-card-single" style="display: none;">
+            <!-- Top Status Row (Compact) -->
+            <div class="product-card-single__top">
+              <div class="product-capsule product-capsule--found">
+                <span class="product-capsule__dot"></span>
+                <span class="product-capsule__text">Product Found</span>
               </div>
-              <div id="single-discount-badge" class="discount-badge" style="display: none;">SAVE 0%</div>
+              <div class="product-capsule product-capsule--stock">
+                <span class="product-capsule__dot"></span>
+                <span class="product-capsule__text">In Stock</span>
+              </div>
             </div>
-            
-            <!-- Bulk Offer Card (Premium Promotional Panel) -->
-            <div id="single-bulk-container" class="bulk-offer-panel" style="display: none;">
-              <div class="bulk-left-col">
-                <div class="bulk-header-row">
-                  <svg class="bulk-tag-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                  </svg>
-                  <span class="bulk-title">Bulk Offer</span>
+
+            <!-- Main Product Area (Dominant) -->
+            <div class="product-card-single__main">
+              <div class="product-card-single__main-left">
+                <h2 class="product-card-single__name" id="single-name">
+                  <span class="skeleton-line skeleton-line--title"></span>
+                </h2>
+              </div>
+
+              <!-- Shared Vertical Axis Divider 1 -->
+              <div class="product-card-single__divider"></div>
+
+              <div class="product-card-single__main-right">
+                <div class="product-card-single__price-main" id="single-sale-price">
+                  <span class="skeleton-line skeleton-line--price"></span>
                 </div>
-                <div class="bulk-subtitle" id="single-bulk-qty">-</div>
+                <div class="product-card-single__price-mrp-row">
+                  <span class="product-card-single__mrp-label">MRP</span>
+                  <span class="product-card-single__mrp-val" id="single-mrp">
+                    <span class="skeleton-line skeleton-line--mrp"></span>
+                  </span>
+                </div>
               </div>
-              <div class="bulk-right-col">
-                <div class="bulk-price" id="single-bulk-price">-</div>
-                <div class="bulk-savings-text" id="single-bulk-savings">-</div>
+            </div>
+
+            <!-- Savings Band (Prominent but Secondary) -->
+            <div class="product-card-single__savings" id="single-discount-badge">
+              <div class="product-card-single__savings-left">
+                <span class="product-card-single__savings-label">You Save</span>
+                <span class="product-card-single__savings-val" id="single-saved-amount">
+                  <span class="skeleton-line skeleton-line--save"></span>
+                </span>
+              </div>
+
+              <!-- Shared Vertical Axis Divider 2 (Aligned on exact same axis as Divider 1) -->
+              <div class="product-card-single__divider"></div>
+
+              <div class="product-card-single__savings-right">
+                <span class="product-card-single__savings-percent" id="single-discount-percent">
+                  <span class="skeleton-line skeleton-line--percent"></span>
+                </span>
+                <span class="product-card-single__savings-off">OFF</span>
               </div>
             </div>
           </div>

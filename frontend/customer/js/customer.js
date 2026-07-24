@@ -1355,34 +1355,48 @@ async function lookupBarcode(barcode) {
           if (announcer) {
             announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
           }
-          document.getElementById('single-name').textContent = p.name;
-          document.getElementById('single-barcode').textContent = p.barcode;
-          document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(p.salePrice);
-          document.getElementById('single-mrp').textContent = formatCurrency(p.mrp);
+          const nameEl = document.getElementById('single-name');
+          if (nameEl) nameEl.textContent = p.name;
+          const barcodeEl = document.getElementById('single-barcode');
+          if (barcodeEl) barcodeEl.textContent = p.barcode;
+          const priceEl = document.getElementById('single-sale-price');
+          if (priceEl) priceEl.innerHTML = formatPremiumPrice(p.salePrice);
+          const mrpEl = document.getElementById('single-mrp');
+          if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
           
-          // Calculate discount percent
+          // Calculate discount percent and savings amount for ProductCard.Single
           const discountBadge = document.getElementById('single-discount-badge');
           if (discountBadge) {
             const mrpVal = Number(p.mrp);
             const saleVal = Number(p.salePrice);
             if (mrpVal > saleVal && mrpVal > 0) {
               const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-              discountBadge.textContent = `SAVE ${discountPercent}%`;
-              discountBadge.style.display = 'inline-block';
+              const savedVal = (mrpVal - saleVal).toFixed(2).replace(/\.00$/, '');
+              
+              const percentEl = document.getElementById('single-discount-percent');
+              if (percentEl) percentEl.textContent = `${discountPercent}%`;
+              
+              const savedEl = document.getElementById('single-saved-amount');
+              if (savedEl) savedEl.textContent = `₹${savedVal}`;
+              
+              discountBadge.style.display = 'flex';
             } else {
               discountBadge.style.display = 'none';
             }
           }
           
           const bulkContainer = document.getElementById('single-bulk-container');
-          if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+          if (bulkContainer && FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
             AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-            document.getElementById('single-bulk-qty').textContent = `Buy ${p.wholesaleQty}+`;
-            document.getElementById('single-bulk-price').textContent = `${formatCurrency(p.wholesalePrice)} each`;
+            const bQty = document.getElementById('single-bulk-qty');
+            if (bQty) bQty.textContent = `Buy ${p.wholesaleQty}+`;
+            const bPrice = document.getElementById('single-bulk-price');
+            if (bPrice) bPrice.textContent = `${formatCurrency(p.wholesalePrice)} each`;
             const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-            document.getElementById('single-bulk-savings').textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
+            const bSavings = document.getElementById('single-bulk-savings');
+            if (bSavings) bSavings.textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
             bulkContainer.style.display = 'flex';
-          } else {
+          } else if (bulkContainer) {
             bulkContainer.style.display = 'none';
           }
           
@@ -1770,20 +1784,46 @@ function renderRecentScansBottomSheet() {
       // Reset product title row collapse status
       resetBarcodeCollapse();
 
-      showState('single');
-      document.getElementById('single-name').textContent = item.name;
-      document.getElementById('single-barcode').textContent = item.barcode;
-      document.getElementById('single-sale-price').innerHTML = formatPremiumPrice(item.salePrice);
-      document.getElementById('single-mrp').textContent = formatCurrency(item.mrp);
+      const hName = document.getElementById('single-name');
+      if (hName) hName.textContent = item.name;
+      const hBarcode = document.getElementById('single-barcode');
+      if (hBarcode) hBarcode.textContent = item.barcode;
+      const hPrice = document.getElementById('single-sale-price');
+      if (hPrice) hPrice.innerHTML = formatPremiumPrice(item.salePrice);
+      const hMrp = document.getElementById('single-mrp');
+      if (hMrp) hMrp.textContent = formatCurrency(item.mrp);
+      
+      const discountBadge = document.getElementById('single-discount-badge');
+      if (discountBadge) {
+        const mrpVal = Number(item.mrp);
+        const saleVal = Number(item.salePrice);
+        if (mrpVal > saleVal && mrpVal > 0) {
+          const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+          const savedVal = (mrpVal - saleVal).toFixed(2).replace(/\.00$/, '');
+          
+          const percentEl = document.getElementById('single-discount-percent');
+          if (percentEl) percentEl.textContent = `${discountPercent}%`;
+          
+          const savedEl = document.getElementById('single-saved-amount');
+          if (savedEl) savedEl.textContent = `₹${savedVal}`;
+          
+          discountBadge.style.display = 'flex';
+        } else {
+          discountBadge.style.display = 'none';
+        }
+      }
       
       const bulkContainer = document.getElementById('single-bulk-container');
-      if (item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
-        document.getElementById('single-bulk-qty').textContent = `Buy ${item.wholesaleQty} or more`;
-        document.getElementById('single-bulk-price').textContent = `${formatCurrency(item.wholesalePrice)} each`;
+      if (bulkContainer && item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
+        const bQty = document.getElementById('single-bulk-qty');
+        if (bQty) bQty.textContent = `Buy ${item.wholesaleQty} or more`;
+        const bPrice = document.getElementById('single-bulk-price');
+        if (bPrice) bPrice.textContent = `${formatCurrency(item.wholesalePrice)} each`;
         const savings = (Number(item.salePrice) - Number(item.wholesalePrice)) * Number(item.wholesaleQty);
-        document.getElementById('single-bulk-savings').textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
+        const bSavings = document.getElementById('single-bulk-savings');
+        if (bSavings) bSavings.textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
         bulkContainer.style.display = 'flex';
-      } else {
+      } else if (bulkContainer) {
         bulkContainer.style.display = 'none';
       }
       

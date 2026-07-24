@@ -862,42 +862,265 @@ html, body {
   overflow: hidden;
 }
 
-#scanner-view .product-card {
-  background: #ffffff;
-  border-radius: 20px;
-  padding: var(--space-3) var(--space-4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  border: 1px solid var(--border-color);
-  width: 95%;
-  height: calc(100% - 32px); /* Consume remaining space in flex container */
+/* ==========================================================================
+   Scanner Design System Tokens & ProductCard.Single Component Architecture
+   ========================================================================== */
+
+#scanner-view {
+  /* Design Tokens */
+  --surface-card: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --accent-positive: #166534;
+  --capsule-success-bg: rgba(34, 197, 94, 0.1);
+  --capsule-success-text: #15803d;
+  --divider-border: #e2e8f0;
+  --radius-card: 22px;
+  --radius-pill: 100px;
+  --radius-band: 14px;
+  --elevation-card: 0 12px 32px -4px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+
+  /* Spacing Scale Tokens */
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 14px;
+  --space-l: 18px;
+  --space-xl: 24px;
+}
+
+/* ProductCard.Single Layout Container */
+#scanner-view .product-card-single {
+  background: var(--surface-card);
+  border-radius: var(--radius-card);
+  padding: var(--space-l);
+  box-shadow: var(--elevation-card);
+  border: 1px solid var(--divider-border);
+  width: 100%;
+  height: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  margin-top: 0;
+  justify-content: space-between;
+  text-align: left;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
-.details-state {
+/* Top Status Row (Compact) */
+#scanner-view .product-card-single__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
+}
+
+#scanner-view .product-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-xs) 10px;
+  border-radius: var(--radius-pill);
+  background: var(--capsule-success-bg);
+  color: var(--capsule-success-text);
+  font-family: var(--font-family);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+#scanner-view .product-capsule__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Main Product Area (Dominant) */
+#scanner-view .product-card-single__main {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  flex: 1;
+  margin: var(--space-m) 0;
+  gap: var(--space-m);
+}
+
+#scanner-view .product-card-single__main-left {
+  flex: 1 1 58%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  justify-content: center;
 }
 
-/* Discount percentage label styling */
-.discount-badge {
-  background-color: #2e7d32;
-  color: #ffffff;
-  font-family: 'Outfit', sans-serif;
-  font-size: 0.75rem;
+#scanner-view .product-card-single__name {
+  font-family: var(--font-family);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Shared Vertical Divider Alignment Axis */
+#scanner-view .product-card-single__divider {
+  width: 1px;
+  background-color: var(--divider-border);
+  align-self: stretch;
+  flex: 0 0 1px;
+}
+
+#scanner-view .product-card-single__main-right {
+  flex: 0 0 38%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Sale Price - Primary Visual Focus */
+#scanner-view .product-card-single__price-main {
+  font-family: var(--font-family);
+  font-size: 1.85rem;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 8px;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+#scanner-view .product-card-single__price-main .price-currency {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-right: 2px;
+  color: var(--text-primary);
+}
+
+#scanner-view .product-card-single__price-main .price-whole {
+  font-size: 1.85rem;
+  font-weight: 800;
+}
+
+#scanner-view .product-card-single__price-main .price-decimal {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+#scanner-view .product-card-single__price-mrp-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+#scanner-view .product-card-single__mrp-label {
+  font-weight: 500;
+}
+
+#scanner-view .product-card-single__mrp-val {
+  text-decoration: line-through;
+  font-weight: 600;
+}
+
+/* Savings Band (Prominent but Secondary) */
+#scanner-view .product-card-single__savings {
+  background: var(--capsule-success-bg);
+  border-radius: var(--radius-band);
+  padding: var(--space-s) var(--space-m);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  gap: var(--space-m);
+}
+
+#scanner-view .product-card-single__savings-left {
+  flex: 1 1 58%;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+#scanner-view .product-card-single__savings-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-positive);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#scanner-view .product-card-single__savings-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent-positive);
+}
+
+#scanner-view .product-card-single__savings-right {
+  flex: 0 0 38%;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+#scanner-view .product-card-single__savings-percent {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--accent-positive);
+}
+
+#scanner-view .product-card-single__savings-off {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent-positive);
+}
+
+/* Skeleton Shimmer Loading Placeholders (CLS Prevention) */
+#scanner-view .skeleton-line {
   display: inline-block;
-  margin-top: 6px;
-  letter-spacing: 0.05em;
-  box-shadow: 0 2px 4px rgba(46, 125, 50, 0.2);
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+#scanner-view .skeleton-line--title {
+  width: 110px;
+  height: 18px;
+}
+
+#scanner-view .skeleton-line--price {
+  width: 70px;
+  height: 28px;
+}
+
+#scanner-view .skeleton-line--mrp {
+  width: 45px;
+  height: 12px;
+}
+
+#scanner-view .skeleton-line--save {
+  width: 50px;
+  height: 16px;
+}
+
+#scanner-view .skeleton-line--percent {
+  width: 40px;
+  height: 16px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 /* Horizontal Swiping Multi List Layout */
