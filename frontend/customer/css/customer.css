@@ -532,7 +532,7 @@ html, body {
   justify-content: center;
 }
 
-/* Header Section Transparent Floating System */
+/* Header Section Transparent Floating System (v1.1 Polish) */
 #scanner-view #scan-row-1 {
   background: transparent !important;
   border-bottom: none !important;
@@ -543,7 +543,7 @@ html, body {
   padding: env(safe-area-inset-top, 0px) 0 0 0;
 }
 
-/* Left Zone - Back Button */
+/* Left Zone - Back Button (Bold Minimalist + Contrast Outline) */
 #scanner-view .scanner-header-left {
   display: flex;
   justify-content: flex-start;
@@ -555,10 +555,12 @@ html, body {
 #scanner-view .scanner-back-button {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: #000000;
   font-family: var(--font-family);
   font-size: 2.25rem;
-  font-weight: 300;
+  font-weight: 800;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
   cursor: pointer;
   width: 48px;
   height: 48px;
@@ -567,14 +569,14 @@ html, body {
   justify-content: center;
   padding: 0;
   margin: 0;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, transform 0.15s ease;
 }
 
 #scanner-view .scanner-back-button:active {
-  color: var(--primary-color);
+  transform: scale(0.92);
 }
 
-/* Center Zone - Mascot */
+/* Center Zone - Mascot (Contained Bottom Alignment) */
 #scanner-view .scanner-header-center {
   display: flex;
   justify-content: center;
@@ -588,11 +590,12 @@ html, body {
   background-image: var(--scanner-mascot-url);
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: bottom center;
   width: 90px;
-  height: 80px;
+  height: 100%;
+  max-height: 52px;
   position: absolute;
-  bottom: -24px; /* Extends 24px below the header bottom edge */
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: 110;
@@ -600,13 +603,14 @@ html, body {
   display: block;
 }
 
-/* Right Zone - Brand Logo */
+/* Right Zone - Brand Logo (Optical Height Scaling) */
 #scanner-view .scanner-header-right {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   height: 100%;
   padding-right: var(--content-inset);
+  box-sizing: border-box;
 }
 
 #scanner-view .scanner-header-logo {
@@ -615,7 +619,7 @@ html, body {
   background-repeat: no-repeat;
   background-position: center right;
   width: 120px;
-  height: 32px;
+  height: 85%;
   display: block;
   pointer-events: none;
   cursor: default;
