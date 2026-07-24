@@ -101,6 +101,8 @@ html, body {
   position: relative;
   overflow: hidden;
   background-color: var(--bg-light);
+  --scanner-mascot-url: url('../assets/scanner-mascot.png');
+  --scanner-logo-url: url('../assets/scanner-logo.jpg');
 }
 
 #scanner-background {
@@ -530,50 +532,91 @@ html, body {
   justify-content: center;
 }
 
-/* Grid columns for Scanner Header */
-#scanner-view .header-left {
+/* Header Section Transparent Floating System */
+#scanner-view #scan-row-1 {
+  background: transparent !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  z-index: 100;
+  position: relative;
+  overflow: visible;
+  padding: env(safe-area-inset-top, 0px) 0 0 0;
+}
+
+/* Left Zone - Back Button */
+#scanner-view .scanner-header-left {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   height: 100%;
+  padding-left: var(--content-inset);
 }
 
-#scanner-view .header-center {
+#scanner-view .scanner-back-button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 2.25rem;
+  font-weight: 300;
+  cursor: pointer;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  transition: color 0.2s ease;
+}
+
+#scanner-view .scanner-back-button:active {
+  color: var(--primary-color);
+}
+
+/* Center Zone - Mascot */
+#scanner-view .scanner-header-center {
   display: flex;
   justify-content: center;
-  align-items: end;
+  align-items: flex-end;
   height: 100%;
+  position: relative;
   overflow: visible;
 }
 
-#scanner-view .header-mascot-img {
-  height: 100%;
-  max-height: 56px;
-  width: auto;
-  object-fit: contain;
+#scanner-view .scanner-header-mascot {
+  background-image: var(--scanner-mascot-url);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 90px;
+  height: 80px;
+  position: absolute;
+  bottom: -24px; /* Extends 24px below the header bottom edge */
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 110;
+  pointer-events: none;
   display: block;
 }
 
-#scanner-view .header-right {
+/* Right Zone - Brand Logo */
+#scanner-view .scanner-header-right {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   height: 100%;
+  padding-right: var(--content-inset);
 }
 
-#scanner-view .header-brand {
-  position: static;
-  transform: none;
-  left: auto;
-  pointer-events: none;
-  cursor: default;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-#header-brand-btn {
+#scanner-view .scanner-header-logo {
+  background-image: var(--scanner-logo-url);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center right;
+  width: 120px;
+  height: 32px;
+  display: block;
   pointer-events: none;
   cursor: default;
 }
