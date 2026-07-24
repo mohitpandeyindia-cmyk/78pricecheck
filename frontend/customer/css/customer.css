@@ -605,13 +605,15 @@ html, body {
   display: block;
 }
 
-/* Right Zone - Brand Logo (Optical Height Scaling) */
+/* Right Zone - Brand Logo (Full 100% Section 1 Height) */
 #scanner-view .scanner-header-right {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   height: 100%;
   padding-right: var(--content-inset);
+  padding-top: 0;
+  padding-bottom: 0;
   box-sizing: border-box;
 }
 
@@ -621,7 +623,7 @@ html, body {
   background-repeat: no-repeat;
   background-position: center right;
   width: 120px;
-  height: 85%;
+  height: 100%;
   display: block;
   pointer-events: none;
   cursor: default;
