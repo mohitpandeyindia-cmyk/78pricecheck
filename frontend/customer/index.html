@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="css/customer.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
-  <script>window.HTML_BUILD = "202607242124";</script>
+  <script>window.HTML_BUILD = "202607242201";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -60,27 +60,34 @@
         </div>
       </header>
 
-      <!-- Row 2: Scanner Area (30%) -->
+      <!-- Row 2: Scanner Area (Section 2 - ScannerView v1.0) -->
       <div class="scanner-area" id="scan-row-2">
-        <div id="reader"></div>
-        <div class="scanner-brackets">
-          <div class="bracket bracket-tl"></div>
-          <div class="bracket bracket-tr"></div>
-          <div class="bracket bracket-bl"></div>
-          <div class="bracket bracket-br"></div>
-          <div class="scanner-glow-line"></div>
-        </div>
-        <div class="scanner-status" id="scan-status-indicator">
-          <span class="status-dot scanning"></span>
-          <span class="status-text">ALIGN BARCODE WITHIN THE FRAME</span>
-        </div>
-        
-        <!-- Dev-only performance overlay -->
-        <div id="debug-overlay" class="debug-overlay" style="display: none;"></div>
-        
-        <!-- Subtle low light suggestions -->
-        <div id="low-light-suggestion" class="low-light-tip" style="display: none;">
-          Lighting is low. Move to a brighter area for faster scanning.
+        <div class="scanner-view-container" id="scanner-view-box">
+          <!-- Live Camera Viewport -->
+          <div id="reader" class="scanner-viewport-reader"></div>
+
+          <!-- Hardware Inner Vignette Depth -->
+          <div class="scanner-vignette-overlay"></div>
+
+          <!-- Four Corner Brackets & Laser Beam -->
+          <div class="scanner-bracket-frame">
+            <div class="scanner-bracket-corner scanner-bracket-tl"></div>
+            <div class="scanner-bracket-corner scanner-bracket-tr"></div>
+            <div class="scanner-bracket-corner scanner-bracket-bl"></div>
+            <div class="scanner-bracket-corner scanner-bracket-br"></div>
+            <!-- Supermarket Red Laser Beam -->
+            <div class="scanner-laser-beam"></div>
+          </div>
+
+          <!-- Dynamic Guidance Capsule -->
+          <div class="scanner-guidance-capsule" id="scan-status-indicator">
+            <span class="guidance-dot scanning"></span>
+            <span class="guidance-text" id="guidance-text">Align barcode within frame</span>
+          </div>
+
+          <!-- Low light & debug containers preserved for state machine -->
+          <div id="low-light-suggestion" style="display: none;"></div>
+          <div id="debug-overlay" style="display: none;"></div>
         </div>
       </div>
 
