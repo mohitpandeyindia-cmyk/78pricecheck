@@ -628,7 +628,7 @@ html, body {
 }
 
 /* ==========================================================================
-   Section 2 – ScannerView (v1.0 Architecture)
+   Section 2 – ScannerView (v1.1 Frozen Architecture)
    ========================================================================== */
 
 #scanner-view #scan-row-2 {
@@ -637,23 +637,22 @@ html, body {
   align-items: center;
   width: 100%;
   height: 100%;
-  background: transparent !important;
+  background: transparent;
   box-sizing: border-box;
-  padding: var(--space-s, 8px) var(--content-inset, 16px);
+  padding: 0 var(--content-inset, 16px);
   position: relative;
   overflow: visible;
 }
 
-/* Container matching ProductCard.Single width */
+/* Width derived from shared layout system; height occupies 100% usable Section 2 height */
 #scanner-view .scanner-view-container {
   width: 100%;
   height: 100%;
-  max-width: 480px; /* Aligned with ProductCard.Single width */
   border-radius: var(--radius-card, 22px);
   background-color: #090d09;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--elevation-card, 0 16px 36px -6px rgba(0, 0, 0, 0.25));
   border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
@@ -661,22 +660,28 @@ html, body {
   align-items: center;
 }
 
-/* Camera Video Viewport */
+/* 1. CameraSurface: Absolutely positioned to prevent document flow participation (Z-Index: 1) */
 #scanner-view #reader {
-  width: 100% !important;
-  height: 100% !important;
-  border: none !important;
-  background: transparent !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  z-index: 1;
 }
 
+#scanner-view #reader *,
 #scanner-view #reader video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  border-radius: var(--radius-card, 22px);
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
 }
 
-/* Hardware Inner Vignette Depth */
+/* 2. Vignette (Z-Index: 3) */
 #scanner-view .scanner-vignette-overlay {
   position: absolute;
   top: 0;
@@ -688,7 +693,7 @@ html, body {
   z-index: 3;
 }
 
-/* Corner Brackets Overlay Frame */
+/* 3. Brackets (Z-Index: 5) */
 #scanner-view .scanner-bracket-frame {
   position: absolute;
   top: 16px;
@@ -740,7 +745,7 @@ html, body {
   border-bottom-right-radius: 8px;
 }
 
-/* Supermarket Red Laser Beam Sweep */
+/* 4. Laser Beam: GPU-accelerated transform translateY (Z-Index: 6) */
 #scanner-view .scanner-laser-beam {
   position: absolute;
   top: 0;
@@ -749,25 +754,28 @@ html, body {
   height: 2px;
   background: #ff2a2a;
   box-shadow: 0 0 12px #ff2a2a, 0 0 24px rgba(255, 42, 42, 0.7);
-  animation: laser-sweep 2.4s ease-in-out infinite alternate;
+  animation: laser-sweep-gpu 2.4s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
   z-index: 6;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  will-change: transform;
 }
 
-@keyframes laser-sweep {
+@keyframes laser-sweep-gpu {
   0% {
-    top: 5%;
+    transform: translateY(12px);
     opacity: 0.85;
   }
   50% {
     opacity: 1;
   }
   100% {
-    top: 92%;
+    transform: translateY(calc(100% - 14px));
     opacity: 0.85;
   }
 }
 
-/* Dynamic Guidance Capsule */
+/* 5. Guidance Capsule (Z-Index: 7) */
 #scanner-view .scanner-guidance-capsule {
   position: absolute;
   bottom: 14px;
