@@ -2035,15 +2035,14 @@ if (window.location.search.includes('smoke=true')) {
 
 // Scanner state visual updates (laser control, scanning status text)
 (function monitorScannerState() {
-  const laserLine = document.querySelector('.scanner-glow-line');
-  const statusDot = document.querySelector('.status-dot');
-  const statusText = document.querySelector('.status-text');
+  const laserLine = document.querySelector('.scanner-laser-beam') || document.querySelector('.scanner-glow-line');
+  const statusDot = document.querySelector('.guidance-dot') || document.querySelector('.status-dot');
+  const statusText = document.querySelector('.guidance-text') || document.querySelector('.status-text');
   
-  if (!laserLine || !statusDot || !statusText) return;
-  
-  // Keep laser line continuously moving and visible
-  laserLine.style.animationPlayState = 'running';
-  laserLine.style.display = 'block';
+  if (laserLine) {
+    laserLine.style.animationPlayState = 'running';
+    laserLine.style.display = 'block';
+  }
   
   let lastState = null;
   
@@ -2052,18 +2051,20 @@ if (window.location.search.includes('smoke=true')) {
     if (state === lastState) return;
     lastState = state;
     
-    if (state === 'SCANNING') {
-      statusDot.className = 'status-dot scanning';
-      statusText.textContent = 'ALIGN BARCODE WITHIN THE FRAME';
-    } else if (state === 'LOOKUP') {
-      statusDot.className = 'status-dot loading';
-      statusText.textContent = 'Looking up...';
-    } else if (state === 'DISPLAY_RESULT') {
-      statusDot.className = 'status-dot ready';
-      statusText.textContent = 'Ready to scan';
-    } else {
-      statusDot.className = 'status-dot offline';
-      statusText.textContent = 'Offline';
+    if (statusDot && statusText) {
+      if (state === 'SCANNING') {
+        statusDot.className = 'guidance-dot scanning';
+        statusText.textContent = 'Align barcode within frame';
+      } else if (state === 'LOOKUP') {
+        statusDot.className = 'guidance-dot loading';
+        statusText.textContent = 'Looking up product...';
+      } else if (state === 'DISPLAY_RESULT') {
+        statusDot.className = 'guidance-dot ready';
+        statusText.textContent = 'Barcode detected';
+      } else {
+        statusDot.className = 'guidance-dot offline';
+        statusText.textContent = 'Scanner ready';
+      }
     }
   }, 100);
 })();
