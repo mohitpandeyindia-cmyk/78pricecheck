@@ -124,40 +124,7 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Phase 1 Wireframe Layout Specifications */
-#scan-row-1, 
-.scanner-area, 
-.product-info-area, 
-.promotions-area, 
-.recently-scanned-handle-area {
-  border: 2px dashed #999999 !important;
-  position: relative;
-  box-sizing: border-box;
-}
 
-#scan-row-1::after, 
-.scanner-area::after, 
-.product-info-area::after, 
-.promotions-area::after, 
-.recently-scanned-handle-area::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: var(--font-family);
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: rgba(0, 0, 0, 0.25);
-  pointer-events: none;
-  letter-spacing: 2px;
-  z-index: 5;
-}
-
-#scan-row-1::after { content: 'HEADER'; }
-.scanner-area::after { content: 'SCANNER'; }
-.product-info-area::after { content: 'PRODUCT'; }
-.promotions-area::after { content: 'PROMOTIONS'; }
-.recently-scanned-handle-area::after { content: 'RECENT SCANS'; }
 
 /* Strip layouts/aesthetics on Scanner Page for Phase 1 Wireframe */
 #scanner-view, 
@@ -183,6 +150,18 @@ html, body {
 
 #scanner-view .product-card {
   border: 1px dashed #999999 !important;
+}
+
+/* Detach legacy scanner UI components from the active layout canvas (Phase 1) */
+#scanner-view .header-center *,
+#scanner-view .header-right *,
+#scanner-view .scanner-area *,
+#scanner-view .product-info-area *,
+#scanner-view .promotions-area *,
+#scanner-view .recently-scanned-handle-area *,
+#scanner-view .sheet-overlay,
+#scanner-view .bottom-sheet {
+  display: none !important;
 }
 
 /* Welcome Page Layout */
