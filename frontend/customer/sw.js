@@ -1,8 +1,10 @@
-const CACHE_NAME = '78pricecheck-202607242303';
+const CACHE_NAME = '78pricecheck-202607252009';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './css/customer.css',
+  './css/scanner.css',
+  './js/scanner.js',
   './js/customer.js',
   './js/build-env.js',
   './js/libs/html5-qrcode.min.js',
