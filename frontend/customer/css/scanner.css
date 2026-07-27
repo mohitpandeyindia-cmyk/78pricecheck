@@ -635,7 +635,7 @@
 .promotions-area {
   flex: 22 1 0;
   width: 100%;
-  background-color: #ffffff;
+  background-color: transparent;
   border-top: 1px solid var(--border-color);
   box-sizing: border-box;
   padding: 6px var(--content-inset);
