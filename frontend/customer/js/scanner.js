@@ -3,17 +3,59 @@
    Canonical runtime script for #scanner-view & CameraManager (Stage 2 Isolation)
    ========================================================================== */
 
+// Scanner Runtime State Variables
+let html5QrcodeScanner = null;
+let lastScannedBarcode = ""; // Prevent repeated lookups of same item
+let lastScanTime = 0;
+let lastSeenTime = 0; // Track when current barcode was last seen in viewport
+let lastDetectedBarcode = ""; // Track consecutive frame detections
+let firstDetectedTime = 0; // Timestamp of first detection frame
+let detectionCount = 0; // Counter for stability
+let isScanPaused = false; // Throttling scanner
+let lookupInProgress = false; // Concurrency lock
+let isCameraRunning = false; // Recovery track
+let recentScans = [];
+let currentRecoveryBarcode = null;
+let cameraPermissionGranted = false;
+
+let cameraStartTime = 0;
+let firstDecodeTime = 0;
+let lastApiDuration = 0;
+let lastRenderDuration = 0;
+let cameraInitDuration = 0;
+let frameCount = 0;
+let lastFpsCalculationTime = Date.now();
+let currentFps = 0;
+let ambientLightInterval = null;
+let cachedHotDeals = [];
+
+// Helper to access result state card elements safely
+function getStates() {
+  return {
+    'camera-opening': document.getElementById('state-camera-opening'),
+    idle: document.getElementById('state-idle'),
+    loading: document.getElementById('state-loading'),
+    single: document.getElementById('state-single'),
+    multiple: document.getElementById('state-multiple'),
+    notFound: document.getElementById('state-not-found'),
+    cameraDenied: document.getElementById('state-camera-denied'),
+    cameraUnavailable: document.getElementById('state-camera-unavailable'),
+    networkError: document.getElementById('state-network-error'),
+    serverError: document.getElementById('state-server-error')
+  };
+}
+
 const CameraManager = {
   state: 'IDLE',
   html5Qrcode: null,
   config: null,
   isIOS: false,
   activeTrack: null,
-  
+
   init() {
-    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-                 
+
     this.config = {
       fps: 15,
       formatsToSupport: [
@@ -28,10 +70,10 @@ const CameraManager = {
         if (boxWidth < 280) boxWidth = 280;
         if (boxWidth > 450) boxWidth = 450;
         if (boxWidth > width) boxWidth = width;
-        
+
         let boxHeight = Math.round(boxWidth / 2.2);
         if (boxHeight > height) boxHeight = height;
-        
+
         const reader = document.getElementById('reader');
         if (reader) {
           const domWidth = reader.clientWidth;
@@ -42,7 +84,7 @@ const CameraManager = {
         return { width: boxWidth, height: boxHeight };
       }
     };
-    
+
     // Auto-recovery Page Visibility listener
     document.addEventListener('visibilitychange', async () => {
       if (document.visibilityState === 'visible') {
@@ -60,19 +102,19 @@ const CameraManager = {
       }
     });
   },
-  
+
   async start() {
     console.log('[Diag] CameraManager.start() invoked. State:', this.state);
-    
+
     // Reset scanning lock flags on session start
     isScanPaused = false;
     lookupInProgress = false;
-    
+
     if (this.state === 'READY' || this.state === 'STARTING') {
       console.log('[Diag] Camera start rejected: already in state', this.state);
       return;
     }
-    
+
     // Check for Insecure Context / Missing MediaDevices (HTTP block)
     if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       console.error('[Diag] Secure context validation failed. isSecureContext:', window.isSecureContext, 'mediaDevices:', !!navigator.mediaDevices);
@@ -83,7 +125,7 @@ const CameraManager = {
       });
       return;
     }
-    
+
     // Check container existence and dimensions
     const readerEl = document.getElementById('reader');
     if (readerEl) {
@@ -95,10 +137,10 @@ const CameraManager = {
     } else {
       console.error('[Diag] Error: Container "#reader" is missing from the DOM!');
     }
-    
+
     this.state = 'STARTING';
     console.log('[Diag] Transitioned CameraManager state to STARTING. Initializing Html5Qrcode...');
-    
+
     try {
       if (!this.html5Qrcode) {
         this.html5Qrcode = new Html5Qrcode("reader");
@@ -109,7 +151,7 @@ const CameraManager = {
       this.state = 'IDLE';
       throw qrInitErr;
     }
-    
+
     cameraStartTime = performance.now();
     isCameraRunning = true;
     lastScannedBarcode = "";
@@ -118,17 +160,17 @@ const CameraManager = {
     currentFps = 0;
     frameCount = 0;
     updateDebugOverlay();
-    
+
     const oldDebugs = document.querySelectorAll('.error-debug-details');
     oldDebugs.forEach(el => el.remove());
-    
+
     try {
       // Build dynamic scanning configuration
       const scanConfig = {
         fps: this.config.fps,
         formatsToSupport: this.config.formatsToSupport
       };
-      
+
       if (this.isIOS) {
         console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
         // Request HD ideal constraints on iOS within videoConstraints configuration object
@@ -154,31 +196,31 @@ const CameraManager = {
         } catch (e) {
           console.warn('[CameraManager] Camera devices enumeration failed, falling back to environment constraints:', e);
         }
-        
+
         const cameraArg = cameraIdToUse ? cameraIdToUse : { facingMode: "environment" };
         await this.html5Qrcode.start(cameraArg, scanConfig, onBarcodeDecoded, onBarcodeScanError);
       }
-      
+
       this.state = 'READY';
       console.log('[CameraManager] Camera start succeeded.');
-      
+
       cameraInitDuration = Math.round(performance.now() - cameraStartTime);
-      if (DEBUG_MODE) {
+      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
         console.log(`[METRICS] Camera initialized successfully in ${cameraInitDuration}ms`);
         updateDebugOverlay();
       }
-      saveDiagnosticsTelemetry({ 
+      saveDiagnosticsTelemetry({
         cameraStartupTime: cameraInitDuration,
         cameraPermission: 'Granted'
       });
-      
+
       this.applyFocusConstraints();
       startAmbientLightDetection();
       showState('idle');
-      
+
     } catch (err) {
       console.warn('[CameraManager] Main camera start path failed, attempting fallback...', err);
-      
+
       const fallbackConfig = {
         fps: this.config.fps,
         formatsToSupport: this.config.formatsToSupport
@@ -186,14 +228,14 @@ const CameraManager = {
       if (!this.isIOS) {
         fallbackConfig.qrbox = this.config.qrbox;
       }
-      
+
       try {
         // Recreate Html5Qrcode to clear any stuck internal state
         this.html5Qrcode = new Html5Qrcode("reader");
-        
+
         await this.html5Qrcode.start({ facingMode: "environment" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
         this.state = 'READY';
-        saveDiagnosticsTelemetry({ 
+        saveDiagnosticsTelemetry({
           cameraStartupTime: Math.round(performance.now() - cameraStartTime),
           cameraPermission: 'Granted'
         });
@@ -205,10 +247,10 @@ const CameraManager = {
         try {
           // Recreate Html5Qrcode to clear any stuck internal state
           this.html5Qrcode = new Html5Qrcode("reader");
-          
+
           await this.html5Qrcode.start({ facingMode: "user" }, fallbackConfig, onBarcodeDecoded, onBarcodeScanError);
           this.state = 'READY';
-          saveDiagnosticsTelemetry({ 
+          saveDiagnosticsTelemetry({
             cameraStartupTime: Math.round(performance.now() - cameraStartTime),
             cameraPermission: 'Granted'
           });
@@ -222,16 +264,16 @@ const CameraManager = {
       }
     }
   },
-  
+
   async stop() {
     // Reset scanning lock flags on session stop/exit
     isScanPaused = false;
     lookupInProgress = false;
-    
+
     if (this.state === 'STOPPED' || this.state === 'IDLE' || !this.html5Qrcode) {
       return;
     }
-    
+
     try {
       if (this.html5Qrcode.isScanning) {
         await this.html5Qrcode.stop();
@@ -244,7 +286,7 @@ const CameraManager = {
       console.error('[CameraManager] Camera stop failed:', e);
     }
   },
-  
+
   applyFocusConstraints() {
     try {
       const video = document.querySelector('#reader video');
@@ -256,7 +298,7 @@ const CameraManager = {
             const label = this.activeTrack.label || 'Camera Stream';
             let resolution = 'Unknown';
             let hasTorch = 'Not Supported';
-            
+
             if (typeof this.activeTrack.getSettings === 'function') {
               const settings = this.activeTrack.getSettings();
               console.log('[CameraManager] Deployed Video Track Settings:', JSON.stringify(settings));
@@ -264,7 +306,7 @@ const CameraManager = {
                 resolution = `${settings.width} × ${settings.height}`;
               }
             }
-            
+
             if (typeof this.activeTrack.getCapabilities === 'function') {
               const capabilities = this.activeTrack.getCapabilities();
               console.log('[CameraManager] Deployed Video Track Capabilities:', JSON.stringify(capabilities));
@@ -272,13 +314,13 @@ const CameraManager = {
                 hasTorch = 'Supported';
               }
             }
-            
+
             saveDiagnosticsTelemetry({
               cameraLabel: label,
               cameraResolution: resolution,
               cameraTorch: hasTorch
             });
-            
+
             if (this.isIOS) {
               // Manually adjust visual viewfinder brackets on iOS where qrbox cropping is disabled
               const reader = document.getElementById('reader');
@@ -290,7 +332,7 @@ const CameraManager = {
                 if (boxWidth > 450) boxWidth = 450;
               }
             }
-            
+
             if (typeof this.activeTrack.getCapabilities === 'function') {
               const capabilities = this.activeTrack.getCapabilities();
               if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
@@ -301,7 +343,7 @@ const CameraManager = {
             }
           }
         };
-        
+
         // Execute immediately
         checkTrack();
         // Also bind to play event to ensure we log correctly after layout settles
@@ -313,7 +355,7 @@ const CameraManager = {
       console.warn('[CameraManager] Autofocus track capabilities validation failed:', focusErr);
     }
   },
-  
+
   async setTorch(on) {
     if (!this.activeTrack) {
       const video = document.querySelector('#reader video');
@@ -321,7 +363,7 @@ const CameraManager = {
         this.activeTrack = video.srcObject.getVideoTracks()[0];
       }
     }
-    
+
     if (this.activeTrack && typeof this.activeTrack.getCapabilities === 'function') {
       try {
         const capabilities = this.activeTrack.getCapabilities();
@@ -338,12 +380,12 @@ const CameraManager = {
     }
     return false;
   },
-  
+
   async recover() {
     if (this.state !== 'READY' && this.state !== 'RECOVERING') {
       return;
     }
-    
+
     console.log('[CameraManager] Recovering active stream due to visibility changes...');
     this.state = 'RECOVERING';
     try {
@@ -355,24 +397,1110 @@ const CameraManager = {
   }
 };
 
+// Scoped Scanner background initializer
+function initScannerBackground() {
+  const bgEl = document.getElementById('scanner-background');
+  if (bgEl && typeof ThemeManager !== 'undefined') {
+    const theme = ThemeManager.getTheme();
+    const asset = ThemeManager.getBackgroundAsset(theme);
+    console.log(`[ScannerPage] Loaded background asset: ${asset} for theme: ${theme}`);
+    bgEl.style.backgroundImage = `url(${asset})`;
+  }
+}
+
+// State display helper
+function showState(activeStateKey) {
+  const states = getStates();
+  Object.keys(states).forEach(key => {
+    if (states[key]) {
+      if (key === activeStateKey) {
+        states[key].style.display = 'flex';
+      } else {
+        states[key].style.display = 'none';
+      }
+    }
+  });
+}
+
+// Synthesize short high-frequency beep on successful decodes
+function playSuccessBeep() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 2000; // High-frequency tone
+    gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+
+    oscillator.start();
+    oscillator.stop(audioCtx.currentTime + 0.08); // 80ms duration
+  } catch (e) {
+    console.warn('Audio Context tone synthesis block:', e);
+  }
+}
+
+// Trigger haptic vibration on successful scans
+function triggerHapticVibrate() {
+  if (navigator.vibrate) {
+    navigator.vibrate(80); // 80ms vibration pulse
+  }
+}
+
+// Trigger border-flash visual highlight effect when rendering a new product card
+function applyCardHighlight() {
+  const detailsCard = document.getElementById('details-card');
+  if (detailsCard) {
+    detailsCard.classList.remove('pulse-highlight');
+    detailsCard.classList.add('scanned');
+    void detailsCard.offsetWidth; // Force CSS repaint reflow
+    detailsCard.classList.add('pulse-highlight');
+    setTimeout(() => {
+      detailsCard.classList.remove('scanned');
+    }, 300);
+  }
+}
+
+// FPS frame counting tracker
+function registerFrameForFps() {
+  frameCount++;
+  const now = Date.now();
+  const elapsed = now - lastFpsCalculationTime;
+  if (elapsed >= 1000) {
+    currentFps = Math.round((frameCount * 1000) / elapsed);
+    frameCount = 0;
+    lastFpsCalculationTime = now;
+    updateDebugOverlay();
+  }
+}
+
+// Development-only metrics card overlay (Milestone 6.2)
+function updateDebugOverlay() {
+  const overlay = document.getElementById('debug-overlay');
+  if (!overlay) return;
+
+  if (typeof DEBUG_MODE !== 'undefined' && !DEBUG_MODE) {
+    overlay.style.display = 'none';
+    return;
+  }
+
+  overlay.style.display = 'block';
+
+  const camStart = cameraInitDuration > 0 ? `${cameraInitDuration} ms` : '-';
+  const firstDec = firstDecodeTime > 0 ? `${firstDecodeTime - cameraStartTime} ms` : '-';
+  const apiTime = lastApiDuration > 0 ? `${lastApiDuration} ms` : '-';
+  const renderTime = lastRenderDuration > 0 ? `${lastRenderDuration} ms` : '-';
+
+  // Retrieve active stream resolution
+  let resStr = '-';
+  const video = document.querySelector('#reader video');
+  if (video) {
+    resStr = `${video.videoWidth}×${video.videoHeight}`;
+  }
+
+  overlay.innerHTML = `
+    Camera Start: ${camStart}<br>
+    First Decode: ${firstDec}<br>
+    API: ${apiTime}<br>
+    Render: ${renderTime}<br>
+    FPS: ${currentFps}<br>
+    Resolution: ${resStr}
+  `;
+}
+
+// Canvas-based ambient light analyzer loop
+function startAmbientLightDetection() {
+  if (ambientLightInterval) clearInterval(ambientLightInterval);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 16;
+  canvas.height = 12;
+  const ctx = canvas.getContext('2d');
+
+  ambientLightInterval = setInterval(() => {
+    const video = document.querySelector('#reader video');
+    if (video && video.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+      try {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        let totalLuminance = 0;
+        const len = data.length;
+        for (let i = 0; i < len; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+          // Standard luminance weights
+          const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+          totalLuminance += luminance;
+        }
+
+        const avgLuminance = totalLuminance / (canvas.width * canvas.height);
+        const suggestion = document.getElementById('low-light-suggestion');
+        if (suggestion) {
+          if (avgLuminance < 45) {
+            suggestion.style.display = 'block';
+          } else {
+            suggestion.style.display = 'none';
+          }
+        }
+      } catch (err) {
+        // Suppress canvas security restrictions if any
+      }
+    }
+  }, 1000);
+}
+
+function stopAmbientLightDetection() {
+  if (ambientLightInterval) {
+    clearInterval(ambientLightInterval);
+    ambientLightInterval = null;
+  }
+  const suggestion = document.getElementById('low-light-suggestion');
+  if (suggestion) suggestion.style.display = 'none';
+}
+
+// Future-ready Torch / Flashlight track controls
+window.setScannerTorch = async function(enabled) {
+  const video = document.querySelector('#reader video');
+  if (video && video.srcObject) {
+    const track = video.srcObject.getVideoTracks()[0];
+    if (track && typeof track.getCapabilities === 'function') {
+      try {
+        const capabilities = track.getCapabilities();
+        if (capabilities.torch) {
+          await track.applyConstraints({
+            advanced: [{ torch: enabled }]
+          });
+          if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[DEBUG] Torch successfully set to: ${enabled}`);
+          return true;
+        } else {
+          if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log('[DEBUG] Torch capability is not supported on this track.');
+        }
+      } catch (err) {
+        console.warn('Failed to apply torch constraints:', err);
+      }
+    }
+  }
+  return false;
+};
+
+// Reset barcode expand/collapse state to default collapsed
+function resetBarcodeCollapse() {
+  const singleBarcodeArea = document.getElementById('single-barcode-area');
+  const toggle = document.getElementById('single-barcode-toggle');
+  if (singleBarcodeArea && toggle) {
+    singleBarcodeArea.classList.remove('expanded');
+    const chevron = toggle.querySelector('.barcode-toggle-chevron');
+    if (chevron) {
+      chevron.classList.remove('expanded');
+      chevron.textContent = '▼';
+    }
+  }
+}
+
+// Two-stage product recognition and update indicator (Milestone 6.2)
+function triggerFeedbackPopup(productName) {
+  const scanFeedback = document.getElementById('scan-feedback');
+  if (!scanFeedback) return;
+
+  // Format the name slightly to fit within the pill nicely
+  const displayName = productName.length > 18 ? productName.slice(0, 18) + '...' : productName;
+  scanFeedback.textContent = `✓ ${displayName} recognised`;
+  scanFeedback.classList.remove('error-feedback');
+  scanFeedback.classList.add('visible');
+
+  // Morph to "✓ Price Updated" after 250ms
+  setTimeout(() => {
+    scanFeedback.style.opacity = '0';
+    setTimeout(() => {
+      scanFeedback.textContent = '✓ Price Updated';
+      scanFeedback.style.opacity = '';
+    }, 100);
+
+    // Hide completely after 300ms more
+    setTimeout(() => {
+      scanFeedback.classList.remove('visible');
+    }, 300);
+  }, 250);
+}
+
+// Add a newly verified item to session history
+function addToHistory(product) {
+  // Check for duplicates in history, move to top if present
+  recentScans = recentScans.filter(item => item.barcode !== product.barcode);
+
+  recentScans.unshift({
+    name: product.name,
+    barcode: product.barcode,
+    salePrice: product.salePrice,
+    mrp: product.mrp,
+    wholesalePrice: product.wholesalePrice,
+    wholesaleQty: product.wholesaleQty,
+    scannedAt: Date.now()
+  });
+
+  // Limit cache history list to 5 items
+  if (recentScans.length > 5) {
+    recentScans.pop();
+  }
+
+  try {
+    localStorage.setItem('recent_scans', JSON.stringify(recentScans));
+  } catch (e) {
+    console.warn('Failed to save scan history to localStorage', e);
+  }
+
+  renderRecentScans();
+}
+
+// Sturdier render RecentScans stub
+function renderRecentScans() {
+  // Chips rendering is deprecated, history is now displayed inside the slide-up bottom sheet
+}
+
+function renderHotDealsCarousel() {
+  const track = document.getElementById('promo-carousel-track');
+  if (!track) return;
+
+  track.innerHTML = '';
+
+  if (cachedHotDeals.length === 0) {
+    const fallbackSlide = document.createElement('div');
+    fallbackSlide.className = 'promo-slide active';
+    fallbackSlide.innerHTML = `
+      <div class="promo-details" style="text-align: center;">
+        <span class="promo-name" style="font-style: italic; color: var(--text-muted);">No offers available today.</span>
+      </div>
+    `;
+    track.appendChild(fallbackSlide);
+    return;
+  }
+
+  cachedHotDeals.forEach((p, index) => {
+    const slide = document.createElement('div');
+    slide.className = index === 0 ? 'promo-slide active' : 'promo-slide';
+    slide.innerHTML = `
+      <div class="promo-details">
+        <span class="promo-name">${escapeHtml(p.name)}</span>
+        <div class="promo-price-row">
+          <span class="promo-mrp">MRP <span class="mrp-strike">₹${p.mrp}</span></span>
+          <span class="promo-sale">₹${p.salePrice}</span>
+          <span class="promo-save">SAVE ${p.discountPercent}%</span>
+        </div>
+      </div>
+    `;
+    track.appendChild(slide);
+  });
+}
+
+async function fetchHotDeals() {
+  try {
+    const response = await fetch('/api/products/hot-deals');
+    if (!response.ok) throw new Error('Hot deals API response failed');
+    const data = await response.json();
+    if (data.success && Array.isArray(data.products)) {
+      cachedHotDeals = data.products;
+    }
+  } catch (err) {
+    console.warn('[HotDeals] Failed to load precomputed hot deals, using fallback:', err);
+    cachedHotDeals = [];
+  }
+  renderHotDealsCarousel();
+}
+
+// Fetch pricing values from endpoint
+async function lookupBarcode(barcode) {
+  if (lookupInProgress) {
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[DEBUG] Lookup request blocked: barcode ${barcode} is already in progress.`);
+    return;
+  }
+
+  lookupInProgress = true;
+  currentRecoveryBarcode = barcode;
+
+  // Dev metrics start
+  const apiStart = Date.now();
+  if (firstDecodeTime === 0) {
+    firstDecodeTime = performance.now();
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[METRICS] First successful decode at: ${Math.round(firstDecodeTime - cameraStartTime)}ms from camera start`);
+  }
+
+  // Transition card out: add replacing class to single state or multi state
+  const singleState = document.getElementById('state-single');
+  const multiState = document.getElementById('state-multiple');
+  const priceValEl = document.getElementById('single-sale-price');
+
+  if (singleState) singleState.classList.add('replacing');
+  if (multiState) multiState.classList.add('replacing');
+  if (priceValEl) priceValEl.classList.add('faded');
+
+  // Switch to loading state if no card is visible yet
+  const states = getStates();
+  const statesKeys = Object.keys(states);
+  let anyProductVisible = false;
+  statesKeys.forEach(k => {
+    if ((k === 'single' || k === 'multiple') && states[k] && states[k].style.display === 'flex') {
+      anyProductVisible = true;
+    }
+  });
+  if (!anyProductVisible) {
+    StateManager.transitionTo('LOOKUP');
+  }
+
+  // Barcode character and Unicode points inspection
+  const inspectPlatform = /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'iOS' : 'Android/Desktop';
+  const inspectBarcodeString = (bc, platform) => {
+    if (typeof bc !== 'string') return;
+    const len = bc.length;
+    const pts = [];
+    for (let i = 0; i < len; i++) {
+      pts.push(`U+${bc.charCodeAt(i).toString(16).padStart(4, '0')}`);
+    }
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+      console.log(`[LookupPipeline] [${platform}] Decoded Barcode: "${bc}" (Length: ${bc.length})`);
+      console.log(`[LookupPipeline] [${platform}] Unicode points: ${pts.join(', ')}`);
+      saveDiagnosticsTelemetry({
+        lastInspectedBarcode: bc,
+        lastInspectedBarcodeLength: len,
+        lastInspectedBarcodeUnicode: pts.join(', ')
+      });
+    }
+  };
+  inspectBarcodeString(barcode, inspectPlatform);
+
+  const lookupUrl = `/api/products/lookup/${encodeURIComponent(barcode)}`;
+  if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+    console.log(`[LookupPipeline] URL before fetch: "${lookupUrl}"`);
+    console.log(`[LookupPipeline] HTTP Method: GET`);
+
+    saveDiagnosticsTelemetry({
+      lastLookupUrl: lookupUrl,
+      lastLookupMethod: 'GET',
+      lastLookupStatus: 'Pending...',
+      lastLookupHeaders: '',
+      lastLookupRawBody: '',
+      lastLookupError: '',
+      lastLookupJsonError: '',
+      lastLookupStack: ''
+    });
+  }
+
+  try {
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+      console.log(`[LookupPipeline] Sending Network Request...`);
+    }
+    const response = await fetch(lookupUrl);
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+      console.log(`[LookupPipeline] Network Request completed. Status: ${response.status}`);
+
+      const headersObj = {};
+      response.headers.forEach((val, key) => {
+        headersObj[key] = val;
+      });
+      console.log(`[LookupPipeline] Response Headers:`, JSON.stringify(headersObj));
+
+      saveDiagnosticsTelemetry({
+        lastLookupStatus: response.status,
+        lastLookupHeaders: JSON.stringify(headersObj)
+      });
+    }
+
+    let rawText = '';
+    try {
+      rawText = await response.text();
+      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+        console.log(`[LookupPipeline] Raw Response Body:`, rawText);
+        saveDiagnosticsTelemetry({
+          lastLookupRawBody: rawText.substring(0, 1000)
+        });
+      }
+    } catch (readErr) {
+      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+        console.error(`[LookupPipeline] Failed to read raw response text:`, readErr);
+        saveDiagnosticsTelemetry({
+          lastLookupRawBody: `Error reading body: ${readErr.message}`
+        });
+      }
+      throw readErr;
+    }
+
+    const apiEnd = Date.now();
+    lastApiDuration = apiEnd - apiStart;
+    saveDiagnosticsTelemetry({ avgScanTime: lastApiDuration });
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+      console.log(`[METRICS] API request duration: ${lastApiDuration}ms`);
+      updateDebugOverlay();
+    }
+
+    // Wait for the slide-out visual transition to finish (150ms)
+    setTimeout(async () => {
+      const renderStart = Date.now();
+
+      if (response.status === 200) {
+        let data;
+        try {
+          data = JSON.parse(rawText);
+        } catch (jsonErr) {
+          console.error(`[LookupPipeline] JSON Parsing Failed! Raw Text: "${rawText}"`, jsonErr);
+          saveDiagnosticsTelemetry({
+            lastLookupJsonError: jsonErr.message
+          });
+          handleLookupFailure();
+          return;
+        }
+
+        // Remove old details layout styles
+        if (singleState) singleState.classList.remove('replacing');
+        if (multiState) multiState.classList.remove('replacing');
+
+        if (data.multipleMatches && data.products.length > 1) {
+          StateManager.transitionTo('DISPLAY_RESULT', { type: 'multiple' });
+          AnalyticsService.logEvent('multiple_matches_shown', { barcode: barcode, count: data.products.length });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = `Multiple matches found. ${data.products.length} matching items displayed.`;
+          }
+          const listContainer = document.getElementById('multi-list');
+          if (listContainer) {
+            listContainer.innerHTML = '';
+
+            data.products.forEach(p => {
+              const card = document.createElement('div');
+              card.className = 'multi-item-card';
+
+              let bulkHtml = '';
+              if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+                const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+                bulkHtml = `
+                  <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div class="bulk-left-col" style="display: flex; flex-direction: column; align-items: flex-start;">
+                      <div class="bulk-header-row" style="display: flex; align-items: center; gap: 4px;">
+                        <svg class="bulk-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
+                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                          <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                        </svg>
+                        <span class="bulk-title" style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color);">Bulk Offer</span>
+                      </div>
+                      <div class="bulk-subtitle" style="font-size: 0.7rem; color: var(--text-muted);">Buy ${p.wholesaleQty}+</div>
+                    </div>
+                    <div class="bulk-right-col" style="display: flex; flex-direction: column; align-items: flex-end;">
+                      <div class="bulk-price" style="font-size: 1rem; font-weight: 800; color: var(--primary-color);">${formatCurrency(p.wholesalePrice)} each</div>
+                      <div class="bulk-savings-text" style="font-size: 0.7rem; font-weight: 700; color: #2e7d32;">You save ${formatCurrency(savings).replace('.00', '')}</div>
+                    </div>
+                  </div>
+                `;
+              }
+
+              card.innerHTML = `
+                <div class="multi-item-name">${p.name}</div>
+                <div class="multi-barcode-badge monospace">${p.barcode}</div>
+                <div class="multi-pricing-container">
+                  <div class="multi-mrp-row">
+                    <span class="multi-mrp-label-inline">MRP:</span>
+                    <span class="multi-mrp-val">${formatCurrency(p.mrp)}</span>
+                  </div>
+                  <div class="multi-price-block">
+                    <span class="multi-price-label">Today's Price</span>
+                    <span class="multi-price-val">${formatCurrency(p.salePrice)}</span>
+                  </div>
+                  ${bulkHtml}
+                </div>
+              `;
+              listContainer.appendChild(card);
+            });
+          }
+
+          addToHistory(data.products[0]);
+          lastScannedBarcode = barcode;
+
+          // Resume decoding after 1.0s debounce pause
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
+        } else if (data.products && data.products.length > 0) {
+          const p = data.products[0];
+          resetBarcodeCollapse();
+
+          StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
+          }
+          const nameEl = document.getElementById('single-name');
+          if (nameEl) nameEl.textContent = p.name;
+          const barcodeEl = document.getElementById('single-barcode');
+          if (barcodeEl) barcodeEl.textContent = p.barcode;
+          const priceEl = document.getElementById('single-sale-price');
+          if (priceEl) priceEl.innerHTML = formatPremiumPrice(p.salePrice);
+          const mrpEl = document.getElementById('single-mrp');
+          if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
+
+          // Calculate discount percent and savings amount for ProductCard.Single
+          const discountBadge = document.getElementById('single-discount-badge');
+          if (discountBadge) {
+            const mrpVal = Number(p.mrp);
+            const saleVal = Number(p.salePrice);
+            if (mrpVal > saleVal && mrpVal > 0) {
+              const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+              const savedVal = (mrpVal - saleVal).toFixed(2).replace(/\.00$/, '');
+
+              const percentEl = document.getElementById('single-discount-percent');
+              if (percentEl) percentEl.textContent = `${discountPercent}%`;
+
+              const savedEl = document.getElementById('single-saved-amount');
+              if (savedEl) savedEl.textContent = `₹${savedVal}`;
+
+              discountBadge.style.display = 'flex';
+            } else {
+              discountBadge.style.display = 'none';
+            }
+          }
+
+          const bulkContainer = document.getElementById('single-bulk-container');
+          if (bulkContainer && FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
+            AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
+            const bQty = document.getElementById('single-bulk-qty');
+            if (bQty) bQty.textContent = `Buy ${p.wholesaleQty}+`;
+            const bPrice = document.getElementById('single-bulk-price');
+            if (bPrice) bPrice.textContent = `${formatCurrency(p.wholesalePrice)} each`;
+            const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
+            const bSavings = document.getElementById('single-bulk-savings');
+            if (bSavings) bSavings.textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
+            bulkContainer.style.display = 'flex';
+          } else if (bulkContainer) {
+            bulkContainer.style.display = 'none';
+          }
+
+          if (singleState) singleState.classList.remove('replacing');
+          if (priceValEl) priceValEl.classList.remove('faded');
+
+          addToHistory(p);
+          triggerFeedbackPopup(p.name);
+
+          // Lock scan to this barcode to prevent accidental duplicates
+          lastScannedBarcode = barcode;
+
+          // API/Render metrics
+          const renderEnd = Date.now();
+          lastRenderDuration = renderEnd - renderStart;
+          if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+            console.log(`[METRICS] UI rendering duration: ${lastRenderDuration}ms`);
+            console.log(`[METRICS] Total decode-to-render: ${renderEnd - apiStart}ms`);
+            updateDebugOverlay();
+          }
+
+          // Resume decoding after 1.0s debounce pause
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
+        } else {
+          StateManager.transitionTo('ERROR', { type: 'notFound' });
+          AnalyticsService.logEvent('product_not_found', { barcode: barcode });
+          const announcer = document.getElementById('a11y-announcer');
+          if (announcer) {
+            announcer.textContent = "Product details not found.";
+          }
+          // Resume scanning after failure
+          setTimeout(() => {
+            resetScannerStatusLine();
+            lookupInProgress = false;
+            isScanPaused = false;
+          }, 1000);
+        }
+      } else {
+        if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+          console.warn(`[LookupPipeline] Non-200 Response status: ${response.status}. Raw content:`, rawText);
+        }
+        handleLookupFailure();
+      }
+    }, 150);
+
+  } catch (err) {
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+      console.error(`[LookupPipeline] Fetch Rejected Exception:`, err);
+      console.error(`[LookupPipeline] Stack Trace:`, err.stack);
+      saveDiagnosticsTelemetry({
+        lastLookupStatus: 'REJECTED',
+        lastLookupError: err.message,
+        lastLookupStack: err.stack
+      });
+    }
+    handleLookupFailure();
+  }
+}
+
+// Graceful lookup error fallback
+function handleLookupFailure() {
+  const scanFeedback = document.getElementById('scan-feedback');
+  if (scanFeedback) {
+    scanFeedback.textContent = "Unable to retrieve price, please try again.";
+    scanFeedback.classList.add('error-feedback');
+    scanFeedback.classList.add('visible');
+    setTimeout(() => {
+      scanFeedback.classList.remove('visible');
+      scanFeedback.classList.remove('error-feedback');
+    }, 2000);
+  }
+
+  // Revert card replacement visual classes
+  const singleState = document.getElementById('state-single');
+  const multiState = document.getElementById('state-multiple');
+  const priceValEl = document.getElementById('single-sale-price');
+  if (singleState) singleState.classList.remove('replacing');
+  if (multiState) multiState.classList.remove('replacing');
+  if (priceValEl) priceValEl.classList.remove('faded');
+
+  // Revert back to previous displays if applicable, or stay idle
+  if (!navigator.onLine) {
+    StateManager.transitionTo('OFFLINE');
+  } else {
+    StateManager.transitionTo('ERROR', { type: 'serverError' });
+  }
+
+  // Auto-resume scanner loop
+  setTimeout(() => {
+    resetScannerStatusLine();
+    lookupInProgress = false;
+    isScanPaused = false;
+  }, 1000);
+}
+
+// Reset status bar display
+function resetScannerStatusLine() {
+  const dot = document.querySelector('.status-dot');
+  const text = document.querySelector('.status-text');
+  if (dot && text) {
+    dot.style.backgroundColor = '#ffffff';
+    dot.style.boxShadow = 'none';
+    text.textContent = 'Align barcode inside the frame';
+  }
+}
+
+// Unified error handler displaying Chrome permission instructions & raw developer console details
+function logAndShowDeniedError(err) {
+  const errName = err ? err.name : 'UnknownError';
+  const errMsg = err ? (err.message || String(err)) : 'Unknown camera access exception.';
+  const fullErrorString = `${errName}: ${errMsg}`;
+
+  console.error('[Camera Debug] Camera initialization exception:', fullErrorString);
+
+  const isPermissionDenied =
+    errName === 'NotAllowedError' ||
+    errName === 'PermissionDeniedError' ||
+    errMsg.toLowerCase().includes('permission') ||
+    errMsg.toLowerCase().includes('notallowed');
+
+  if (isPermissionDenied) {
+    StateManager.transitionTo('ERROR', { type: 'cameraDenied', errorString: fullErrorString });
+  } else {
+    StateManager.transitionTo('ERROR', { type: 'cameraUnavailable', errorString: fullErrorString });
+  }
+}
+
+// Append exact exception details on card
+function appendDebugInfo(container, errText) {
+  const div = document.createElement('div');
+  div.className = 'error-debug-details';
+  div.style.cssText = 'font-family: monospace; font-size: 0.75rem; margin-top: 15px; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c2c7; padding: 10px; border-radius: 6px; word-break: break-all; text-align: left; width: 100%;';
+  div.innerHTML = `<strong>Developer Exception:</strong><br>${errText}`;
+  container.appendChild(div);
+}
+
+// Handler functions
+function onBarcodeDecoded(decodedText) {
+  const now = Date.now();
+
+  // Track last seen timestamp to calculate disappearance intervals for anti-double scans
+  lastSeenTime = now;
+
+  // Ignore subsequent scans if lookup is in progress or scan debouncing is active
+  if (isScanPaused || lookupInProgress) return;
+
+  // Anti-double scan check: ignore stationary scanned barcode
+  if (decodedText === lastScannedBarcode) {
+    return;
+  }
+
+  // Time-based confidence check (consistent across 15fps to 60fps frame rates)
+  if (decodedText === lastDetectedBarcode) {
+    detectionCount++;
+  } else {
+    lastDetectedBarcode = decodedText;
+    firstDetectedTime = now;
+    detectionCount = 1;
+    return; // Wait for next frame to build confidence
+  }
+
+  const elapsedStableTime = now - firstDetectedTime;
+  const isStable = (detectionCount >= 2) || (elapsedStableTime >= 100);
+  if (!isStable) {
+    return;
+  }
+
+  // Stable detection confirmed! Reset transient state frame counters
+  detectionCount = 0;
+  lastDetectedBarcode = "";
+
+  // Lock the scanner loop
+  isScanPaused = true;
+  lastScanTime = now;
+
+  // A11y and Telemetry Hooks
+  AnalyticsService.logEvent('scan_success', { barcode: decodedText });
+  const announcer = document.getElementById('a11y-announcer');
+  if (announcer) {
+    announcer.textContent = "Barcode scanned successfully. Fetching details.";
+  }
+
+  // 1. Log metrics in dev environment
+  if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) {
+    console.log(`[DEBUG] Stable barcode detected: ${decodedText} (stable for ${elapsedStableTime}ms, frames: ${detectionCount})`);
+  }
+
+  // 2. Flash brackets green for 200ms
+  const brackets = document.querySelector('.scanner-brackets');
+  if (brackets) {
+    brackets.classList.add('flash-green');
+    setTimeout(() => {
+      brackets.classList.remove('flash-green');
+    }, 200);
+  }
+
+  // 3. Update top status label to green dot and "✓ Barcode detected"
+  const dot = document.querySelector('.status-dot');
+  const text = document.querySelector('.status-text');
+  if (dot && text) {
+    dot.style.backgroundColor = '#2e7d32';
+    dot.style.boxShadow = '0 0 8px #2e7d32';
+    text.textContent = '✓ Barcode detected';
+  }
+
+  // 4. Synthesize beep and haptic feedback
+  triggerHapticVibrate();
+  playSuccessBeep();
+
+  // 5. Lookup details from backend catalog
+  lookupBarcode(decodedText);
+}
+
+function onBarcodeScanError(errorMessage) {
+  // Increment frames for real-time FPS overlay calculation
+  registerFrameForFps();
+}
+
+// Stop camera scan stream
+function stopCameraScanner() {
+  isCameraRunning = false;
+  if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+    html5QrcodeScanner.stop().then(() => {
+      console.log('Camera stream stopped successfully.');
+    }).catch(err => {
+      console.warn('Failed to stop camera stream:', err);
+    });
+  }
+  stopAmbientLightDetection();
+  const overlay = document.getElementById('debug-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function closeHistorySheet() {
+  const historySheet = document.getElementById('history-sheet');
+  const historySheetOverlay = document.getElementById('history-sheet-overlay');
+  if (historySheet && historySheetOverlay) {
+    historySheet.style.transform = 'translate(-50%, 100%)';
+    setTimeout(() => {
+      historySheet.style.display = 'none';
+      historySheetOverlay.style.display = 'none';
+    }, 300);
+  }
+}
+
+// Render dynamic recent scans rows in the slide-up bottom sheet
+function renderRecentScansBottomSheet() {
+  const listContainer = document.getElementById('sheet-list-container');
+  if (!listContainer) return;
+  listContainer.innerHTML = '';
+
+  if (recentScans.length === 0) {
+    listContainer.innerHTML = '<span class="history-empty text-muted" style="text-align: center; display: block; padding: 20px;">No items scanned yet in this session.</span>';
+    return;
+  }
+
+  // Display maximum 2 items only
+  const displayItems = recentScans.slice(0, 2);
+
+  displayItems.forEach((item, index) => {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'sheet-item';
+
+    // Relative timestamp calculation
+    let timeString = 'Just now';
+    if (item.scannedAt) {
+      const diff = Math.floor((Date.now() - item.scannedAt) / 1000);
+      if (diff < 60) {
+        timeString = 'Just now';
+      } else {
+        const mins = Math.floor(diff / 60);
+        timeString = `${mins} min ago`;
+      }
+    } else {
+      timeString = index === 0 ? 'Just now' : '2 min ago';
+    }
+
+    itemDiv.innerHTML = `
+      <div class="sheet-thumb-placeholder">🛒</div>
+      <div class="sheet-item-middle">
+        <span class="sheet-item-name">${item.name}</span>
+        <div class="sheet-item-price-time">
+          <span class="sheet-item-price">${formatCurrency(item.salePrice)}</span>
+          <span class="sheet-item-time">${timeString}</span>
+        </div>
+      </div>
+      <span class="sheet-item-chevron">&gt;</span>
+    `;
+
+    itemDiv.addEventListener('click', () => {
+      closeHistorySheet();
+
+      // Reset product title row collapse status
+      resetBarcodeCollapse();
+
+      const hName = document.getElementById('single-name');
+      if (hName) hName.textContent = item.name;
+      const hBarcode = document.getElementById('single-barcode');
+      if (hBarcode) hBarcode.textContent = item.barcode;
+      const hPrice = document.getElementById('single-sale-price');
+      if (hPrice) hPrice.innerHTML = formatPremiumPrice(item.salePrice);
+      const hMrp = document.getElementById('single-mrp');
+      if (hMrp) hMrp.textContent = formatCurrency(item.mrp);
+
+      const discountBadge = document.getElementById('single-discount-badge');
+      if (discountBadge) {
+        const mrpVal = Number(item.mrp);
+        const saleVal = Number(item.salePrice);
+        if (mrpVal > saleVal && mrpVal > 0) {
+          const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+          const savedVal = (mrpVal - saleVal).toFixed(2).replace(/\.00$/, '');
+
+          const percentEl = document.getElementById('single-discount-percent');
+          if (percentEl) percentEl.textContent = `${discountPercent}%`;
+
+          const savedEl = document.getElementById('single-saved-amount');
+          if (savedEl) savedEl.textContent = `₹${savedVal}`;
+
+          discountBadge.style.display = 'flex';
+        } else {
+          discountBadge.style.display = 'none';
+        }
+      }
+
+      const bulkContainer = document.getElementById('single-bulk-container');
+      if (bulkContainer && item.wholesalePrice !== undefined && item.wholesalePrice !== null && item.wholesaleQty !== undefined && item.wholesaleQty !== null) {
+        const bQty = document.getElementById('single-bulk-qty');
+        if (bQty) bQty.textContent = `Buy ${item.wholesaleQty} or more`;
+        const bPrice = document.getElementById('single-bulk-price');
+        if (bPrice) bPrice.textContent = `${formatCurrency(item.wholesalePrice)} each`;
+        const savings = (Number(item.salePrice) - Number(item.wholesalePrice)) * Number(item.wholesaleQty);
+        const bSavings = document.getElementById('single-bulk-savings');
+        if (bSavings) bSavings.textContent = 'Save ' + formatCurrency(savings).replace('.00', '');
+        bulkContainer.style.display = 'flex';
+      } else if (bulkContainer) {
+        bulkContainer.style.display = 'none';
+      }
+
+      applyCardHighlight();
+    });
+
+    listContainer.appendChild(itemDiv);
+
+    if (index < displayItems.length - 1) {
+      const div = document.createElement('div');
+      div.className = 'sheet-item-divider';
+      listContainer.appendChild(div);
+    }
+  });
+}
+
+// Bind DOM event listeners for Scanner Page
+document.addEventListener('DOMContentLoaded', () => {
+  const singleBarcodeToggle = document.getElementById('single-barcode-toggle');
+  if (singleBarcodeToggle) {
+    singleBarcodeToggle.addEventListener('click', () => {
+      const singleBarcodeArea = document.getElementById('single-barcode-area');
+      const chevron = singleBarcodeToggle.querySelector('.barcode-toggle-chevron');
+      if (singleBarcodeArea && chevron) {
+        const isExpanded = singleBarcodeArea.classList.toggle('expanded');
+        chevron.classList.toggle('expanded');
+        chevron.textContent = isExpanded ? '▲' : '▼';
+      }
+    });
+  }
+
+  const openHistoryBtn = document.getElementById('open-history-btn');
+  const closeHistoryBtn = document.getElementById('close-history-btn');
+  const historySheetOverlay = document.getElementById('history-sheet-overlay');
+
+  if (openHistoryBtn && historySheetOverlay) {
+    openHistoryBtn.addEventListener('click', () => {
+      renderRecentScansBottomSheet();
+      historySheetOverlay.style.display = 'block';
+      const historySheet = document.getElementById('history-sheet');
+      if (historySheet) {
+        historySheet.style.display = 'flex';
+        setTimeout(() => {
+          historySheet.style.transform = 'translate(-50%, 0)';
+        }, 10);
+      }
+    });
+  }
+
+  if (closeHistoryBtn) {
+    closeHistoryBtn.addEventListener('click', closeHistorySheet);
+  }
+  if (historySheetOverlay) {
+    historySheetOverlay.addEventListener('click', closeHistorySheet);
+  }
+
+  const retryDenied = document.getElementById('retry-camera-denied-btn');
+  if (retryDenied) {
+    retryDenied.addEventListener('click', () => {
+      console.log('[Diag] Retry Camera Denied clicked. Transitioning state to SCANNING...');
+      StateManager.transitionTo('SCANNING');
+      setTimeout(async () => {
+        try {
+          await CameraManager.start();
+        } catch (err) {
+          console.error('[Diag] Retry camera startup failed:', err);
+        }
+      }, 150);
+    });
+  }
+
+  const retryUnavailable = document.getElementById('retry-camera-unavailable-btn');
+  if (retryUnavailable) {
+    retryUnavailable.addEventListener('click', () => {
+      console.log('[Diag] Retry Camera Unavailable clicked. Transitioning state to SCANNING...');
+      StateManager.transitionTo('SCANNING');
+      setTimeout(async () => {
+        try {
+          await CameraManager.start();
+        } catch (err) {
+          console.error('[Diag] Retry camera startup failed:', err);
+        }
+      }, 150);
+    });
+  }
+
+  const retryNetwork = document.getElementById('retry-network-btn');
+  if (retryNetwork) {
+    retryNetwork.addEventListener('click', () => {
+      if (currentRecoveryBarcode) {
+        lookupBarcode(currentRecoveryBarcode);
+      }
+    });
+  }
+
+  const retryServer = document.getElementById('retry-server-btn');
+  if (retryServer) {
+    retryServer.addEventListener('click', () => {
+      if (currentRecoveryBarcode) {
+        lookupBarcode(currentRecoveryBarcode);
+      }
+    });
+  }
+
+  // Initialize Session History from LocalStorage
+  if (typeof FeatureFlags !== 'undefined' && FeatureFlags.isEnabled('FEATURE_RECENT')) {
+    try {
+      const cached = localStorage.getItem('recent_scans');
+      if (cached) {
+        recentScans = JSON.parse(cached);
+        renderRecentScans();
+      }
+    } catch (e) {
+      console.warn('Failed to load cached scan history', e);
+    }
+  } else {
+    const container = document.querySelector('.recently-scanned-trigger-container');
+    if (container) container.style.display = 'none';
+  }
+
+  // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
+  setInterval(() => {
+    if (lastScannedBarcode && Date.now() - lastSeenTime > 2000) {
+      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[DEBUG] Scan lock on barcode ${lastScannedBarcode} cleared after 2.0s of absence.`);
+      lastScannedBarcode = "";
+    }
+  }, 500);
+
+  // Query browser camera permission state on load safely
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'camera' }).then(permissionStatus => {
+        console.log('Initial camera permission state:', permissionStatus.state);
+        if (permissionStatus.state === 'granted') {
+          cameraPermissionGranted = true;
+        }
+        permissionStatus.onchange = () => {
+          cameraPermissionGranted = (permissionStatus.state === 'granted');
+          console.log('Camera permission state changed to:', permissionStatus.state);
+        };
+      }).catch(err => {
+        console.warn('Camera permission query not supported in this browser', err);
+      });
+    }
+  } catch (err) {
+    console.warn('Synchronous camera permission query failed or not supported:', err);
+  }
+});
+
+// Auto-playing promotions carousel runner
+(function initPromotionsCarousel() {
+  const track = document.getElementById('promo-carousel-track');
+  if (!track) return;
+
+  let currentSlideIndex = 0;
+
+  setInterval(() => {
+    const slides = track.querySelectorAll('.promo-slide');
+    if (slides.length <= 1) return;
+
+    slides[currentSlideIndex].classList.remove('active');
+    currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+    if (slides[currentSlideIndex]) {
+      slides[currentSlideIndex].classList.add('active');
+    }
+  }, 4000); // Transitions every 4 seconds
+})();
+
 // Scanner state visual updates (laser control, scanning status text)
 (function monitorScannerState() {
   const laserLine = document.querySelector('.scanner-laser-beam');
   const statusDot = document.querySelector('.guidance-dot');
   const statusText = document.querySelector('.guidance-text');
-  
+
   if (laserLine) {
     laserLine.style.animationPlayState = 'running';
     laserLine.style.display = 'block';
   }
-  
+
   let lastState = null;
-  
+
   setInterval(() => {
+    if (typeof StateManager === 'undefined') return;
     const state = StateManager.currentState;
     if (state === lastState) return;
     lastState = state;
-    
+
     if (statusDot && statusText) {
       if (state === 'SCANNING') {
         statusDot.className = 'guidance-dot scanning';

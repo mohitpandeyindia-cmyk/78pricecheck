@@ -29,15 +29,25 @@ export async function getDb(): Promise<Database> {
   return dbInstance;
 }
 
+export async function closeDb(): Promise<void> {
+  if (dbInstance) {
+    await dbInstance.close();
+    dbInstance = null;
+  }
+}
+
+export async function resetDatabase(): Promise<void> {
+  const db = await getDb();
+  await db.exec('DROP TABLE IF EXISTS hot_deals;');
+  await db.exec('DROP TABLE IF EXISTS upload_history;');
+  await db.exec('DROP TABLE IF EXISTS products;');
+  await initializeDatabase(true);
+}
+
 export async function initializeDatabase(seedData = false): Promise<void> {
   const db = await getDb();
 
-  // Drop old tables to apply schema updates
-  await db.exec('DROP TABLE IF EXISTS products;');
-  await db.exec('DROP TABLE IF EXISTS upload_history;');
-  await db.exec('DROP TABLE IF EXISTS hot_deals;');
-
-  // Create tables
+  // Create tables if they do not exist
   await db.exec(`
     CREATE TABLE IF NOT EXISTS system_settings (
       key TEXT PRIMARY KEY,

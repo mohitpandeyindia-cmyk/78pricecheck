@@ -70,18 +70,7 @@ html, body {
 }
 
 /* App Shell centered on desktop screens */
-.app-shell {
-  max-width: 480px;
-  margin: 0 auto;
-  height: var(--app-height, 100dvh);
-  background-color: var(--bg-light);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  box-shadow: var(--shadow-medium);
-  overflow: hidden;
-  box-sizing: border-box;
-}
+/* [ACTIVE RULE ".app-shell" MOVED TO scanner.css] */
 
 /* Unified Page Contract (Scanner Design System v1.2) */
 .app-page {
@@ -97,45 +86,17 @@ html, body {
 }
 
 /* Scanner Page Content Layering (Version 1.2 Isolation) */
-#scanner-view {
-  position: relative;
-  overflow: hidden;
-  background-color: var(--bg-light);
-  --scanner-mascot-url: url('../assets/scanner-mascot.png');
-  --scanner-logo-url: url('../assets/scanner-logo.jpg');
-}
+/* [ACTIVE RULE "#scanner-view" MOVED TO scanner.css] */
 
-#scanner-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1; /* Underneath content */
-  pointer-events: none;
-  background-color: #eaeaea;
-}
+/* [ACTIVE RULE "#scanner-background" MOVED TO scanner.css] */
 
-#scanner-content {
-  position: relative;
-  z-index: 10; /* Above background */
-  width: 100%;
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
+/* [ACTIVE RULE "#scanner-content" MOVED TO scanner.css] */
 
 
 
 /* Strip layouts/aesthetics on Scanner Page for Phase 1 Wireframe */
 #scanner-view, 
-#scanner-view * {
-  box-shadow: none !important;
-  text-shadow: none !important;
-  animation: none !important;
-  transition: none !important;
-}
+/* [ACTIVE RULE "#scanner-view *" MOVED TO scanner.css] */
 
 #scanner-view .top-header,
 #scanner-view .product-info-area,
@@ -144,15 +105,9 @@ html, body {
 #scanner-view .product-card,
 #scanner-view .bottom-sheet,
 #scanner-view .sheet-grab-handle,
-#scanner-view .sheet-header {
-  background: transparent !important;
-  border-radius: 0 !important;
-  border-color: #999999 !important;
-}
+/* [ACTIVE RULE "#scanner-view .sheet-header" MOVED TO scanner.css] */
 
-#scanner-view .product-card {
-  border: 1px dashed #999999 !important;
-}
+/* [ACTIVE RULE "#scanner-view .product-card" MOVED TO scanner.css] */
 
 /* Detach legacy scanner UI components from the active layout canvas (Phase 1) */
 #scanner-view .header-center *,
@@ -160,9 +115,7 @@ html, body {
 #scanner-view .promotions-area *,
 #scanner-view .recently-scanned-handle-area *,
 #scanner-view .sheet-overlay,
-#scanner-view .bottom-sheet {
-  display: none !important;
-}
+/* [ACTIVE RULE "#scanner-view .bottom-sheet" MOVED TO scanner.css] */
 
 /* Welcome Page Layout */
 .welcome-container {
@@ -383,38 +336,15 @@ html, body {
 }
 
 /* Camera Opening Loading State Card */
-.opening-camera-text {
-  font-family: 'Poppins', sans-serif;
-  font-size: var(--text-md);
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: var(--space-2);
-  text-align: center;
-}
+/* [ACTIVE RULE ".opening-camera-text" MOVED TO scanner.css] */
 
-.bouncing-dots {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
-  margin-top: var(--space-1);
-}
+/* [ACTIVE RULE ".bouncing-dots" MOVED TO scanner.css] */
 
-.bouncing-dots .dot {
-  width: 8px;
-  height: 8px;
-  background-color: var(--primary-color);
-  border-radius: 50%;
-  animation: dot-bounce 1.4s infinite ease-in-out both;
-}
+/* [ACTIVE RULE ".bouncing-dots .dot" MOVED TO scanner.css] */
 
-.bouncing-dots .dot:nth-child(1) {
-  animation-delay: -0.32s;
-}
+/* [ACTIVE RULE ".bouncing-dots .dot:nth-child(1)" MOVED TO scanner.css] */
 
-.bouncing-dots .dot:nth-child(2) {
-  animation-delay: -0.16s;
-}
+/* [ACTIVE RULE ".bouncing-dots .dot:nth-child(2)" MOVED TO scanner.css] */
 
 @keyframes dot-bounce {
   0%, 80%, 100% { 
@@ -457,17 +387,9 @@ html, body {
   font-size: 1.1rem;
 }
 
-.btn-outline {
-  background-color: transparent;
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  padding: 10px 20px;
-  font-size: 0.9rem;
-}
+/* [ACTIVE RULE ".btn-outline" MOVED TO scanner.css] */
 
-.btn-outline:active {
-  background-color: rgba(27, 94, 32, 0.05);
-}
+/* [ACTIVE RULE ".btn-outline:active" MOVED TO scanner.css] */
 
 .btn-text {
   background: none;
@@ -483,18 +405,7 @@ html, body {
 }
 
 /* Premium Supermarket Header */
-.top-header {
-  height: calc(56px + env(safe-area-inset-top, 0px));
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  align-items: end;
-  padding: env(safe-area-inset-top, 0px) var(--space-4) 0 var(--space-4);
-  background-color: var(--card-bg);
-  position: relative;
-  user-select: none;
-  z-index: 100;
-  box-sizing: border-box;
-}
+/* [ACTIVE RULE ".top-header" MOVED TO scanner.css] */
 
 .header-back-btn {
   background: none;
@@ -576,26 +487,11 @@ html, body {
   object-fit: contain;
 }
 
-#scan-row-1 {
-  height: calc(56px + env(safe-area-inset-top, 0px));
-  box-shadow: none !important;
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 var(--space-4);
-  background: #ffffff;
-}
+/* [ACTIVE RULE "#scan-row-1" MOVED TO scanner.css] */
 
 
 
-/* Scanner Area Row 2 (30% of screen height) */
-.scanner-area {
-  flex: 30 1 0;
-  position: relative;
-  background-color: #0c150c;
-  overflow: hidden;
-  width: 100%;
-  padding: 0 var(--content-inset);
-  box-sizing: border-box;
-}
+/* [ACTIVE .scanner-area RULE MOVED TO scanner.css] */
 
 /* [LEGACY BARE #reader RULES PURGED] */
 
@@ -613,64 +509,24 @@ html, body {
   white-space: nowrap;
 }
 
-/* Row 3: Dynamic Product Information Card (40% height) */
-.product-info-area {
-  flex: 40 1 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: var(--bg-light);
-  box-sizing: border-box;
-  padding: 4px var(--content-inset) 8px var(--content-inset);
-  position: relative;
-  overflow: hidden;
-}
+/* [ACTIVE .product-info-area RULE MOVED TO scanner.css] */
 
 /* ==========================================================================
    Scanner Design System Tokens & ProductCard.Single Component Architecture
    ========================================================================== */
 
-#scanner-view {
-  /* Design Tokens */
-  --surface-card: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #64748b;
-  --accent-positive: #166534;
-  --capsule-success-bg: rgba(34, 197, 94, 0.1);
-  --capsule-success-text: #15803d;
-  --divider-border: #e2e8f0;
-/* [ACTIVE PRODUCTCARD.SINGLE RULE MOVED TO scanner.css] */
-  }
+/* [ACTIVE RULE "#scanner-view" MOVED TO scanner.css] */
   100% {
     background-position: -200% 0;
   }
 }
 
 /* Horizontal Swiping Multi List Layout */
-.multi-products-list {
-  display: flex;
-  flex-direction: row;
-  overflow-x: auto;
-  gap: var(--space-3);
-  padding: 6px 4px;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  box-sizing: border-box;
-}
+/* [ACTIVE RULE ".multi-products-list" MOVED TO scanner.css] */
 
-.multi-products-list::-webkit-scrollbar {
-  height: 4px;
-}
-.multi-products-list::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.05);
-}
-.multi-products-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 2px;
-}
+/* [ACTIVE RULE ".multi-products-list::-webkit-scrollbar" MOVED TO scanner.css] */
+/* [ACTIVE RULE ".multi-products-list::-webkit-scrollbar-track" MOVED TO scanner.css] */
+/* [ACTIVE RULE ".multi-products-list::-webkit-scrollbar-thumb" MOVED TO scanner.css] */
 
 .multi-item-card {
   flex: 0 0 82%;
@@ -689,59 +545,17 @@ html, body {
   transform: scale(0.98);
 }
 
-/* Row 4: Promotions Carousel (20% height) */
-.promotions-area {
-  flex: 22 1 0;
-  width: 100%;
-  background-color: #ffffff;
-  border-top: 1px solid var(--border-color);
-  box-sizing: border-box;
-  padding: 6px var(--content-inset);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
-}
+/* [ACTIVE .promotions-area RULE MOVED TO scanner.css] */
 
-.promo-title-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
+/* [ACTIVE RULE ".promo-title-row" MOVED TO scanner.css] */
 
-.promo-hot-badge {
-  font-size: 9px;
-  font-weight: 800;
-  background-color: #e64a19;
-  color: #ffffff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  letter-spacing: 0.05em;
-  font-family: 'Outfit', sans-serif;
-}
+/* [ACTIVE RULE ".promo-hot-badge" MOVED TO scanner.css] */
 
-.promo-section-title {
-  font-family: 'Outfit', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-main);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
+/* [ACTIVE RULE ".promo-section-title" MOVED TO scanner.css] */
 
-.promo-carousel-container {
-  flex: 1;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  margin-top: 6px;
-}
+/* [ACTIVE RULE ".promo-carousel-container" MOVED TO scanner.css] */
 
-.promo-carousel-track {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
+/* [ACTIVE RULE ".promo-carousel-track" MOVED TO scanner.css] */
 
 .promo-slide {
   position: absolute;
@@ -761,25 +575,9 @@ html, body {
   visibility: visible;
 }
 
-.promo-details {
-  background-color: #f8f9fa;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: var(--space-3) var(--space-4);
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-}
+/* [ACTIVE RULE ".promo-details" MOVED TO scanner.css] */
 
-.promo-name {
-  font-family: 'Outfit', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-main);
-}
+/* [ACTIVE RULE ".promo-name" MOVED TO scanner.css] */
 
 .promo-price-row {
   display: flex;
@@ -812,56 +610,15 @@ html, body {
   border-radius: 6px;
 }
 
-/* Row 5: Recently Scanned Handle (5% height) */
-.recently-scanned-handle-area {
-  flex: 3 1 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #f8f9fa;
-  border-top: 1px solid var(--border-color);
-  box-sizing: border-box;
-}
+/* [ACTIVE .recently-scanned-handle-area RULE MOVED TO scanner.css] */
 
-.sheet-handle-btn {
-  background: none;
-  border: none;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  gap: 3px;
-}
+/* [ACTIVE RULE ".sheet-handle-btn" MOVED TO scanner.css] */
 
-.handle-line {
-  width: 32px;
-  height: 4px;
-  border-radius: 2px;
-  background-color: #ccc;
-  display: block;
-}
+/* [ACTIVE RULE ".handle-line" MOVED TO scanner.css] */
 
-.handle-text {
-  font-family: 'Outfit', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-}
+/* [ACTIVE RULE ".handle-text" MOVED TO scanner.css] */
 
-.details-state {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
+/* [ACTIVE .details-state BLOCK 1 MOVED TO scanner.css] */
 
 /* State idle & loaders */
 .idle-graphic {
@@ -870,42 +627,13 @@ html, body {
   opacity: 0.5;
 }
 
-.state-instruction {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  max-width: 260px;
-  line-height: 1.5;
-}
+/* [ACTIVE RULE ".state-instruction" MOVED TO scanner.css] */
 
-.spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid rgba(0, 0, 0, 0.08);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 12px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+/* [ACTIVE RULE ".spinner" MOVED TO scanner.css] */
+/* [ACTIVE RULE "@keyframes spin" MOVED TO scanner.css] */
 
 /* Premium Floating Product Card */
-.product-card {
-  flex: 0 1 auto; /* Hug content height instead of taking full height */
-  background-color: var(--card-bg);
-  border-radius: 16px;
-  padding: 20px 16px; /* Extra top padding for title breathing room */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.01);
-  transition: transform 0.25s cubic-bezier(0.2, 1, 0.2, 1), background-color 0.2s ease;
-}
+/* [ACTIVE RULE ".product-card" MOVED TO scanner.css] */
 
 /* Interactive Name Row */
 .product-title-row {
@@ -1107,51 +835,20 @@ html, body {
 
 
 /* State Multiple Matches */
-.multi-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-align: left;
-  width: 100%;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 10px;
-}
+/* [ACTIVE RULE ".multi-header" MOVED TO scanner.css] */
 
-.multi-icon {
-  font-size: 1.25rem;
-  color: var(--primary-color);
-}
+/* [ACTIVE RULE ".multi-icon" MOVED TO scanner.css] */
 
-.multi-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-}
+/* [ACTIVE RULE ".multi-title" MOVED TO scanner.css] */
 
-.multi-subtitle {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
+/* [ACTIVE RULE ".multi-subtitle" MOVED TO scanner.css] */
 
-.multi-products-list {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 280px; /* Increase height to support vertical cards */
-  overflow-y: auto;
-  padding-right: 5px;
-}
+/* [ACTIVE RULE ".multi-products-list" MOVED TO scanner.css] */
 
 /* Custom Scrollbar for list container */
-.multi-products-list::-webkit-scrollbar {
-  width: 4px;
-}
+/* [ACTIVE RULE ".multi-products-list::-webkit-scrollbar" MOVED TO scanner.css] */
 
-.multi-products-list::-webkit-scrollbar-thumb {
-  background-color: var(--border-color);
-  border-radius: 2px;
-}
+/* [ACTIVE RULE ".multi-products-list::-webkit-scrollbar-thumb" MOVED TO scanner.css] */
 
 .multi-item-card {
   background-color: var(--card-bg);
@@ -1240,52 +937,14 @@ html, body {
 }
 
 /* Errors & Recovery Graphics */
-.error-graphic {
-  font-size: 2.5rem;
-  margin-bottom: 12px;
-}
+/* [ACTIVE RULE ".error-graphic" MOVED TO scanner.css] */
 
-.error-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 6px;
-  color: var(--text-main);
-}
+/* [ACTIVE RULE ".error-title" MOVED TO scanner.css] */
 
-.error-desc {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  max-width: 280px;
-  line-height: 1.4;
-  margin-bottom: 15px;
-}
+/* [ACTIVE RULE ".error-desc" MOVED TO scanner.css] */
 
 /* Feedback bubble popup */
-.scan-feedback-popup {
-  position: relative;
-  margin: 3px auto;
-  background-color: #e8f5e9;
-  color: #1b5e20;
-  border: 1px solid #c8e6c9;
-  font-weight: 700;
-  font-size: 0.7rem;
-  padding: 3px 10px;
-  border-radius: 12px;
-  z-index: 50;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s, color 0.2s, border-color 0.2s;
-  white-space: nowrap;
-  max-width: 95%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-sizing: border-box;
-  text-align: center;
-  height: 22px;
-  line-height: 14px;
-}
+/* [ACTIVE RULE ".scan-feedback-popup" MOVED TO scanner.css] */
 
 .scan-feedback-popup.visible {
   opacity: 1;
@@ -1319,101 +978,26 @@ html, body {
 }
 
 /* Bottom Sheet Overlay & Sheet */
-.sheet-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  animation: fade-in 0.2s ease-out;
-}
+/* [ACTIVE RULE ".sheet-overlay" MOVED TO scanner.css] */
 
-.bottom-sheet {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  background-color: var(--card-bg);
-  border-radius: 20px 20px 0 0;
-  padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) var(--space-4);
-  z-index: 1001;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  display: flex;
-  flex-direction: column;
-}
+/* [ACTIVE RULE ".bottom-sheet" MOVED TO scanner.css] */
 
-.sheet-grab-handle {
-  width: 36px;
-  height: 4px;
-  background-color: #dee2e6;
-  border-radius: 2px;
-  align-self: center;
-  margin-bottom: 14px;
-}
+/* [ACTIVE RULE ".sheet-grab-handle" MOVED TO scanner.css] */
 
-.sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 8px;
-}
+/* [ACTIVE RULE ".sheet-header" MOVED TO scanner.css] */
 
-.sheet-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
+/* [ACTIVE RULE ".sheet-title" MOVED TO scanner.css] */
 
-.sheet-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: var(--text-muted);
-  cursor: pointer;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
+/* [ACTIVE RULE ".sheet-close-btn" MOVED TO scanner.css] */
 
 /* Accessibility screen-reader hidden helper */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  border: 0;
-}
+/* [ACTIVE RULE ".sr-only" MOVED TO scanner.css] */
 
-.sheet-close-btn:active {
-  background-color: var(--bg-light);
-}
+/* [ACTIVE RULE ".sheet-close-btn:active" MOVED TO scanner.css] */
 
-.sheet-divider {
-  width: 100%;
-  border-top: 1px solid var(--border-color);
-  margin-bottom: 12px;
-}
+/* [ACTIVE RULE ".sheet-divider" MOVED TO scanner.css] */
 
-.sheet-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
+/* [ACTIVE RULE ".sheet-list" MOVED TO scanner.css] */
 
 .sheet-item {
   display: flex;
@@ -1495,18 +1079,7 @@ html, body {
   to { opacity: 1; }
 }
 
-/* Card content fade-out and slide-up replacements (Milestone 6.2) */
-.details-state {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 200ms ease, transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-
-.details-state.replacing {
-  opacity: 0;
-  transform: translateY(8px);
-}
+/* [ACTIVE .details-state BLOCK 2 & 3 MOVED TO scanner.css] */
 
 /* Today's Price number micro-fade transition (Milestone 6.2) */
 .price-val {
@@ -1578,47 +1151,10 @@ html, body {
 }
 
 /* PWA Update Banner Styling */
-.pwa-banner-container {
-  position: fixed;
-  bottom: var(--space-4);
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--primary-color);
-  color: #ffffff;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  z-index: 1100;
-  animation: slideUp 0.3s ease-out;
-}
+/* [ACTIVE RULE ".pwa-banner-container" MOVED TO scanner.css] */
 
-.pwa-banner-text {
-  font-family: var(--font-primary);
-  font-size: var(--text-sm);
-  font-weight: 500;
-}
+/* [ACTIVE RULE ".pwa-banner-text" MOVED TO scanner.css] */
 
-.pwa-banner-btn {
-  background-color: #ffffff;
-  color: var(--primary-color);
-  border: none;
-  padding: 6px 12px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-primary);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  cursor: pointer;
-  min-width: 44px;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.2s ease;
-}
+/* [ACTIVE RULE ".pwa-banner-btn" MOVED TO scanner.css] */
 
-.pwa-banner-btn:active {
-  opacity: 0.9;
-}
+/* [ACTIVE RULE ".pwa-banner-btn:active" MOVED TO scanner.css] */

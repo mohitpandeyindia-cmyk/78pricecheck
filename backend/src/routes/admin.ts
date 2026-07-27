@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getDb, initializeDatabase } from '../db';
+import { getDb, initializeDatabase, resetDatabase } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
@@ -55,8 +55,8 @@ router.post('/admin/setup', authenticateToken, async (req: Request, res: Respons
   }
 
   try {
-    // Run DB schema build and seed default products
-    await initializeDatabase(true);
+    // Run DB schema reset and seed default products
+    await resetDatabase();
 
     res.json({
       success: true,

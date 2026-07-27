@@ -4,7 +4,9 @@ const path = require('path');
 const requiredFiles = [
   '../frontend/customer/index.html',
   '../frontend/customer/css/customer.css',
+  '../frontend/customer/css/scanner.css',
   '../frontend/customer/js/customer.js',
+  '../frontend/customer/js/scanner.js',
   '../frontend/customer/js/build-env.js',
   '../frontend/customer/js/libs/html5-qrcode.min.js',
   '../frontend/customer/manifest.json',
