@@ -673,8 +673,8 @@ function renderHotDealsCarousel() {
     const fallbackSlide = document.createElement('div');
     fallbackSlide.className = 'promo-slide active';
     fallbackSlide.innerHTML = `
-      <div class="promo-details" style="text-align: center;">
-        <span class="promo-name" style="font-style: italic; color: var(--text-muted);">No offers available today.</span>
+      <div class="promo-details promo-details--empty">
+        <span class="promo-name">No offers available today.</span>
       </div>
     `;
     track.appendChild(fallbackSlide);

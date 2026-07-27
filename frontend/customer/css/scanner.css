@@ -874,23 +874,79 @@
 }
 
 .promo-details {
-  background-color: #f8f9fa;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: var(--space-3) var(--space-4);
+  background-color: #ffffff;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 16px;
+  padding: 12px 16px;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.promo-details--empty {
+  align-items: center;
+  text-align: center;
+  padding: 14px 16px;
+}
+
+.promo-details--empty .promo-name {
+  color: var(--text-secondary, #8e8e93);
+  font-weight: 500;
+  font-size: 0.85rem;
+  font-style: normal;
+  white-space: normal;
 }
 
 .promo-name {
-  font-family: 'Outfit', sans-serif;
-  font-size: 14px;
+  font-family: var(--font-family, 'Outfit', sans-serif);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #1c1c1e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.promo-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.promo-mrp {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #8e8e93);
+  font-weight: 500;
+}
+
+.mrp-strike {
+  text-decoration: line-through;
   font-weight: 600;
-  color: var(--text-main);
+}
+
+.promo-sale {
+  font-family: var(--font-family, 'Outfit', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary, #1c1c1e);
+}
+
+.promo-save {
+  font-family: var(--font-family, 'Outfit', sans-serif);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background-color: var(--capsule-success-bg, rgba(46, 125, 50, 0.12));
+  color: var(--accent-positive, #2e7d32);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
 }
 
 .sheet-handle-btn {
