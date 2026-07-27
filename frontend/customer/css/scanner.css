@@ -4,6 +4,7 @@
    ========================================================================== */
 
 #scanner-view #scan-row-1 {
+  min-height: 52px;
   background: transparent !important;
   border-bottom: none !important;
   box-shadow: none !important;
@@ -774,7 +775,7 @@
 
 .top-header {
   flex: 5 1 0;
-  min-height: 0;
+  min-height: 52px;
   display: grid;
   grid-template-columns: 48px 1fr 48px;
   align-items: end;
@@ -788,7 +789,7 @@
 
 #scan-row-1 {
   flex: 5 1 0;
-  min-height: 0;
+  min-height: 52px;
   box-shadow: none !important;
   border-bottom: 1px solid var(--border-color);
   padding: 0 var(--space-4);
