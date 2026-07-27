@@ -20,7 +20,7 @@
   justify-content: flex-start;
   align-items: center;
   height: 100%;
-  padding-left: var(--content-inset);
+  z-index: 105;
 }
 
 #scanner-view .scanner-back-button {
@@ -49,52 +49,50 @@
   transform: scale(0.92);
 }
 
-/* Center Zone - Mascot (Contained Bottom Alignment) */
+/* Center Zone - Mascot (Absolute Screen Centering) */
 #scanner-view .scanner-header-center {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  height: 100%;
-  position: relative;
+  z-index: 110;
+  pointer-events: none;
   overflow: visible;
 }
 
 #scanner-view .scanner-header-mascot {
-  background-image: var(--scanner-mascot-url);
+  background-image: var(--scanner-mascot-url, url('../assets/scanner-mascot.png'));
   background-size: contain;
   background-repeat: no-repeat;
   background-position: bottom center;
   width: 90px;
   height: 100%;
   max-height: 52px;
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 110;
-  pointer-events: none;
   display: block;
+  pointer-events: none;
 }
 
-/* Right Zone - Brand Logo (Full 100% Section 1 Height) */
+/* Right Zone - Brand Logo (Right-Aligned Flex) */
 #scanner-view .scanner-header-right {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   height: 100%;
-  padding-right: var(--content-inset);
-  padding-top: 0;
-  padding-bottom: 0;
-  box-sizing: border-box;
+  z-index: 105;
 }
 
 #scanner-view .scanner-header-logo {
-  background-image: var(--scanner-logo-url);
+  background-image: var(--scanner-logo-url, url('../assets/scanner-logo.jpg'));
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center right;
   width: 120px;
   height: 100%;
+  max-height: 52px;
   display: block;
   pointer-events: none;
   cursor: default;
@@ -353,7 +351,7 @@
   box-shadow: var(--elevation-card);
   border: 1px solid var(--divider-border);
   width: 100%;
-  height: 100%;
+  height: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -618,7 +616,7 @@
 
 /* Row 3: Dynamic Product Information Card (40% height) */
 .product-info-area {
-  flex: 40 1 0;
+  flex: 0 0 auto;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -626,35 +624,36 @@
   justify-content: flex-start;
   background-color: transparent;
   box-sizing: border-box;
-  padding: 4px var(--content-inset) 8px var(--content-inset);
+  padding: 8px var(--content-inset);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
-/* Row 4: Promotions Carousel (20% height) */
+/* Row 4: Promotions Carousel */
 .promotions-area {
-  flex: 22 1 0;
+  flex: 0 0 auto;
   width: 100%;
   background-color: transparent;
   border-top: none;
   box-sizing: border-box;
-  padding: 6px var(--content-inset);
+  padding: 8px var(--content-inset);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  overflow: hidden;
+  justify-content: flex-start;
+  overflow: visible;
 }
 
-/* Row 5: Recently Scanned Handle (5% height) */
+/* Row 5: Recently Scanned Handle */
 .recently-scanned-handle-area {
-  flex: 3 1 0;
+  flex: 0 0 auto;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8f9fa;
-  border-top: 1px solid var(--border-color);
+  background-color: transparent;
+  border-top: none;
   box-sizing: border-box;
+  padding: 8px 0;
 }
 
 
@@ -770,13 +769,13 @@
 }
 
 .top-header {
-  flex: 5 1 0;
+  flex: 0 0 auto;
   min-height: 52px;
-  display: grid;
-  grid-template-columns: 48px 1fr 48px;
-  align-items: end;
-  padding: env(safe-area-inset-top, 0px) var(--space-4) 0 var(--space-4);
-  background-color: var(--card-bg);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: env(safe-area-inset-top, 0px) var(--content-inset) 0 var(--content-inset);
+  background-color: transparent;
   position: relative;
   user-select: none;
   z-index: 100;
@@ -869,18 +868,32 @@
   position: relative;
 }
 
-.promo-details {
+.promo-card {
+  width: 100%;
+  box-sizing: border-box;
   background-color: #ffffff;
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   border-radius: 16px;
   padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 1 auto;
+}
+
+.promo-details {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   width: 100%;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: none;
 }
 
 .promo-details--empty {
