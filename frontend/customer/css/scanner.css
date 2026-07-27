@@ -149,26 +149,13 @@
   z-index: 1;
 }
 
-/* Enforce absolute containment on all html5-qrcode injected elements inside #reader */
-#scanner-view #reader *,
-#scanner-view #reader video,
-#scanner-view #reader canvas,
-#scanner-view #reader div,
-#scanner-view #reader__scan_region {
+#scanner-view #reader video {
   position: absolute !important;
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  border: none !important;
-  box-sizing: border-box !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-#scanner-view #reader video {
   object-fit: cover !important;
   display: block !important;
 }
