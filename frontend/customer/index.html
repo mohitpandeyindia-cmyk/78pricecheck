@@ -7,11 +7,11 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1b5e20">
   <link rel="stylesheet" href="css/customer.css">
-  <link rel="stylesheet" href="css/scanner.css">
+  <link rel="stylesheet" href="css/scanner-v2.css">
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607272104";</script>
+  <script>window.HTML_BUILD = "202607272232";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -45,211 +45,146 @@
     </div>
     
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
-    <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="app-page">
-      <div id="scanner-background" class="dynamic-background-layer"></div>
-      <div id="scanner-content">
-        <!-- Row 1: Navigation Bar (5%) -->
-      <header class="top-header" id="scan-row-1">
-        <div class="scanner-header-left">
-          <button id="back-btn" class="scanner-back-button">&lsaquo;</button>
-        </div>
-        <div class="scanner-header-center">
-          <div class="scanner-header-mascot"></div>
-        </div>
-        <div class="scanner-header-right">
-          <div class="scanner-header-logo"></div>
-        </div>
-      </header>
-
-      <!-- Shared Relational Content Lane (Sections 2, 3, 4) -->
-      <div class="scanner-content-lane">
-        <!-- Row 2: Scanner Area (Section 2 - ScannerView v1.0) -->
-        <div class="scanner-area" id="scan-row-2">
-        <div class="scanner-view-container" id="scanner-view-box">
-          <!-- Live Camera Viewport -->
-          <div id="reader" class="scanner-viewport-reader"></div>
-
-          <!-- Hardware Inner Vignette Depth -->
-          <div class="scanner-vignette-overlay"></div>
-
-          <!-- Four Corner Brackets & Laser Beam -->
-          <div class="scanner-bracket-frame">
-            <div class="scanner-bracket-corner scanner-bracket-tl"></div>
-            <div class="scanner-bracket-corner scanner-bracket-tr"></div>
-            <div class="scanner-bracket-corner scanner-bracket-bl"></div>
-            <div class="scanner-bracket-corner scanner-bracket-br"></div>
-            <!-- Supermarket Red Laser Beam -->
-            <div class="scanner-laser-beam"></div>
-          </div>
-
-          <!-- Dynamic Guidance Capsule -->
-          <div class="scanner-guidance-capsule" id="scan-status-indicator">
-            <span class="guidance-dot scanning"></span>
-            <span class="guidance-text" id="guidance-text">Align barcode within frame</span>
-          </div>
-
-          <!-- Low light & debug containers preserved for state machine -->
-          <div id="low-light-suggestion" style="display: none;"></div>
-          <div id="debug-overlay" style="display: none;"></div>
-        </div>
-      </div>
-
-      <!-- Row 3: Dynamic Product Information Card (30%) -->
-      <div class="product-info-area" id="scan-row-3">
-        <!-- Barcode Detected Success Flash Bubble -->
-        <div id="scan-feedback" class="scan-feedback-popup">
-          ✓ Price Updated
-        </div>
+      <div id="scanner-background" class="scanner-v2-wallpaper"></div>
+      <!-- Layer 2: Functional UI Grid Shell (5:29:1:39:1:21:4 | 10%:80%:10%) -->
+      <div id="scanner-v2-shell" class="scanner-v2-shell">
         
-        <!-- Large Floating Product Card -->
-        <div id="details-card" class="product-card">
-          <!-- State: Camera Opening -->
-          <div id="state-camera-opening" class="details-state" style="display: none;">
-            <div class="opening-camera-text">Opening Camera</div>
-            <div class="bouncing-dots">
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
+        <!-- Track 1 (5fr, Cols 1 / -1): Minimal Header Zone -->
+        <header id="scan-row-1" class="scanner-v2-header">
+          <button id="back-btn" class="scanner-v2-back-btn" aria-label="Go Back">&lsaquo;</button>
+          <div class="scanner-v2-mascot"></div>
+          <div class="scanner-v2-logo"></div>
+        </header>
+
+        <!-- Track 2 (29fr, Col 2 [80%]): Section 2 Scanner Card -->
+        <section id="scan-row-2" class="scanner-v2-card scanner-v2-card--scanner">
+          <div id="scanner-view-box" class="scanner-v2-view-box">
+            <div id="reader" class="scanner-v2-reader"></div>
+            <div class="scanner-v2-vignette"></div>
+            <div class="scanner-v2-frame">
+              <div class="scanner-v2-corner scanner-v2-corner--tl"></div>
+              <div class="scanner-v2-corner scanner-v2-corner--tr"></div>
+              <div class="scanner-v2-corner scanner-v2-corner--bl"></div>
+              <div class="scanner-v2-corner scanner-v2-corner--br"></div>
+              <div class="scanner-v2-laser"></div>
             </div>
+            <!-- Dynamic Guidance Capsule -->
+            <div class="scanner-guidance-capsule" id="scan-status-indicator">
+              <span class="guidance-dot scanning"></span>
+              <span class="guidance-text" id="guidance-text">Align barcode within frame</span>
+            </div>
+            <!-- Preserved State Machine Hooks -->
+            <div id="low-light-suggestion" style="display: none;"></div>
+            <div id="debug-overlay" style="display: none;"></div>
           </div>
+        </section>
 
-          <!-- State 1: Idle -->
-          <div id="state-idle" class="details-state">
-            <h3 class="idle-heading">Ready to scan</h3>
-            <p class="state-instruction">Point your camera at any product barcode.</p>
-          </div>
+        <!-- Track 3 (1fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 1 - NO DOM ELEMENT) -->
+
+        <!-- Track 4 (39fr, Col 2 [80%]): Section 3 Product Details Card -->
+        <section id="scan-row-3" class="scanner-v2-card scanner-v2-card--product">
+          <div id="scan-feedback" class="scan-feedback-popup">✓ Price Updated</div>
           
-          <!-- State 2: Loading -->
-          <div id="state-loading" class="details-state" style="display: none;">
-            <div class="spinner"></div>
-            <p class="state-instruction">Looking up price...</p>
-          </div>
-          
-          <!-- State 3: Single Match Display (ProductCard.Single v1.0) -->
-          <div id="state-single" class="details-state product-card-single" style="display: none;">
-            <!-- Top Status Row (Compact) -->
-            <div class="product-card-single__top">
-              <div class="product-capsule product-capsule--found">
-                <span class="product-capsule__dot"></span>
-                <span class="product-capsule__text">Product Found</span>
-              </div>
-              <div class="product-capsule product-capsule--stock">
-                <span class="product-capsule__dot"></span>
-                <span class="product-capsule__text">In Stock</span>
+          <div id="details-card" class="scanner-v2-details-container">
+            <!-- State: Camera Opening -->
+            <div id="state-camera-opening" class="scanner-v2-state" style="display: none;">
+              <div class="opening-camera-text">Opening Camera</div>
+              <div class="bouncing-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
               </div>
             </div>
 
-            <!-- Main Product Area (Dominant) -->
-            <div class="product-card-single__main">
-              <div class="product-card-single__main-left">
-                <h2 class="product-card-single__name" id="single-name">
-                  <span class="skeleton-line skeleton-line--title"></span>
-                </h2>
+            <!-- State 1: Idle -->
+            <div id="state-idle" class="scanner-v2-state">
+              <div class="idle-capsule">
+                <h3 class="idle-title">Ready to scan</h3>
+                <p class="idle-subtitle">Point camera at any barcode</p>
               </div>
+            </div>
 
-              <!-- Shared Vertical Axis Divider 1 -->
-              <div class="product-card-single__divider"></div>
+            <!-- State 2: Loading -->
+            <div id="state-loading" class="scanner-v2-state" style="display: none;">
+              <div class="spinner"></div>
+              <p class="state-instruction">Looking up price...</p>
+            </div>
 
-              <div class="product-card-single__main-right">
-                <div class="product-card-single__price-main" id="single-sale-price">
-                  <span class="skeleton-line skeleton-line--price"></span>
-                </div>
-                <div class="product-card-single__price-mrp-row">
-                  <span class="product-card-single__mrp-label">MRP</span>
-                  <span class="product-card-single__mrp-val" id="single-mrp">
-                    <span class="skeleton-line skeleton-line--mrp"></span>
+            <!-- State 3: Single Product Found -->
+            <div id="state-single" class="scanner-v2-state" style="display: none;">
+              <div class="single-title-row" id="single-name">
+                <span class="skeleton-line skeleton-line--title"></span>
+              </div>
+              <div class="single-barcode-row" id="single-barcode"></div>
+              <div class="single-price-card">
+                <div class="single-price-left">
+                  <span class="single-sale-label">Today's Price</span>
+                  <span class="single-sale-amount" id="single-sale-price">
+                    <span class="skeleton-line skeleton-line--price"></span>
                   </span>
+                  <span class="single-mrp-amount">MRP <span id="single-mrp"></span></span>
+                </div>
+                <div class="single-discount-pill" id="single-discount-badge">
+                  <span id="single-discount-percent"></span>&nbsp;<span id="single-saved-amount"></span>
                 </div>
               </div>
             </div>
 
-            <!-- Savings Band (Prominent but Secondary) -->
-            <div class="product-card-single__savings" id="single-discount-badge">
-              <div class="product-card-single__savings-left">
-                <span class="product-card-single__savings-label">You Save</span>
-                <span class="product-card-single__savings-val" id="single-saved-amount">
-                  <span class="skeleton-line skeleton-line--save"></span>
-                </span>
+            <!-- State 4: Multiple Matches (NON-SCROLLING BOUNDED PRESENTATION) -->
+            <div id="state-multiple" class="scanner-v2-state" style="display: none;">
+              <div class="multi-header-row">
+                <div class="multi-title">Multiple Matches Found</div>
+                <div class="multi-subtitle">Compare MRP to verify product</div>
               </div>
-
-              <!-- Shared Vertical Axis Divider 2 (Aligned on exact same axis as Divider 1) -->
-              <div class="product-card-single__divider"></div>
-
-              <div class="product-card-single__savings-right">
-                <span class="product-card-single__savings-percent" id="single-discount-percent">
-                  <span class="skeleton-line skeleton-line--percent"></span>
-                </span>
-                <span class="product-card-single__savings-off">OFF</span>
+              <div class="multi-products-list" id="multi-list">
+                <!-- Populated dynamically by scanner.js -->
               </div>
             </div>
-          </div>
-          
-          <!-- State 4: Multiple Matches Display -->
-          <div id="state-multiple" class="details-state" style="display: none;">
-            <div class="multi-header">
-              <span class="multi-icon">ℹ</span>
-              <div>
-                <h3 class="multi-title">Multiple matching products found.</h3>
-                <p class="multi-subtitle">Compare the MRP to identify the correct product.</p>
-              </div>
-            </div>
-            
-            <div class="multi-products-list" id="multi-list">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-          
-          <!-- State 5: Product Not Found Alert -->
-          <div id="state-not-found" class="details-state" style="display: none;">
-            <div class="error-graphic">❌</div>
-            <h3 class="error-title">Product not found</h3>
-            <p class="error-desc">Please try scanning again or ask a store associate for assistance.</p>
-          </div>
-          
-          <!-- State F1: Camera Permission Denied -->
-          <div id="state-camera-denied" class="details-state style-camera-error" style="display: none;">
-            <div class="error-graphic">📷</div>
-            <h3 class="error-title">Camera access is needed</h3>
-            <p class="error-desc" style="margin-bottom: var(--space-3);">to scan product barcodes.</p>
-            <button id="retry-camera-denied-btn" class="welcome-scan-btn" style="width: 100%; height: 56px; border-radius: 16px; margin: 0; box-shadow: none;">Enable Camera</button>
-          </div>
-          
-          <!-- State F2: Camera Unavailable -->
-          <div id="state-camera-unavailable" class="details-state style-camera-error" style="display: none;">
-            <div class="error-graphic">📷</div>
-            <h3 class="error-title">Camera access is needed</h3>
-            <p class="error-desc" style="margin-bottom: var(--space-3);">to scan product barcodes.</p>
-            <button id="retry-camera-unavailable-btn" class="welcome-scan-btn" style="width: 100%; height: 56px; border-radius: 16px; margin: 0; box-shadow: none;">Enable Camera</button>
-          </div>
-          
-          <!-- State F3: Network Error -->
-          <div id="state-network-error" class="details-state" style="display: none;">
-            <div class="error-graphic">⚡</div>
-            <h3 class="error-title">Unable to connect.</h3>
-            <p class="error-desc">Please check your internet connection.</p>
-            <button id="retry-network-btn" class="btn btn-outline">Retry</button>
-          </div>
-          
-          <!-- State F4: Server Error -->
-          <div id="state-server-error" class="details-state" style="display: none;">
-            <div class="error-graphic">⚡</div>
-            <h3 class="error-title">Price service is temporarily unavailable.</h3>
-            <p class="error-desc">Please try again shortly.</p>
-            <button id="retry-server-btn" class="btn btn-outline">Retry</button>
-          </div>
-        </div>
-      </div>
 
-      <!-- Row 4: Promotions Carousel (25%) -->
-      <div class="promotions-area" id="scan-row-4">
-        <div class="promo-card">
-          <div class="promo-title-row">
-            <span class="promo-hot-badge">🔥 HOT DEAL</span>
-            <span class="promo-section-title">Today's Best Deals</span>
+            <!-- State 5: Product Not Found Alert -->
+            <div id="state-not-found" class="scanner-v2-state" style="display: none;">
+              <div class="error-graphic">❌</div>
+              <h3 class="error-title">Product not found</h3>
+              <p class="error-desc">Please try scanning again or ask a store associate.</p>
+            </div>
+
+            <!-- State F1: Camera Permission Denied -->
+            <div id="state-camera-denied" class="scanner-v2-state style-camera-error" style="display: none;">
+              <div class="error-graphic">📷</div>
+              <h3 class="error-title">Camera access needed</h3>
+              <button id="retry-camera-denied-btn" class="welcome-scan-btn" style="width: 100%; height: 44px; border-radius: 12px; margin-top: 8px;">Enable Camera</button>
+            </div>
+
+            <!-- State F2: Camera Unavailable -->
+            <div id="state-camera-unavailable" class="scanner-v2-state style-camera-error" style="display: none;">
+              <div class="error-graphic">📷</div>
+              <h3 class="error-title">Camera unavailable</h3>
+              <button id="retry-camera-unavailable-btn" class="welcome-scan-btn" style="width: 100%; height: 44px; border-radius: 12px; margin-top: 8px;">Enable Camera</button>
+            </div>
+
+            <!-- State F3: Network Error -->
+            <div id="state-network-error" class="scanner-v2-state" style="display: none;">
+              <div class="error-graphic">⚡</div>
+              <h3 class="error-title">Unable to connect</h3>
+              <button id="retry-network-btn" class="btn btn-outline" style="margin-top: 8px;">Retry</button>
+            </div>
+
+            <!-- State F4: Server Error -->
+            <div id="state-server-error" class="scanner-v2-state" style="display: none;">
+              <div class="error-graphic">⚡</div>
+              <h3 class="error-title">Service unavailable</h3>
+              <button id="retry-server-btn" class="btn btn-outline" style="margin-top: 8px;">Retry</button>
+            </div>
           </div>
-          <div class="promo-carousel-container">
-            <div class="promo-carousel-track" id="promo-carousel-track">
+        </section>
+
+        <!-- Track 5 (1fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 2 - NO DOM ELEMENT) -->
+
+        <!-- Track 6 (21fr, Col 2 [80%]): Section 4 Promotion Card -->
+        <section id="scan-row-4" class="scanner-v2-card scanner-v2-card--promo">
+          <div class="scanner-v2-carousel-box">
+            <div class="scanner-v2-carousel-track" id="promo-carousel-track">
               <!-- Default placeholder slide -->
               <div class="promo-slide active">
                 <div class="promo-details promo-details--empty">
@@ -258,16 +193,16 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      </div>
+        </section>
 
-      <!-- Row 5: Recently Scanned Handle (5%) -->
-      <div class="recently-scanned-handle-area" id="scan-row-5">
-        <button id="open-history-btn" class="sheet-handle-btn">
-          <span class="handle-line"></span>
-          <span class="handle-text">Recently Scanned</span>
-        </button>
+        <!-- Track 7 (4fr, Cols 1 / -1): Section 5 History Control Zone -->
+        <footer id="scan-row-5" class="scanner-v2-footer">
+          <button id="open-history-btn" class="scanner-v2-history-pill">
+            <span class="scanner-v2-pill-dot"></span>
+            Recently Scanned
+          </button>
+        </footer>
+
       </div>
 
       <!-- Recently Scanned Bottom Sheet Overlay -->
@@ -284,10 +219,6 @@
         </div>
       </div>
     </div>
-    </div>
-    </div>
-    </div>
-    
   </div>
   
   <!-- PWA Update Notification Banner -->

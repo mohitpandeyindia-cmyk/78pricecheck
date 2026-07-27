@@ -1,0 +1,533 @@
+/* ==========================================================================
+   SCANNER FRONTEND V2 — ISOLATED PRESENTATION SYSTEM
+   Architecture: Two-layer viewport-bounded layout
+   Layer 1: Dynamic Wallpaper (#scanner-background)
+   Layer 2: Grid Shell (#scanner-v2-shell: 5fr 29fr 1fr 39fr 1fr 21fr 4fr | 10% 80% 10%)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. VIEWPORT & CONTAINER HEIGHT BOUNDING
+   -------------------------------------------------------------------------- */
+.app-shell {
+  height: var(--app-height, 100dvh);
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#scanner-view {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+   1. LAYER 1 — DYNAMIC WALLPAPER BACKGROUND
+   -------------------------------------------------------------------------- */
+#scanner-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  background-color: #eaeaea;
+  background-size: cover;
+  background-position: center;
+}
+
+/* --------------------------------------------------------------------------
+   2. LAYER 2 — FUNCTIONAL UI GRID SHELL (SOLE GEOMETRY OWNER)
+   -------------------------------------------------------------------------- */
+#scanner-v2-shell {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 10% 80% 10%;
+  grid-template-rows: 5fr 29fr 1fr 39fr 1fr 21fr 4fr;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: transparent; /* TRANSPARENT TO EXPOSE LAYER 1 WALLPAPER */
+}
+
+/* --------------------------------------------------------------------------
+   3. TRACK 1 (5fr) — MINIMAL HEADER ZONE
+   -------------------------------------------------------------------------- */
+#scan-row-1 {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: transparent; /* TRANSPARENT BREATHING HEADER AREA */
+  box-sizing: border-box;
+  position: relative;
+  z-index: 20;
+}
+
+.scanner-v2-back-btn {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #000000;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-v2-mascot {
+  width: 44px;
+  height: 44px;
+  background-image: var(--scanner-mascot-url, url('../assets/scanner-mascot.png'));
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.scanner-v2-logo {
+  width: 32px;
+  height: 32px;
+  background-image: var(--scanner-logo-url, url('../assets/scanner-logo.jpg'));
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   4. TRACK 2 (29fr) — SECTION 2: SCANNER CARD
+   -------------------------------------------------------------------------- */
+#scan-row-2 {
+  grid-row: 2;
+  grid-column: 2;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.scanner-v2-card--scanner {
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-sizing: border-box;
+}
+
+.scanner-v2-view-box {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.scanner-v2-reader {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background-color: #090d09 !important;
+}
+
+.scanner-v2-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.scanner-v2-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 55%, rgba(0,0,0,0.55) 100%);
+  z-index: 5;
+}
+
+.scanner-v2-frame {
+  position: absolute;
+  inset: 12px;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.scanner-v2-corner {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: #22c55e;
+  border-style: solid;
+}
+
+.scanner-v2-corner--tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+.scanner-v2-corner--tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+.scanner-v2-corner--bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+.scanner-v2-corner--br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+
+.scanner-v2-laser {
+  position: absolute;
+  top: 50%;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #22c55e, transparent);
+  box-shadow: 0 0 8px #22c55e;
+  transform: translateY(-50%);
+  animation: laserPulse 2s infinite ease-in-out;
+}
+
+@keyframes laserPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* --------------------------------------------------------------------------
+   5. TRACK 4 (39fr) — SECTION 3: PRODUCT DETAILS CARD (NO SCROLLING)
+   -------------------------------------------------------------------------- */
+#scan-row-3 {
+  grid-row: 4;
+  grid-column: 2;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.scanner-v2-card--product {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+}
+
+.scanner-v2-details-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  position: relative;
+}
+
+.scanner-v2-state {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Single Product State Styling */
+#state-single {
+  justify-content: space-between;
+}
+
+.single-title-row {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.single-barcode-row {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-family: monospace;
+  margin-bottom: 6px;
+}
+
+.single-price-card {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #f3f4f6;
+}
+
+.single-price-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.single-sale-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #6b7280;
+  letter-spacing: 0.5px;
+}
+
+.single-sale-amount {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #16a34a;
+  line-height: 1.1;
+}
+
+.single-mrp-amount {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.single-discount-pill {
+  background: #dc2626;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* State Multiple: NON-SCROLLING BOUNDED PRESENTATION */
+#state-multiple {
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.multi-header-row {
+  flex: 0 0 auto;
+  margin-bottom: 6px;
+}
+
+.multi-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.multi-subtitle {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+#multi-list {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden; /* STRICT ZERO SCROLLING CONTRACT */
+  box-sizing: border-box;
+}
+
+#multi-list .multi-item-card {
+  width: 100%;
+  box-sizing: border-box;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid #e9ecef;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+/* Idle / Prompt State */
+.idle-capsule {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.idle-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+.idle-subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* --------------------------------------------------------------------------
+   6. TRACK 6 (21fr) — SECTION 4: PROMOTION CARD
+   -------------------------------------------------------------------------- */
+#scan-row-4 {
+  grid-row: 6;
+  grid-column: 2;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.scanner-v2-card--promo {
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.scanner-v2-carousel-box {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.scanner-v2-carousel-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.4s ease;
+  width: 100%;
+}
+
+.promo-slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.promo-details {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.promo-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.promo-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.promo-price-group {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.promo-sale-price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #16a34a;
+}
+
+.promo-mrp {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.promo-badge {
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   7. TRACK 7 (4fr) — SECTION 5: RECENTLY SCANNED CONTROL ZONE
+   -------------------------------------------------------------------------- */
+#scan-row-5 {
+  grid-row: 7;
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent; /* TRANSPARENT FOOTER AREA */
+  box-sizing: border-box;
+  position: relative;
+  z-index: 20;
+}
+
+.scanner-v2-history-pill {
+  background: #111827;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.scanner-v2-history-pill:active {
+  transform: scale(0.96);
+}
+
+.scanner-v2-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+}
