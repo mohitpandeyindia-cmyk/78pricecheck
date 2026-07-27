@@ -103,11 +103,13 @@
    ========================================================================== */
 
 #scanner-view #scan-row-2 {
+  flex: 0 0 240px;
+  height: 240px;
+  min-height: 240px;
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  min-height: 0;
   background: transparent !important;
   box-sizing: border-box;
   padding: 0;
@@ -610,7 +612,9 @@
 /* Five-Section Layout Sizing Architecture (Stage 1 Correction Round 2) */
 /* Scanner Area Row 2 (30% of screen height) */
 .scanner-area {
-  flex: 30 1 0;
+  flex: 0 0 240px;
+  height: 240px;
+  min-height: 240px;
   position: relative;
   background-color: transparent !important;
   overflow: hidden;
@@ -623,6 +627,8 @@
 /* Row 3: Dynamic Product Information Card (Owns 12px separation above) */
 .product-info-area {
   flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -640,6 +646,8 @@
 /* Row 4: Promotions Carousel (Owns 12px separation above) */
 .promotions-area {
   flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
   width: 100%;
   background-color: transparent !important;
   border-top: none;
@@ -879,6 +887,10 @@
 }
 
 .promo-card {
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  align-self: center;
   width: calc(100% - (2 * var(--scanner-card-inset, 16px)));
   margin-left: auto;
   margin-right: auto;
@@ -891,7 +903,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 0 1 auto;
 }
 
 .promo-details {
@@ -1024,7 +1035,10 @@
 }
 
 .product-card {
-  flex: 0 1 auto; /* Hug content height instead of taking full height */
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  align-self: center;
   width: calc(100% - (2 * var(--scanner-card-inset, 16px)));
   margin-left: auto;
   margin-right: auto;
