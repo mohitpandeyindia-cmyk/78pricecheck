@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607271914";</script>
+  <script>window.HTML_BUILD = "202607272011";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -62,8 +62,10 @@
         </div>
       </header>
 
-      <!-- Row 2: Scanner Area (Section 2 - ScannerView v1.0) -->
-      <div class="scanner-area" id="scan-row-2">
+      <!-- Shared Relational Content Lane (Sections 2, 3, 4) -->
+      <div class="scanner-content-lane">
+        <!-- Row 2: Scanner Area (Section 2 - ScannerView v1.0) -->
+        <div class="scanner-area" id="scan-row-2">
         <div class="scanner-view-container" id="scanner-view-box">
           <!-- Live Camera Viewport -->
           <div id="reader" class="scanner-viewport-reader"></div>
@@ -257,6 +259,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       <!-- Row 5: Recently Scanned Handle (5%) -->

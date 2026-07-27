@@ -102,30 +102,42 @@
    Section 2 – ScannerView (v1.1 Frozen Architecture)
    ========================================================================== */
 
+/* Shared Relational Content Lane (Sections 2, 3, 4 - CSS Grid Architecture) */
+.scanner-content-lane {
+  width: calc(100% - 32px);
+  margin-inline: auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 12px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
 #scanner-view #scan-row-2 {
-  flex: 0 0 240px;
-  height: 240px;
-  min-height: 240px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  height: auto;
+  min-height: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
   background: transparent !important;
   box-sizing: border-box;
-  padding: 0;
   position: relative;
   overflow: hidden;
-  margin: 0;
 }
 
-/* Width derived from shared relational layout token; visible surface owns geometry */
+/* Camera Surface: Responsive Bounded Height */
 #scanner-view .scanner-view-container {
-  width: calc(100% - (2 * var(--scanner-card-inset, 16px)));
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  height: clamp(190px, calc(36dvh - 20px), 240px);
+  margin: 0;
+  flex: none;
   box-sizing: border-box;
-  height: 100%;
-  min-height: 0;
   border-radius: 22px;
   background-color: #090d09;
   position: relative;
@@ -611,59 +623,27 @@
 
 /* Five-Section Layout Sizing Architecture (Stage 1 Correction Round 2) */
 /* Scanner Area Row 2 (30% of screen height) */
-.scanner-area {
-  flex: 0 0 240px;
-  height: 240px;
-  min-height: 240px;
-  position: relative;
-  background-color: transparent !important;
-  overflow: hidden;
-  width: 100%;
-  padding: 0;
-  box-sizing: border-box;
-  margin: 0;
-}
-
-/* Row 3: Dynamic Product Information Card (Owns 12px separation above) */
-.product-info-area {
-  flex: 0 0 auto;
-  height: auto;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: transparent !important;
-  box-sizing: border-box;
-  padding: 0;
-  position: relative;
-  overflow: visible;
-  margin-top: 12px;
-  margin-bottom: 0;
-}
-
-/* Row 4: Promotions Carousel (Owns 12px separation above) */
+.scanner-area,
+.product-info-area,
 .promotions-area {
-  flex: 0 0 auto;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  flex: none;
   height: auto;
   min-height: 0;
-  width: 100%;
-  background-color: transparent !important;
-  border-top: none;
   box-sizing: border-box;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  background-color: transparent !important;
+  position: relative;
   overflow: visible;
-  margin-top: 12px;
-  margin-bottom: 0;
 }
 
 /* Row 5: Recently Scanned Handle */
+#scan-row-5,
 .recently-scanned-handle-area {
   flex: 0 0 auto;
+  height: 36px;
+  min-height: 36px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -672,6 +652,7 @@
   border-top: none;
   box-sizing: border-box;
   padding: 8px 0;
+  margin-top: auto;
 }
 
 
@@ -716,12 +697,12 @@
   position: relative;
   z-index: 10; /* Above background */
   width: 100%;
-  height: 100%;
-  max-height: 100%;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 #scanner-view * {
@@ -887,13 +868,14 @@
 }
 
 .promo-card {
-  flex: 0 0 auto;
+  width: 100%;
   height: auto;
-  min-height: 0;
-  align-self: center;
-  width: calc(100% - (2 * var(--scanner-card-inset, 16px)));
-  margin-left: auto;
-  margin-right: auto;
+  max-height: 114px;
+  margin: 0;
+
+  flex: none;
+  align-self: auto;
+
   box-sizing: border-box;
   background-color: #ffffff;
   border-radius: 22px;
@@ -1034,18 +1016,20 @@
   100% { transform: rotate(360deg); }
 }
 
+#details-card.product-card,
 .product-card {
-  flex: 0 0 auto;
+  width: 100%;
   height: auto;
-  min-height: 0;
-  align-self: center;
-  width: calc(100% - (2 * var(--scanner-card-inset, 16px)));
-  margin-left: auto;
-  margin-right: auto;
+  max-height: clamp(150px, 30dvh, 200px);
+  margin: 0;
+
+  flex: none;
+  align-self: auto;
+
   box-sizing: border-box;
   background-color: #ffffff;
   border-radius: 22px;
-  padding: 20px 16px; /* Extra top padding for title breathing room */
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -1086,7 +1070,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 280px; /* Increase height to support vertical cards */
+  max-height: 125px;
   overflow-y: auto;
   padding-right: 5px;
 }
