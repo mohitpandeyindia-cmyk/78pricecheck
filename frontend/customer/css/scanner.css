@@ -672,11 +672,13 @@
 
 #scanner-view {
   position: relative;
-  overflow: hidden;
-  height: 100dvh;
-  max-height: 100dvh;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background-color: transparent;
   --scanner-mascot-url: url('../assets/scanner-mascot.png');
   --scanner-logo-url: url('../assets/scanner-logo.jpg');
@@ -697,7 +699,9 @@
   position: relative;
   z-index: 10; /* Above background */
   width: 100%;
-  min-height: 100dvh;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -856,6 +860,7 @@
 .promo-carousel-container {
   flex: 1;
   width: 100%;
+  min-height: 48px;
   position: relative;
   overflow: hidden;
   margin-top: 6px;
