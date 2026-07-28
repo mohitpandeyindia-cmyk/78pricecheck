@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607282040";</script>
+  <script>window.HTML_BUILD = "202607282108";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -47,20 +47,17 @@
     <!-- State B: Active Scanner & Result View (SPA Panel) -->
     <div id="scanner-view" class="app-page">
       <div id="scanner-background" class="scanner-v2-wallpaper"></div>
-      <!-- Layer 2: Functional UI Grid Shell (5:29:1:39:1:21:4 | 10%:80%:10%) -->
+      <!-- Layer 2: Functional UI Grid Shell (6:27:0.5:39:0.5:23:4 | 5%:90%:5%) -->
       <div id="scanner-v2-shell" class="scanner-v2-shell">
         
-        <!-- Track 1 (6fr, Cols 1 / -1): Section 1 Minimal Header Zone -->
+        <!-- Track 1 (6fr, Cols 1 / -1): Section 1 Minimal Mascot Home Header Zone -->
         <header id="scan-row-1" class="scanner-v2-header">
-          <button id="back-btn" class="scanner-v2-back-btn" aria-label="Go Back">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
+          <button id="back-btn" class="scanner-v2-mascot-button" aria-label="Return to home">
+            <span class="scanner-v2-mascot"></span>
           </button>
-          <div class="scanner-v2-mascot"></div>
         </header>
 
-        <!-- Track 2 (29fr, Col 2 [80%]): Section 2 Scanner Card -->
+        <!-- Track 2 (27fr, Col 2 [90%]): Section 2 Scanner Card -->
         <section id="scan-row-2" class="scanner-v2-card scanner-v2-card--scanner">
           <div id="scanner-view-box" class="scanner-v2-view-box">
             <div id="reader" class="scanner-v2-reader"></div>
@@ -83,9 +80,9 @@
           </div>
         </section>
 
-        <!-- Track 3 (1fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 1 - NO DOM ELEMENT) -->
+        <!-- Track 3 (0.5fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 1 - NO DOM ELEMENT) -->
 
-        <!-- Track 4 (39fr, Col 2 [80%]): Section 3 Product Details Card -->
+        <!-- Track 4 (39fr, Col 2 [90%]): Section 3 Product Details Card -->
         <section id="scan-row-3" class="scanner-v2-card scanner-v2-card--product">
           <div id="scan-feedback" class="scan-feedback-popup">✓ Price Updated</div>
           
@@ -182,9 +179,9 @@
           </div>
         </section>
 
-        <!-- Track 5 (1fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 2 - NO DOM ELEMENT) -->
+        <!-- Track 5 (0.5fr, Col 2): EMPTY GRID ROW (Wallpaper Breathing Gap 2 - NO DOM ELEMENT) -->
 
-        <!-- Track 6 (21fr, Col 2 [80%]): Section 4 Promotion Card -->
+        <!-- Track 6 (23fr, Col 2 [90%]): Section 4 Promotion Card -->
         <section id="scan-row-4" class="scanner-v2-card scanner-v2-card--promo">
           <div class="scanner-v2-carousel-box">
             <div class="scanner-v2-carousel-track" id="promo-carousel-track">
