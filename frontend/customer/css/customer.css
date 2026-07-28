@@ -94,29 +94,6 @@ html, body {
 
 
 
-/* Strip layouts/aesthetics on Scanner Page for Phase 1 Wireframe */
-#scanner-view, 
-/* [ACTIVE RULE "#scanner-view *" MOVED TO scanner.css] */
-
-#scanner-view .top-header,
-#scanner-view .product-info-area,
-#scanner-view .promotions-area,
-#scanner-view .recently-scanned-handle-area,
-#scanner-view .product-card,
-#scanner-view .bottom-sheet,
-#scanner-view .sheet-grab-handle,
-/* [ACTIVE RULE "#scanner-view .sheet-header" MOVED TO scanner.css] */
-
-/* [ACTIVE RULE "#scanner-view .product-card" MOVED TO scanner.css] */
-
-/* Detach legacy scanner UI components from the active layout canvas (Phase 1) */
-#scanner-view .header-center *,
-#scanner-view .header-right *,
-#scanner-view .promotions-area *,
-#scanner-view .recently-scanned-handle-area *,
-#scanner-view .sheet-overlay,
-/* [ACTIVE RULE "#scanner-view .bottom-sheet" MOVED TO scanner.css] */
-
 /* Welcome Page Layout */
 .welcome-container {
   width: 100%;
