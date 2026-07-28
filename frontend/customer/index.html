@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607272320";</script>
+  <script>window.HTML_BUILD = "202607281613";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -50,11 +50,14 @@
       <!-- Layer 2: Functional UI Grid Shell (5:29:1:39:1:21:4 | 10%:80%:10%) -->
       <div id="scanner-v2-shell" class="scanner-v2-shell">
         
-        <!-- Track 1 (5fr, Cols 1 / -1): Minimal Header Zone -->
+        <!-- Track 1 (6fr, Cols 1 / -1): Section 1 Minimal Header Zone -->
         <header id="scan-row-1" class="scanner-v2-header">
-          <button id="back-btn" class="scanner-v2-back-btn" aria-label="Go Back">&lsaquo;</button>
+          <button id="back-btn" class="scanner-v2-back-btn" aria-label="Go Back">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
           <div class="scanner-v2-mascot"></div>
-          <div class="scanner-v2-logo"></div>
         </header>
 
         <!-- Track 2 (29fr, Col 2 [80%]): Section 2 Scanner Card -->

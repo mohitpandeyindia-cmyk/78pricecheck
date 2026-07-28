@@ -22,7 +22,7 @@ function saveDiagnosticsTelemetry(data) {
 const startScanBtn = document.getElementById('start-scan-btn');
 const welcomeView = document.getElementById('welcome-view');
 const scannerView = document.getElementById('scanner-view');
-const backBtn = document.getElementById('header-back-btn');
+const backBtn = document.getElementById('back-btn');
 
 function showPage(pageId) {
   const pages = [welcomeView, scannerView];

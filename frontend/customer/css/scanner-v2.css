@@ -60,38 +60,45 @@
 }
 
 /* --------------------------------------------------------------------------
-   3. TRACK 1 (5fr) — MINIMAL HEADER ZONE
+   3. TRACK 1 (6fr) — SECTION 1: HEADER ZONE
    -------------------------------------------------------------------------- */
 #scan-row-1 {
   grid-row: 1;
   grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  background: transparent; /* TRANSPARENT BREATHING HEADER AREA */
-  box-sizing: border-box;
   position: relative;
+  background: transparent; /* TRANSPARENT TO EXPOSE LAYER 1 WALLPAPER */
+  box-sizing: border-box;
+  overflow: hidden;
   z-index: 20;
 }
 
 .scanner-v2-back-btn {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
-  font-size: 1.8rem;
-  font-weight: 900;
   color: #000000;
   cursor: pointer;
-  padding: 4px 8px;
-  line-height: 1;
-  display: flex;
+  padding: 8px;
+  margin: 0;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  z-index: 30;
+  pointer-events: auto;
 }
 
 .scanner-v2-mascot {
-  width: 44px;
-  height: 44px;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1 / 1;
   background-image: var(--scanner-mascot-url, url('../assets/scanner-mascot.png'));
   background-size: contain;
   background-repeat: no-repeat;
@@ -101,16 +108,7 @@
   bottom: 0;
   transform: translateX(-50%);
   pointer-events: none;
-}
-
-.scanner-v2-logo {
-  width: 32px;
-  height: 32px;
-  background-image: var(--scanner-logo-url, url('../assets/scanner-logo.jpg'));
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 6px;
+  z-index: 10;
 }
 
 /* --------------------------------------------------------------------------
