@@ -588,47 +588,6 @@
   margin-bottom: 14px;
 }
 
-.sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-bottom: 8px;
-}
-
-.sheet-title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #111111;
-}
-
-.sheet-close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: #666666;
-  cursor: pointer;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.sheet-close-btn:active {
-  background-color: #f0f0f0;
-}
-
-.sheet-divider {
-  width: 100%;
-  border-top: 1px solid #e0e0e0;
-  margin-bottom: 12px;
-}
-
 .sheet-list {
   display: flex;
   flex-direction: column;
