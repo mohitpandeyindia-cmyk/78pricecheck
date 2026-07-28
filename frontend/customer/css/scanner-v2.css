@@ -503,29 +503,135 @@
   z-index: 20;
 }
 
-.scanner-v2-history-pill {
-  background: #111827;
-  color: #ffffff;
+.scanner-v2-history-handle {
+  background: transparent;
   border: none;
-  border-radius: 20px;
-  padding: 6px 16px;
-  font-size: 0.75rem;
-  font-weight: 700;
+  color: #333333;
   cursor: pointer;
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  transition: transform 0.15s ease;
+  justify-content: center;
+  gap: 1px;
+  padding: 0 16px;
+  margin: 0;
+  width: auto;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+  pointer-events: auto;
+  overflow: hidden;
 }
 
-.scanner-v2-history-pill:active {
-  transform: scale(0.96);
+.scanner-v2-handle-chevron {
+  color: #555555;
+  transition: transform 0.2s ease;
 }
 
-.scanner-v2-pill-dot {
-  width: 6px;
-  height: 6px;
+.scanner-v2-handle-text {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: #444444;
+  text-transform: uppercase;
+}
+
+.scanner-v2-history-handle:active .scanner-v2-handle-chevron {
+  transform: translateY(-2px);
+}
+
+/* --------------------------------------------------------------------------
+   8. RECENTLY SCANNED BOTTOM SHEET & OVERLAY SYSTEM
+   -------------------------------------------------------------------------- */
+.sheet-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: scanner-v2-fade-in 0.2s ease-out;
+}
+
+@keyframes scanner-v2-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bottom-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 100%);
+  width: 100%;
+  max-width: 480px;
+  background-color: #ffffff;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px;
+  z-index: 1001;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.sheet-grab-handle {
+  width: 36px;
+  height: 4px;
+  background-color: #dee2e6;
+  border-radius: 2px;
+  align-self: center;
+  margin-bottom: 14px;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.sheet-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111111;
+}
+
+.sheet-close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #666666;
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
-  background: #22c55e;
+  transition: background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-close-btn:active {
+  background-color: #f0f0f0;
+}
+
+.sheet-divider {
+  width: 100%;
+  border-top: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+}
+
+.sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
 }
