@@ -183,22 +183,79 @@ function formatPremiumPrice(val) {
 
 // Theme Manager - Decoupled asset mapper for design system themes (Layer 1)
 const ThemeManager = {
+  DAY_BACKGROUNDS: [
+    'assets/backgrounds/day_1.jpg',
+    'assets/backgrounds/day_2.jpg',
+    'assets/backgrounds/day_3.jpg',
+    'assets/backgrounds/day_4.png',
+    'assets/backgrounds/day_5.png',
+    'assets/backgrounds/day_6.jpg',
+    'assets/backgrounds/day_7.png',
+    'assets/backgrounds/day_8.png',
+    'assets/backgrounds/day_9.png'
+  ],
+
+  NIGHT_BACKGROUNDS: [
+    'assets/backgrounds/night_1.jpg',
+    'assets/backgrounds/night_2.jpg',
+    'assets/backgrounds/night_3.jpg',
+    'assets/backgrounds/night_4.jpg',
+    'assets/backgrounds/night_5.jpg',
+    'assets/backgrounds/night_6.jpg',
+    'assets/backgrounds/night_7.jpg',
+    'assets/backgrounds/night_8.jpg',
+    'assets/backgrounds/night_9.jpg'
+  ],
+
+  getKolkataTime(dateObj = new Date()) {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+    const parts = {};
+    formatter.formatToParts(dateObj).forEach(p => {
+      if (p.type !== 'literal') parts[p.type] = p.value;
+    });
+    let hour = parseInt(parts.hour, 10);
+    if (hour === 24) hour = 0;
+    return {
+      year: parseInt(parts.year, 10),
+      month: parseInt(parts.month, 10),
+      day: parseInt(parts.day, 10),
+      hour: hour,
+      minute: parseInt(parts.minute, 10),
+      second: parseInt(parts.second, 10)
+    };
+  },
+
+  isNight(kolkata) {
+    const k = kolkata || this.getKolkataTime();
+    return k.hour < 6 || k.hour >= 18;
+  },
+
+  getRotationIndex(kolkata) {
+    const k = kolkata || this.getKolkataTime();
+    const localDays = Math.floor(Date.UTC(k.year, k.month - 1, k.day) / (24 * 60 * 60 * 1000));
+    const threeDayBlock = Math.floor(localDays / 3);
+    return (threeDayBlock % 9 + 9) % 9;
+  },
+
   getTheme() {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 17) return 'afternoon';
-    if (hour >= 17 && hour < 21) return 'evening';
-    return 'night';
+    return this.isNight() ? 'night' : 'day';
   },
 
   getBackgroundAsset(theme) {
-    const mapping = {
-      morning: 'assets/backgrounds/morning.webp',
-      afternoon: 'assets/backgrounds/afternoon.webp',
-      evening: 'assets/backgrounds/evening.webp',
-      night: 'assets/backgrounds/night.webp'
-    };
-    return mapping[theme] || 'assets/backgrounds/morning.webp';
+    const kolkata = this.getKolkataTime();
+    const isNightTime = theme ? (theme === 'night') : this.isNight(kolkata);
+    const index = this.getRotationIndex(kolkata);
+    const activeSet = isNightTime ? this.NIGHT_BACKGROUNDS : this.DAY_BACKGROUNDS;
+    return activeSet[index];
   }
 };
 
@@ -259,21 +316,53 @@ AnalyticsService.logEvent('app_opened');
 const appBuild = window.APP_BUILD || { environment: 'production', serviceWorkerEnabled: true, build: 'v1.1.0' };
 
 if (appBuild.serviceWorkerEnabled && 'serviceWorker' in navigator) {
+  let refreshing = false;
+
+  // Single-reload guard on controller change
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
       .then((registration) => {
         console.log(`[PWA Service Worker] Registered successfully in [${appBuild.environment}] mode with scope:`, registration.scope);
 
-        // Listen for new service worker updates
+        // Helper to attach statechange listener on installing worker
+        const trackInstalling = (worker) => {
+          if (!worker) return;
+          worker.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[PWA Update] New version installed! Prompting user to reload...');
+              showUpdateToast(registration);
+            }
+          });
+        };
+
+        // Scenario B: Check if a worker is ALREADY waiting when app opens/loads
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          console.log('[PWA Update] Found waiting worker on startup. Prompting user...');
+          showUpdateToast(registration);
+        }
+
+        // Track worker if currently installing on startup
+        if (registration.installing) {
+          trackInstalling(registration.installing);
+        }
+
+        // Scenario A: Listen for update discovery while app is open
         registration.addEventListener('updatefound', () => {
-          const installingWorker = registration.installing;
-          if (installingWorker) {
-            installingWorker.addEventListener('statechange', () => {
-              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('[PWA Update] New version available! Prompting user to reload...');
-                showUpdateToast(registration);
-              }
-            });
+          trackInstalling(registration.installing);
+        });
+
+        // Trigger an update check on startup and when window becomes visible
+        registration.update().catch(() => {});
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            registration.update().catch(() => {});
           }
         });
       })
@@ -284,6 +373,8 @@ if (appBuild.serviceWorkerEnabled && 'serviceWorker' in navigator) {
 }
 
 function showUpdateToast(registration) {
+  if (document.getElementById('pwa-update-toast')) return;
+
   const toast = document.createElement('div');
   toast.id = 'pwa-update-toast';
   toast.className = 'pwa-toast visible';
@@ -300,8 +391,9 @@ function showUpdateToast(registration) {
     reloadBtn.addEventListener('click', () => {
       if (registration.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      } else {
+        window.location.reload();
       }
-      window.location.reload();
     });
   }
 }

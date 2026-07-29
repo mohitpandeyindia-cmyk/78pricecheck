@@ -1,4 +1,4 @@
-const CACHE_NAME = '78pricecheck-202607282108';
+const CACHE_NAME = '78pricecheck-202607292108';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -46,7 +46,7 @@ self.addEventListener('activate', event => {
 
 // Production Update Manager: Listen for manual activation trigger
 self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') {
+  if (event.data === 'SKIP_WAITING' || (event.data && event.data.type === 'SKIP_WAITING')) {
     console.log('[Service Worker] Received SKIP_WAITING trigger.');
     self.skipWaiting();
   }

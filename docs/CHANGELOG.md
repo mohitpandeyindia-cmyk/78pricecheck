@@ -89,4 +89,14 @@ All notable changes to the **SEVENTYEIGHTOS** and **78 PriceCheck** projects wil
   - Created a lightweight and secure health monitoring endpoint (`GET /api/health`).
   - Authored the comprehensive **Production Deployment Guide** (`docs/PRODUCTION_DEPLOYMENT.md`) detailing setup, PM2 process management, and nightly database cron backups.
 
+## [1.1.0] - 2026-07-30
 
+### Added & Refined
+- **Macro-Grid Layout Calibration (Layer 2)**:
+  - Calibrated vertical grid row proportions to `7fr | 26fr | 1fr | 38fr | 1fr | 23fr | 4fr` with `5% | 90% | 5%` horizontal margins.
+  - Synchronized all architectural comments in `index.html` and `scanner-v2.css`.
+- **Layer 1 Background Rotation & Timezone Contract**:
+  - Mapped 18 artwork assets across `DAY_BACKGROUNDS` (`day_1.jpg`–`day_9.png`) and `NIGHT_BACKGROUNDS` (`night_1.jpg`–`night_9.jpg`).
+  - Implemented `Asia/Kolkata` local timezone logic: Day (`06:00:00`–`17:59:59` IST) and Night (`18:00:00`–`05:59:59` IST).
+  - Implemented 3-calendar-day rotation index calculation on midnight IST boundaries (`00:00` IST).
+  - Maintained complete zero-authority isolation for Layer 1 (`inset: 0`, `pointer-events: none`, `z-index: 1`).
