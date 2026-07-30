@@ -242,6 +242,12 @@
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
+  position: relative;
+}
+
+#scan-feedback,
+.scan-feedback-popup {
+  display: none !important;
 }
 
 .scanner-v2-card--product {
@@ -261,9 +267,10 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   overflow: hidden;
   box-sizing: border-box;
-  padding: 8px 10px;
+  padding: 10px 14px;
   position: relative;
   background-color: #ffffff;
   border-radius: 16px;
@@ -276,43 +283,94 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   box-sizing: border-box;
   overflow: hidden;
 }
 
-/* Single Product State Styling */
+/* Idle State - Minimal Apple Control Panel */
+#state-idle {
+  justify-content: center;
+  align-items: center;
+}
+
+.idle-capsule {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.idle-barcode-icon {
+  margin-bottom: 2px;
+  opacity: 0.6;
+}
+
+.idle-title {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.idle-subtitle {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Loading State */
+#state-loading {
+  justify-content: center;
+  align-items: center;
+}
+
+/* Single Product State Styling - Flagship Hierarchy */
 #state-single {
   justify-content: space-between;
+  padding: 2px 0;
+}
+
+.single-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .single-title-row {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #111827;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
   line-height: 1.25;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 
 .single-barcode-row {
-  font-size: 0.75rem;
-  color: #6b7280;
-  font-family: monospace;
-  margin-bottom: 6px;
+  font-size: 0.68rem;
+  color: #64748b;
+  font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
+  font-weight: 500;
 }
 
 .single-price-card {
-  background: #f9fafb;
-  border-radius: 12px;
-  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 6px 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #f3f4f6;
+  border: 1px solid #f1f5f9;
+  margin: 4px 0;
 }
 
 .single-price-left {
@@ -320,36 +378,49 @@
   flex-direction: column;
 }
 
-.single-sale-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: #6b7280;
-  letter-spacing: 0.5px;
-}
-
 .single-sale-amount {
-  font-size: 1.3rem;
-  font-weight: 900;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: #16a34a;
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .single-mrp-amount {
-  font-size: 0.75rem;
-  color: #9ca3af;
+  font-size: 0.68rem;
+  color: #94a3b8;
   text-decoration: line-through;
+  margin-bottom: -1px;
 }
 
 .single-discount-pill {
-  background: #dc2626;
-  color: #ffffff;
-  font-weight: 800;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
   font-size: 0.7rem;
-  padding: 4px 8px;
-  border-radius: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
   display: inline-flex;
   align-items: center;
+}
+
+.single-meta-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.meta-chip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.62rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.01em;
 }
 
 /* State Multiple: NON-SCROLLING BOUNDED PRESENTATION */
