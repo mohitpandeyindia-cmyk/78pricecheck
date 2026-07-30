@@ -327,7 +327,7 @@ if (appBuild.serviceWorkerEnabled && 'serviceWorker' in navigator) {
   });
 
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
       .then((registration) => {
         console.log(`[PWA Service Worker] Registered successfully in [${appBuild.environment}] mode with scope:`, registration.scope);
 
@@ -380,16 +380,18 @@ function showUpdateToast(registration) {
   toast.className = 'pwa-toast visible';
   toast.innerHTML = `
     <div class="toast-content">
-      <span>A new version of 78 Price Check is available!</span>
-      <button id="pwa-reload-btn" class="toast-action-btn">Update Now</button>
+      <span>Reload to Update</span>
+      <button id="pwa-toast-reload-btn" class="toast-action-btn">Update Now</button>
     </div>
   `;
   document.body.appendChild(toast);
 
-  const reloadBtn = document.getElementById('pwa-reload-btn');
+  const reloadBtn = document.getElementById('pwa-toast-reload-btn');
   if (reloadBtn) {
     reloadBtn.addEventListener('click', () => {
-      if (registration.waiting) {
+      // Provide immediate visual feedback by removing toast
+      toast.remove();
+      if (registration && registration.waiting) {
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
       } else {
         window.location.reload();
