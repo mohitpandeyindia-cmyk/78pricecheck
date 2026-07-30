@@ -1485,7 +1485,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Scanner state visual updates (laser control, scanning status text)
 (function monitorScannerState() {
   const laserLine = document.querySelector('.scanner-laser-beam');
-  const statusDot = document.querySelector('.guidance-dot');
   const statusText = document.querySelector('.guidance-text');
 
   if (laserLine) {
@@ -1494,26 +1493,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let lastState = null;
+  let lastLowLight = null;
 
   setInterval(() => {
     if (typeof StateManager === 'undefined') return;
     const state = StateManager.currentState;
-    if (state === lastState) return;
-    lastState = state;
+    const lowLightEl = document.getElementById('low-light-suggestion');
+    const isLowLight = lowLightEl && lowLightEl.style.display !== 'none';
 
-    if (statusDot && statusText) {
-      if (state === 'SCANNING') {
-        statusDot.className = 'guidance-dot scanning';
-        statusText.textContent = 'Align barcode within frame';
+    if (state === lastState && isLowLight === lastLowLight) return;
+    lastState = state;
+    lastLowLight = isLowLight;
+
+    if (statusText) {
+      if (isLowLight) {
+        statusText.textContent = 'Low-light';
+      } else if (state === 'SCANNING') {
+        statusText.textContent = 'Align';
       } else if (state === 'LOOKUP') {
-        statusDot.className = 'guidance-dot loading';
-        statusText.textContent = 'Looking up product...';
+        statusText.textContent = 'Scanning';
       } else if (state === 'DISPLAY_RESULT') {
-        statusDot.className = 'guidance-dot ready';
-        statusText.textContent = 'Barcode detected';
+        statusText.textContent = 'Found';
       } else {
-        statusDot.className = 'guidance-dot offline';
-        statusText.textContent = 'Scanner ready';
+        statusText.textContent = 'Align';
       }
     }
   }, 100);
