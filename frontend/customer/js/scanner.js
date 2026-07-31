@@ -743,14 +743,16 @@ function renderV2ProductCard(p, barcode) {
   let discountPercent = 0;
   if (mrpVal > saleVal && mrpVal > 0) {
     discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-    if (discountEl) discountEl.textContent = `${discountPercent}% OFF`;
+    if (discountEl) {
+      discountEl.innerHTML = `<div class="v3-discount-stack"><span class="v3-discount-num">${discountPercent}%</span><span class="v3-discount-off">OFF</span></div>`;
+    }
     if (discountCol) discountCol.style.visibility = 'visible';
   } else {
-    if (discountEl) discountEl.textContent = '';
+    if (discountEl) discountEl.innerHTML = '';
     if (discountCol) discountCol.style.visibility = 'hidden';
   }
 
-  // Section 3: Dynamic Footer Strip (Type 1: Single Savings / Type 2: Bulk Offer)
+  // Section 3: Dynamic Premium Band (Type 1: Single Savings / Type 2: Bulk Offer)
   const footerText = document.getElementById('single-footer-text');
   if (footerText) {
     const hasBulk = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
@@ -760,14 +762,14 @@ function renderV2ProductCard(p, barcode) {
     if (hasBulk) {
       // Type 2: Bulk Offer
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `BUY ${p.wholesaleQty} @ <span class="footer-struck-price">${formatCurrency(p.salePrice)}</span> ${formatCurrency(p.wholesalePrice)}`;
+      footerText.innerHTML = `<div class="v3-bulk-stack"><span class="v3-bulk-label">BUY ${p.wholesaleQty} @</span><span class="footer-struck-price">${formatCurrency(p.salePrice)}</span><span class="v3-bulk-price">${formatCurrency(p.wholesalePrice)}</span></div>`;
     } else {
       // Type 1: Single Product
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
       if (savingsVal > 0) {
-        footerText.textContent = `YOU SAVE ${formatCurrency(savingsVal).replace('.00', '')}`;
+        footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatCurrency(savingsVal).replace('.00', '')}</span></div>`;
       } else {
-        footerText.textContent = `BEST PRICE GUARANTEED`;
+        footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">BEST PRICE</span><span class="v3-save-amount">GUARANTEED</span></div>`;
       }
     }
   }

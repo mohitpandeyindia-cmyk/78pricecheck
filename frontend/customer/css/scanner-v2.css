@@ -331,7 +331,7 @@
   align-items: center;
 }
 
-/* V2 PREMIUM RESULT CARD STYLING (3-TIER EQUAL VERTICAL LAYOUT) */
+/* V3 LUXURY RESULT CARD STYLING (APPLE / AMEX / REVOLUT HIGH-END DESIGN) */
 #state-single,
 #state-multiple {
   width: 100%;
@@ -355,27 +355,29 @@
 }
 
 .result-section-1 {
-  flex: 1 1 33%;
+  flex: 1 1 33.33%;
 }
 
 .result-section-2 {
-  flex: 1 1 34%;
+  flex: 1 1 33.33%;
 }
 
 .result-section-3 {
-  flex: 1 1 33%;
+  flex: 1 1 33.33%;
 }
 
-/* --- Section 1: Hero Product Name Capsule (80-85% Width) --- */
-.result-hero-capsule {
-  width: 84%;
-  max-width: 280px;
+/* --- Section 1: Hero Product Button Capsule (Luxury Raised Button) --- */
+.v3-hero-capsule {
+  width: 92%;
+  max-width: 310px;
+  height: 90%;
+  max-height: 52px;
   margin: 0 auto;
-  padding: 6px 12px;
+  padding: 4px 14px;
   background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
   text-align: center;
   display: flex;
   align-items: center;
@@ -383,18 +385,13 @@
   box-sizing: border-box;
 }
 
-.result-hero-capsule--multi {
-  background: #f8fafc;
-  border-color: rgba(15, 23, 42, 0.06);
-}
-
-.result-hero-name {
+.v3-hero-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.88rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
   color: #0f172a;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -403,37 +400,44 @@
   word-break: break-word;
 }
 
-/* --- Section 2: 3-Column Pricing Grid --- */
-.result-pricing-grid {
+/* --- Section 2: Premium 3-Column Price Grid with Hairline Separators --- */
+.v3-pricing-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1.6fr 1fr;
+  grid-template-columns: 1fr 1px 1.8fr 1px 1fr;
   align-items: center;
   text-align: center;
-  padding: 0 4px;
+  padding: 0 2px;
   box-sizing: border-box;
+}
+
+.v3-hairline-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(15, 23, 42, 0.08);
+  align-self: center;
 }
 
 .mrp-col {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  text-align: left;
-  padding-left: 4px;
+  text-align: center;
 }
 
 .mrp-label {
-  font-size: 0.6rem;
-  font-weight: 600;
+  font-size: 0.58rem;
+  font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+  margin-bottom: 1px;
 }
 
 .mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
@@ -447,58 +451,116 @@
 
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.6rem;
-  font-weight: 800;
+  font-size: 1.85rem;
+  font-weight: 900;
   color: #15803d;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   line-height: 1;
 }
 
 .discount-col {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding-right: 4px;
+  justify-content: center;
 }
 
-.discount-value {
+.v3-discount-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.v3-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 800;
   color: #16a34a;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
-/* --- Section 3: Dynamic Footer Strip (Type 1: You Save / Type 2: Bulk Offer) --- */
-.result-footer-strip {
-  width: 88%;
-  max-width: 290px;
+.v3-discount-off {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #16a34a;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+/* --- Section 3: Dynamic Premium Band (Soft Mint Raised Capsule) --- */
+.v3-premium-band {
+  width: 92%;
+  max-width: 310px;
+  height: 90%;
+  max-height: 50px;
   margin: 0 auto;
-  padding: 6px 12px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  padding: 4px 14px;
+  background: #f4fbf7;
+  border-radius: 14px;
+  border: 1px solid rgba(22, 163, 74, 0.12);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.03), inset 0 1px 0 #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
 }
 
-.footer-strip-text {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #15803d;
-  letter-spacing: 0.01em;
+.v3-band-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
 }
 
-.footer-struck-price {
-  color: #64748b;
-  text-decoration: line-through;
-  font-weight: 500;
-  margin: 0 4px;
+.v3-save-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.v3-save-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.v3-save-amount {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #15803d;
+  letter-spacing: -0.02em;
+}
+
+.v3-bulk-stack {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.v3-bulk-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #166534;
+  letter-spacing: 0.02em;
+}
+
+.v3-bulk-price {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #15803d;
+  letter-spacing: -0.02em;
 }
 
 /* --- Type 3: Multiple MRP Selection Buttons --- */

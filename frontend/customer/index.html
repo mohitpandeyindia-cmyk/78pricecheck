@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607312135";</script>
+  <script>window.HTML_BUILD = "202607312200";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -118,36 +118,38 @@
               <p class="state-instruction">Looking up price...</p>
             </div>
 
-            <!-- State 3: Single / Bulk Product Found (V2 Premium 3-Tier Layout) -->
+            <!-- State 3: Single / Bulk Product Found (V3 Luxury Apple/Amex Layout) -->
             <div id="state-single" class="scanner-v2-state" style="display: none;">
-              <!-- Section 1: Hero Product Name Capsule (80-85% Width) -->
+              <!-- Section 1: Hero Product Button Capsule (92% Width) -->
               <div class="result-section-1">
-                <div class="result-hero-capsule">
-                  <span class="result-hero-name" id="single-name"><span class="skeleton-line skeleton-line--title"></span></span>
+                <div class="v3-hero-capsule">
+                  <span class="v3-hero-name" id="single-name"><span class="skeleton-line skeleton-line--title"></span></span>
                   <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
                 </div>
               </div>
 
-              <!-- Section 2: 3-Column Pricing Grid -->
+              <!-- Section 2: Premium Price Grid (3 Columns + 2 Hairline Separators) -->
               <div class="result-section-2">
-                <div class="result-pricing-grid">
+                <div class="v3-pricing-grid">
                   <div class="mrp-col" id="single-mrp-col">
                     <span class="mrp-label">MRP</span>
                     <span class="mrp-value" id="single-mrp"></span>
                   </div>
+                  <div class="v3-hairline-divider"></div>
                   <div class="sale-col" id="single-sale-col">
                     <span class="sale-price-value" id="single-sale-price"></span>
                   </div>
+                  <div class="v3-hairline-divider"></div>
                   <div class="discount-col" id="single-discount-col">
-                    <span class="discount-value" id="single-discount-percent"></span>
+                    <div class="v3-discount-stack" id="single-discount-percent"></div>
                   </div>
                 </div>
               </div>
 
-              <!-- Section 3: Dynamic Footer Strip (Type 1: You Save / Type 2: Bulk Offer) -->
+              <!-- Section 3: Dynamic Premium Band (Mint Raised Capsule) -->
               <div class="result-section-3">
-                <div class="result-footer-strip" id="single-footer-strip">
-                  <span class="footer-strip-text" id="single-footer-text"></span>
+                <div class="v3-premium-band" id="single-footer-strip">
+                  <div class="v3-band-content" id="single-footer-text"></div>
                 </div>
               </div>
             </div>
