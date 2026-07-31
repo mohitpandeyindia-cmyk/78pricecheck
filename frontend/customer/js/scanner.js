@@ -731,7 +731,13 @@ function renderV2ProductCard(p, barcode) {
 
   // Section 2: 3-Column Pricing Grid
   const priceEl = document.getElementById('single-sale-price');
-  if (priceEl) priceEl.textContent = formatCurrency(p.salePrice);
+  if (priceEl) {
+    const formattedPrice = formatCurrency(p.salePrice);
+    const rupeePart = formattedPrice.startsWith('₹') ? '<span class="rupee-symbol">₹</span>' : '';
+    const priceDigits = formattedPrice.startsWith('₹') ? formattedPrice.slice(1) : formattedPrice;
+    priceEl.innerHTML = `${rupeePart}${priceDigits}`;
+  }
+
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
 
@@ -748,8 +754,10 @@ function renderV2ProductCard(p, barcode) {
     }
     if (discountCol) discountCol.style.visibility = 'visible';
   } else {
-    if (discountEl) discountEl.innerHTML = '';
-    if (discountCol) discountCol.style.visibility = 'hidden';
+    if (discountEl) {
+      discountEl.innerHTML = `<svg class="v3-cash-coin-icon" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>`;
+    }
+    if (discountCol) discountCol.style.visibility = 'visible';
   }
 
   // Section 3: Dynamic Premium Band (Type 1: Single Savings / Type 2: Bulk Offer)
@@ -760,17 +768,13 @@ function renderV2ProductCard(p, barcode) {
                     p.wholesaleQty !== undefined && p.wholesaleQty !== null;
 
     if (hasBulk) {
-      // Type 2: Bulk Offer
+      // Type 2: Bulk Offer (BUY Qty @ StruckSalePrice WholesalePrice)
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
       footerText.innerHTML = `<div class="v3-bulk-stack"><span class="v3-bulk-label">BUY ${p.wholesaleQty} @</span><span class="footer-struck-price">${formatCurrency(p.salePrice)}</span><span class="v3-bulk-price">${formatCurrency(p.wholesalePrice)}</span></div>`;
     } else {
-      // Type 1: Single Product
+      // Type 1: Single Product (YOU SAVE ₹XX)
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
-      if (savingsVal > 0) {
-        footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatCurrency(savingsVal).replace('.00', '')}</span></div>`;
-      } else {
-        footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">BEST PRICE</span><span class="v3-save-amount">GUARANTEED</span></div>`;
-      }
+      footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatCurrency(savingsVal).replace('.00', '')}</span></div>`;
     }
   }
 

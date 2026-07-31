@@ -331,7 +331,7 @@
   align-items: center;
 }
 
-/* V3 LUXURY RESULT CARD STYLING (APPLE / AMEX / REVOLUT HIGH-END DESIGN) */
+/* V3 LUXURY RESULT CARD STYLING (25% | 50% | 25% GRID, BLACK RUPEE, RED OFF) */
 #state-single,
 #state-multiple {
   width: 100%;
@@ -340,7 +340,7 @@
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  padding: 4px 0;
+  padding: 2px 0;
   transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
 }
 
@@ -366,14 +366,14 @@
   flex: 1 1 33.33%;
 }
 
-/* --- Section 1: Hero Product Button Capsule (Luxury Raised Button) --- */
+/* --- Section 1: Hero Product Button Capsule (90-92% Width, High Fill) --- */
 .v3-hero-capsule {
   width: 92%;
-  max-width: 310px;
-  height: 90%;
-  max-height: 52px;
+  max-width: 320px;
+  height: 92%;
+  max-height: 56px;
   margin: 0 auto;
-  padding: 4px 14px;
+  padding: 4px 12px;
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.07);
@@ -387,10 +387,10 @@
 
 .v3-hero-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: #0f172a;
-  line-height: 1.2;
+  line-height: 1.25;
   letter-spacing: -0.015em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -400,11 +400,11 @@
   word-break: break-word;
 }
 
-/* --- Section 2: Premium 3-Column Price Grid with Hairline Separators --- */
+/* --- Section 2: Premium Price Grid (25% | 50% | 25% Proportions) --- */
 .v3-pricing-grid {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1px 1.8fr 1px 1fr;
+  grid-template-columns: 25% 1px 50% 1px 25%;
   align-items: center;
   text-align: center;
   padding: 0 2px;
@@ -413,7 +413,7 @@
 
 .v3-hairline-divider {
   width: 1px;
-  height: 36px;
+  height: 38px;
   background: rgba(15, 23, 42, 0.08);
   align-self: center;
 }
@@ -437,10 +437,12 @@
 
 .mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
+  text-decoration-color: #dc2626;
+  text-decoration-thickness: 1.5px;
 }
 
 .sale-col {
@@ -451,11 +453,21 @@
 
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.85rem;
+  font-size: 2.1rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.04em;
   line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+}
+
+.rupee-symbol {
+  color: #0f172a !important;
+  font-size: 0.85em;
+  font-weight: 800;
+  margin-right: 1px;
 }
 
 .discount-col {
@@ -474,7 +486,7 @@
 
 .v3-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.1rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #16a34a;
   letter-spacing: -0.02em;
@@ -482,20 +494,26 @@
 
 .v3-discount-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 800;
-  color: #16a34a;
-  letter-spacing: 0.06em;
+  color: #dc2626;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-top: 1px;
+  margin-top: 2px;
+}
+
+.v3-cash-coin-icon {
+  width: 24px;
+  height: 24px;
+  opacity: 0.75;
 }
 
 /* --- Section 3: Dynamic Premium Band (Soft Mint Raised Capsule) --- */
 .v3-premium-band {
   width: 92%;
-  max-width: 310px;
+  max-width: 320px;
   height: 90%;
-  max-height: 50px;
+  max-height: 52px;
   margin: 0 auto;
   padding: 4px 14px;
   background: #f4fbf7;
@@ -535,7 +553,7 @@
 
 .v3-save-amount {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.02em;
@@ -549,7 +567,7 @@
 }
 
 .v3-bulk-label {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 800;
   color: #166534;
   letter-spacing: 0.02em;
@@ -557,7 +575,7 @@
 
 .v3-bulk-price {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.02em;
