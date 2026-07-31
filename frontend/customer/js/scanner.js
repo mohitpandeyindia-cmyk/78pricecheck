@@ -713,6 +713,18 @@ async function fetchHotDeals() {
   renderHotDealsCarousel();
 }
 
+// Format price with large whole number and small decimal place digits (.00)
+function formatV3PriceHTML(val, isRupeeBlack = true) {
+  if (val === undefined || val === null) return 'N/A';
+  const num = Number(val);
+  const formatted = isNaN(num) ? '0.00' : num.toFixed(2);
+  const parts = formatted.split('.');
+  const whole = parts[0];
+  const decimal = parts[1] || '00';
+  const rupeeClass = isRupeeBlack ? 'rupee-symbol rupee-symbol--black' : 'rupee-symbol';
+  return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span><span class="price-decimal">.${decimal}</span>`;
+}
+
 // Render V2 Premium Product Result Card (Type 1: Single Savings / Type 2: Bulk Offer)
 function renderV2ProductCard(p, barcode) {
   resetBarcodeCollapse();
@@ -732,10 +744,7 @@ function renderV2ProductCard(p, barcode) {
   // Section 2: 3-Column Pricing Grid
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    const formattedPrice = formatCurrency(p.salePrice);
-    const rupeePart = formattedPrice.startsWith('₹') ? '<span class="rupee-symbol">₹</span>' : '';
-    const priceDigits = formattedPrice.startsWith('₹') ? formattedPrice.slice(1) : formattedPrice;
-    priceEl.innerHTML = `${rupeePart}${priceDigits}`;
+    priceEl.innerHTML = formatV3PriceHTML(p.salePrice, true);
   }
 
   const mrpEl = document.getElementById('single-mrp');
@@ -770,11 +779,11 @@ function renderV2ProductCard(p, barcode) {
     if (hasBulk) {
       // Type 2: Bulk Offer (BUY Qty @ StruckSalePrice WholesalePrice)
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `<div class="v3-bulk-stack"><span class="v3-bulk-label">BUY ${p.wholesaleQty} @</span><span class="footer-struck-price">${formatCurrency(p.salePrice)}</span><span class="v3-bulk-price">${formatCurrency(p.wholesalePrice)}</span></div>`;
+      footerText.innerHTML = `<div class="v3-bulk-stack"><span class="v3-bulk-label">BUY ${p.wholesaleQty} @</span><span class="footer-struck-price">${formatCurrency(p.salePrice)}</span><span class="v3-bulk-price">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
     } else {
       // Type 1: Single Product (YOU SAVE ₹XX)
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
-      footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatCurrency(savingsVal).replace('.00', '')}</span></div>`;
+      footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
     }
   }
 
