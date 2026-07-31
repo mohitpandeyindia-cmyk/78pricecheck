@@ -713,6 +713,70 @@ async function fetchHotDeals() {
   renderHotDealsCarousel();
 }
 
+// Render V2 Premium Product Result Card (Type 1: Single Savings / Type 2: Bulk Offer)
+function renderV2ProductCard(p, barcode) {
+  resetBarcodeCollapse();
+
+  StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
+  const announcer = document.getElementById('a11y-announcer');
+  if (announcer) {
+    announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
+  }
+
+  // Section 1: Hero Name
+  const nameEl = document.getElementById('single-name');
+  if (nameEl) nameEl.textContent = p.name;
+  const barcodeEl = document.getElementById('single-barcode');
+  if (barcodeEl) barcodeEl.textContent = p.barcode;
+
+  // Section 2: 3-Column Pricing Grid
+  const priceEl = document.getElementById('single-sale-price');
+  if (priceEl) priceEl.textContent = formatCurrency(p.salePrice);
+  const mrpEl = document.getElementById('single-mrp');
+  if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
+
+  const mrpVal = Number(p.mrp);
+  const saleVal = Number(p.salePrice);
+  const discountCol = document.getElementById('single-discount-col');
+  const discountEl = document.getElementById('single-discount-percent');
+
+  let discountPercent = 0;
+  if (mrpVal > saleVal && mrpVal > 0) {
+    discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+    if (discountEl) discountEl.textContent = `${discountPercent}% OFF`;
+    if (discountCol) discountCol.style.visibility = 'visible';
+  } else {
+    if (discountEl) discountEl.textContent = '';
+    if (discountCol) discountCol.style.visibility = 'hidden';
+  }
+
+  // Section 3: Dynamic Footer Strip (Type 1: Single Savings / Type 2: Bulk Offer)
+  const footerText = document.getElementById('single-footer-text');
+  if (footerText) {
+    const hasBulk = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
+                    p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
+                    p.wholesaleQty !== undefined && p.wholesaleQty !== null;
+
+    if (hasBulk) {
+      // Type 2: Bulk Offer
+      AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
+      footerText.innerHTML = `BUY ${p.wholesaleQty} @ <span class="footer-struck-price">${formatCurrency(p.salePrice)}</span> ${formatCurrency(p.wholesalePrice)}`;
+    } else {
+      // Type 1: Single Product
+      const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
+      if (savingsVal > 0) {
+        footerText.textContent = `YOU SAVE ${formatCurrency(savingsVal).replace('.00', '')}`;
+      } else {
+        footerText.textContent = `BEST PRICE GUARANTEED`;
+      }
+    }
+  }
+
+  addToHistory(p);
+  triggerFeedbackPopup(p.name);
+  lastScannedBarcode = barcode || p.barcode;
+}
+
 // Fetch pricing values from endpoint
 async function lookupBarcode(barcode) {
   if (lookupInProgress) {
@@ -866,53 +930,26 @@ async function lookupBarcode(barcode) {
           if (announcer) {
             announcer.textContent = `Multiple matches found. ${data.products.length} matching items displayed.`;
           }
+
+          const multiTitle = document.getElementById('multi-title');
+          if (multiTitle) multiTitle.textContent = `${data.products.length} Products Found`;
+
           const listContainer = document.getElementById('multi-list');
           if (listContainer) {
             listContainer.innerHTML = '';
-
             data.products.forEach(p => {
-              const card = document.createElement('div');
-              card.className = 'multi-item-card';
-
-              let bulkHtml = '';
-              if (FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-                const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-                bulkHtml = `
-                  <div class="bulk-offer-panel" style="margin-top: 8px; padding: 10px; border-radius: 10px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <div class="bulk-left-col" style="display: flex; flex-direction: column; align-items: flex-start;">
-                      <div class="bulk-header-row" style="display: flex; align-items: center; gap: 4px;">
-                        <svg class="bulk-tag-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary-color);">
-                          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                          <line x1="7" y1="7" x2="7.01" y2="7"></line>
-                        </svg>
-                        <span class="bulk-title" style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color);">Bulk Offer</span>
-                      </div>
-                      <div class="bulk-subtitle" style="font-size: 0.7rem; color: var(--text-muted);">Buy ${p.wholesaleQty}+</div>
-                    </div>
-                    <div class="bulk-right-col" style="display: flex; flex-direction: column; align-items: flex-end;">
-                      <div class="bulk-price" style="font-size: 1rem; font-weight: 800; color: var(--primary-color);">${formatCurrency(p.wholesalePrice)} each</div>
-                      <div class="bulk-savings-text" style="font-size: 0.7rem; font-weight: 700; color: #2e7d32;">You save ${formatCurrency(savings).replace('.00', '')}</div>
-                    </div>
-                  </div>
-                `;
-              }
-
-              card.innerHTML = `
-                <div class="multi-item-name">${p.name}</div>
-                <div class="multi-barcode-badge monospace">${p.barcode}</div>
-                <div class="multi-pricing-container">
-                  <div class="multi-mrp-row">
-                    <span class="multi-mrp-label-inline">MRP:</span>
-                    <span class="multi-mrp-val">${formatCurrency(p.mrp)}</span>
-                  </div>
-                  <div class="multi-price-block">
-                    <span class="multi-price-label">Today's Price</span>
-                    <span class="multi-price-val">${formatCurrency(p.salePrice)}</span>
-                  </div>
-                  ${bulkHtml}
-                </div>
-              `;
-              listContainer.appendChild(card);
+              const btn = document.createElement('button');
+              btn.className = 'multi-mrp-btn';
+              btn.textContent = `MRP ${formatCurrency(p.mrp)}`;
+              btn.addEventListener('click', () => {
+                const detailsCard = document.getElementById('details-card');
+                if (detailsCard) detailsCard.classList.add('card-content-updating');
+                setTimeout(() => {
+                  renderV2ProductCard(p, barcode);
+                  if (detailsCard) detailsCard.classList.remove('card-content-updating');
+                }, 120);
+              });
+              listContainer.appendChild(btn);
             });
           }
 
@@ -927,66 +964,10 @@ async function lookupBarcode(barcode) {
           }, 1000);
         } else if (data.products && data.products.length > 0) {
           const p = data.products[0];
-          resetBarcodeCollapse();
-
-          StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
-          const announcer = document.getElementById('a11y-announcer');
-          if (announcer) {
-            announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
-          }
-          const nameEl = document.getElementById('single-name');
-          if (nameEl) nameEl.textContent = p.name;
-          const barcodeEl = document.getElementById('single-barcode');
-          if (barcodeEl) barcodeEl.textContent = p.barcode;
-          const priceEl = document.getElementById('single-sale-price');
-          if (priceEl) priceEl.innerHTML = formatPremiumPrice(p.salePrice);
-          const mrpEl = document.getElementById('single-mrp');
-          if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
-
-          // Calculate discount percent and savings amount for ProductCard.Single
-          const discountBadge = document.getElementById('single-discount-badge');
-          if (discountBadge) {
-            const mrpVal = Number(p.mrp);
-            const saleVal = Number(p.salePrice);
-            if (mrpVal > saleVal && mrpVal > 0) {
-              const discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-              const savedVal = (mrpVal - saleVal).toFixed(2).replace(/\.00$/, '');
-
-              const percentEl = document.getElementById('single-discount-percent');
-              if (percentEl) percentEl.textContent = `${discountPercent}%`;
-
-              const savedEl = document.getElementById('single-saved-amount');
-              if (savedEl) savedEl.textContent = `₹${savedVal}`;
-
-              discountBadge.style.display = 'flex';
-            } else {
-              discountBadge.style.display = 'none';
-            }
-          }
-
-          const bulkContainer = document.getElementById('single-bulk-container');
-          if (bulkContainer && FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') && p.wholesalePrice !== undefined && p.wholesalePrice !== null && p.wholesaleQty !== undefined && p.wholesaleQty !== null) {
-            AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-            const bQty = document.getElementById('single-bulk-qty');
-            if (bQty) bQty.textContent = `Buy ${p.wholesaleQty}+`;
-            const bPrice = document.getElementById('single-bulk-price');
-            if (bPrice) bPrice.textContent = `${formatCurrency(p.wholesalePrice)} each`;
-            const savings = (Number(p.salePrice) - Number(p.wholesalePrice)) * Number(p.wholesaleQty);
-            const bSavings = document.getElementById('single-bulk-savings');
-            if (bSavings) bSavings.textContent = 'You save ' + formatCurrency(savings).replace('.00', '');
-            bulkContainer.style.display = 'flex';
-          } else if (bulkContainer) {
-            bulkContainer.style.display = 'none';
-          }
+          renderV2ProductCard(p, barcode);
 
           if (singleState) singleState.classList.remove('replacing');
           if (priceValEl) priceValEl.classList.remove('faded');
-
-          addToHistory(p);
-          triggerFeedbackPopup(p.name);
-
-          // Lock scan to this barcode to prevent accidental duplicates
-          lastScannedBarcode = barcode;
 
           // API/Render metrics
           const renderEnd = Date.now();

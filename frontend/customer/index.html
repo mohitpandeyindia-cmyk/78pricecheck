@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607311613";</script>
+  <script>window.HTML_BUILD = "202607312135";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -118,40 +118,61 @@
               <p class="state-instruction">Looking up price...</p>
             </div>
 
-            <!-- State 3: Single Product Found -->
+            <!-- State 3: Single / Bulk Product Found (V2 Premium 3-Tier Layout) -->
             <div id="state-single" class="scanner-v2-state" style="display: none;">
-              <div class="single-card-header">
-                <div class="single-title-row" id="single-name">
-                  <span class="skeleton-line skeleton-line--title"></span>
-                </div>
-                <div class="single-barcode-row" id="single-barcode"></div>
-              </div>
-              <div class="single-price-card">
-                <div class="single-price-left">
-                  <span class="single-mrp-amount">MRP <span id="single-mrp"></span></span>
-                  <span class="single-sale-amount" id="single-sale-price">
-                    <span class="skeleton-line skeleton-line--price"></span>
-                  </span>
-                </div>
-                <div class="single-discount-pill" id="single-discount-badge">
-                  <span id="single-discount-percent"></span>&nbsp;<span id="single-saved-amount"></span>
+              <!-- Section 1: Hero Product Name Capsule (80-85% Width) -->
+              <div class="result-section-1">
+                <div class="result-hero-capsule">
+                  <span class="result-hero-name" id="single-name"><span class="skeleton-line skeleton-line--title"></span></span>
+                  <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
                 </div>
               </div>
 
-              <div class="single-meta-chips" id="single-meta-chips">
-                <span class="meta-chip">Instant Savings</span>
-                <span class="meta-chip">In Stock</span>
+              <!-- Section 2: 3-Column Pricing Grid -->
+              <div class="result-section-2">
+                <div class="result-pricing-grid">
+                  <div class="mrp-col" id="single-mrp-col">
+                    <span class="mrp-label">MRP</span>
+                    <span class="mrp-value" id="single-mrp"></span>
+                  </div>
+                  <div class="sale-col" id="single-sale-col">
+                    <span class="sale-price-value" id="single-sale-price"></span>
+                  </div>
+                  <div class="discount-col" id="single-discount-col">
+                    <span class="discount-value" id="single-discount-percent"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 3: Dynamic Footer Strip (Type 1: You Save / Type 2: Bulk Offer) -->
+              <div class="result-section-3">
+                <div class="result-footer-strip" id="single-footer-strip">
+                  <span class="footer-strip-text" id="single-footer-text"></span>
+                </div>
               </div>
             </div>
 
-            <!-- State 4: Multiple Matches (NON-SCROLLING BOUNDED PRESENTATION) -->
+            <!-- State 4: Multiple MRP Found (V2 Selection Card Layout) -->
             <div id="state-multiple" class="scanner-v2-state" style="display: none;">
-              <div class="multi-header-row">
-                <div class="multi-title">Multiple Matches Found</div>
-                <div class="multi-subtitle">Compare MRP to verify product</div>
+              <!-- Section 1: Hero Title Capsule -->
+              <div class="result-section-1">
+                <div class="result-hero-capsule result-hero-capsule--multi">
+                  <span class="result-hero-name" id="multi-title">2 Products Found</span>
+                </div>
               </div>
-              <div class="multi-products-list" id="multi-list">
-                <!-- Populated dynamically by scanner.js -->
+
+              <!-- Section 2: MRP Selection Buttons Container -->
+              <div class="result-section-2">
+                <div class="multi-mrp-container" id="multi-list">
+                  <!-- Populated dynamically with MRP selection buttons by scanner.js -->
+                </div>
+              </div>
+
+              <!-- Section 3: Helper Text Footer -->
+              <div class="result-section-3">
+                <div class="result-footer-helper">
+                  <span>Select the MRP printed on your product</span>
+                </div>
               </div>
             </div>
 
