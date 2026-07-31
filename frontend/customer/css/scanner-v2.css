@@ -229,6 +229,7 @@
   letter-spacing: 0.02em;
   color: #ffffff;
   white-space: nowrap;
+  transition: opacity 0.15s ease;
 }
 
 /* --------------------------------------------------------------------------

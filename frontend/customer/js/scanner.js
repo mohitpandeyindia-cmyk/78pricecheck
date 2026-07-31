@@ -751,6 +751,7 @@ async function lookupBarcode(barcode) {
   if (!anyProductVisible) {
     StateManager.transitionTo('LOOKUP');
   }
+  setScannerGuidance('Scanning…');
 
   // Barcode character and Unicode points inspection
   const inspectPlatform = /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'iOS' : 'Android/Desktop';
@@ -1074,8 +1075,27 @@ function handleLookupFailure() {
   }, 1000);
 }
 
+// Guidance dialogue controller with smooth fade transition
+let guidanceTransitionTimer = null;
+function setScannerGuidance(text) {
+  const el = document.getElementById('guidance-text') || document.querySelector('.guidance-text');
+  if (!el) return;
+  if (el.textContent === text && el.style.opacity !== '0') return;
+
+  if (guidanceTransitionTimer) {
+    clearTimeout(guidanceTransitionTimer);
+  }
+
+  el.style.opacity = '0';
+  guidanceTransitionTimer = setTimeout(() => {
+    el.textContent = text;
+    el.style.opacity = '1';
+  }, 120);
+}
+
 // Reset status bar display
 function resetScannerStatusLine() {
+  setScannerGuidance('Align');
   const dot = document.querySelector('.status-dot');
   const text = document.querySelector('.status-text');
   if (dot && text) {
@@ -1130,6 +1150,9 @@ function onBarcodeDecoded(decodedText) {
     return;
   }
 
+  // Candidate barcode detected — prompt user to hold steady
+  setScannerGuidance('Steady');
+
   // Time-based confidence check (consistent across 15fps to 60fps frame rates)
   if (decodedText === lastDetectedBarcode) {
     detectionCount++;
@@ -1153,6 +1176,9 @@ function onBarcodeDecoded(decodedText) {
   // Lock the scanner loop
   isScanPaused = true;
   lastScanTime = now;
+
+  // Signal barcode found on guidance capsule
+  setScannerGuidance('Found');
 
   // A11y and Telemetry Hooks
   AnalyticsService.logEvent('scan_success', { barcode: decodedText });
@@ -1485,7 +1511,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Scanner state visual updates (laser control, scanning status text)
 (function monitorScannerState() {
   const laserLine = document.querySelector('.scanner-laser-beam');
-  const statusText = document.querySelector('.guidance-text');
 
   if (laserLine) {
     laserLine.style.animationPlayState = 'running';
@@ -1505,18 +1530,16 @@ document.addEventListener('DOMContentLoaded', () => {
     lastState = state;
     lastLowLight = isLowLight;
 
-    if (statusText) {
-      if (isLowLight) {
-        statusText.textContent = 'Low-light';
-      } else if (state === 'SCANNING') {
-        statusText.textContent = 'Align';
-      } else if (state === 'LOOKUP') {
-        statusText.textContent = 'Scanning';
-      } else if (state === 'DISPLAY_RESULT') {
-        statusText.textContent = 'Found';
-      } else {
-        statusText.textContent = 'Align';
-      }
+    if (isLowLight) {
+      setScannerGuidance('Low-light');
+    } else if (state === 'LOOKUP' || lookupInProgress) {
+      setScannerGuidance('Scanning…');
+    } else if (state === 'DISPLAY_RESULT' && isScanPaused) {
+      setScannerGuidance('Found');
+    } else if (state === 'SCANNING' && !isScanPaused) {
+      setScannerGuidance('Align');
+    } else if (state === 'READY') {
+      setScannerGuidance('Align');
     }
   }, 100);
 })();
