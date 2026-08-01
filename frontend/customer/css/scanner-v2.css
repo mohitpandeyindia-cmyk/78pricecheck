@@ -332,10 +332,10 @@
 }
 
 /* ==========================================================================
-   SECTION 3 — V5.1 OPTICAL HIERARCHY & PREMIUM 3-LAYER SURFACE DESIGN
+   SECTION 3 — V5.2 SINGLE PRIMARY SURFACE & BAND 2 OPTICAL CENTERING
    ========================================================================== */
 
-/* Layer 2: Main Card Surface (Brightest White, Primary Object) */
+/* Layout Containers Only: Strip background, border, radius, and shadows */
 #state-single.v5-result-grid,
 #state-multiple.v5-multi-grid {
   width: 100%;
@@ -343,11 +343,13 @@
   display: grid;
   grid-template-rows: 1fr 1fr 1fr;
   box-sizing: border-box;
-  padding: 2px 0;
+  padding: 0;
+  margin: 0;
   row-gap: 0;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
   transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
 }
 
@@ -365,9 +367,11 @@
   justify-content: center;
   box-sizing: border-box;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
-/* Layer 3: Hero Product Capsule (1-3% Breathing Space, +20% Typography) */
+/* Layer 3: Hero Product Capsule (Sits directly on #details-card primary surface) */
 .v5-hero-capsule {
   width: 96%;
   max-width: 335px;
@@ -416,32 +420,43 @@
   font-size: 1.0rem;
 }
 
-/* --- Band 2: Pricing Hero Grid (85% Height Fill, +15-20% Sale Price) --- */
+/* --- Band 2: Pricing Hero Grid (Full-height Vertically Centered Columns) --- */
 .v5-pricing-grid {
   width: 100%;
   height: 100%;
   display: grid;
   grid-template-columns: 25% 1px 50% 1px 25%;
   align-items: center;
+  justify-items: center;
   text-align: center;
   padding: 0 2px;
+  margin: 0;
   box-sizing: border-box;
 }
 
+/* Divider lines centered vertically spanning 72% of Band 2 height */
 .v5-hairline-divider {
   width: 1px;
-  height: 85%;
+  height: 72%;
   background: rgba(15, 23, 42, 0.08);
   align-self: center;
+  justify-self: center;
+  margin: 0 auto;
 }
 
-.mrp-col {
+.mrp-col,
+.sale-col,
+.discount-col {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .mrp-label {
@@ -463,31 +478,32 @@
   text-decoration-thickness: 1.5px;
 }
 
-.sale-col {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Sale Price visual anchor (+15-20% size, 85% usable height fill) */
+/* Sale Price: Single flex row optically centered in Band 2 */
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  height: 95%;
+  width: 100%;
+  height: 100%;
   font-size: 3.5rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.05em;
-  line-height: 0.82;
-  display: inline-flex;
-  align-items: baseline;
+  line-height: 1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   justify-content: center;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transform: translateY(1px);
 }
 
 .rupee-symbol {
   font-size: 0.62em;
   font-weight: 800;
   margin-right: -1px;
+  align-self: center;
+  line-height: 1;
 }
 
 .rupee-symbol--black {
@@ -496,6 +512,8 @@
 
 .price-whole {
   font-weight: 900;
+  align-self: center;
+  line-height: 1;
 }
 
 .price-decimal {
@@ -503,7 +521,9 @@
   font-weight: 600;
   opacity: 0.65;
   margin-left: 0.5px;
-  vertical-align: baseline;
+  align-self: center;
+  transform: translateY(-0.15em);
+  line-height: 1;
 }
 
 .discount-col {
