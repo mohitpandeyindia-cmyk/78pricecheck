@@ -331,7 +331,7 @@
   align-items: center;
 }
 
-/* V3 LUXURY RESULT CARD STYLING (25% | 50% | 25% GRID, BLACK RUPEE, RED OFF) */
+/* V4 LUXURY RESULT CARD STYLING (APPLE WALLET / AMEX HIGH-END DESIGN) */
 #state-single,
 #state-multiple {
   width: 100%;
@@ -366,14 +366,14 @@
   flex: 1 1 33.33%;
 }
 
-/* --- Section 1: Hero Product Button Capsule (90-92% Width, High Fill) --- */
+/* --- Section 1: Hero Product Button Capsule (92-94% Width, 90-95% Height) --- */
 .v3-hero-capsule {
-  width: 92%;
-  max-width: 320px;
+  width: 93%;
+  max-width: 325px;
   height: 92%;
-  max-height: 56px;
+  max-height: 58px;
   margin: 0 auto;
-  padding: 4px 12px;
+  padding: 4px 14px;
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.07);
@@ -387,10 +387,9 @@
 
 .v3-hero-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.98rem;
   font-weight: 800;
   color: #0f172a;
-  line-height: 1.25;
+  line-height: 1.2;
   letter-spacing: -0.015em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -398,6 +397,19 @@
   overflow: hidden;
   text-align: center;
   word-break: break-word;
+}
+
+/* Dynamic font scaling according to product name length */
+.hero-name--short {
+  font-size: 1.12rem;
+}
+
+.hero-name--medium {
+  font-size: 0.96rem;
+}
+
+.hero-name--long {
+  font-size: 0.84rem;
 }
 
 /* --- Section 2: Premium Price Grid (25% | 50% | 25% Proportions) --- */
@@ -413,7 +425,7 @@
 
 .v3-hairline-divider {
   width: 1px;
-  height: 38px;
+  height: 40px;
   background: rgba(15, 23, 42, 0.08);
   align-self: center;
 }
@@ -427,7 +439,7 @@
 }
 
 .mrp-label {
-  font-size: 0.58rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
@@ -437,7 +449,7 @@
 
 .mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
@@ -453,7 +465,7 @@
 
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 2.2rem;
+  font-size: 2.5rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.04em;
@@ -464,7 +476,7 @@
 }
 
 .rupee-symbol {
-  font-size: 0.72em;
+  font-size: 0.7em;
   font-weight: 800;
   margin-right: 1px;
 }
@@ -478,7 +490,7 @@
 }
 
 .price-decimal {
-  font-size: 0.52em;
+  font-size: 0.5em;
   font-weight: 700;
   opacity: 0.85;
   margin-left: 1px;
@@ -501,7 +513,7 @@
 
 .v3-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: #16a34a;
   letter-spacing: -0.02em;
@@ -509,26 +521,26 @@
 
 .v3-discount-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.58rem;
+  font-size: 0.74rem;
   font-weight: 800;
   color: #dc2626;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .v3-cash-coin-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   opacity: 0.75;
 }
 
 /* --- Section 3: Dynamic Premium Band (Soft Mint Raised Capsule) --- */
 .v3-premium-band {
-  width: 92%;
-  max-width: 320px;
-  height: 90%;
-  max-height: 52px;
+  width: 93%;
+  max-width: 325px;
+  height: 92%;
+  max-height: 54px;
   margin: 0 auto;
   padding: 4px 14px;
   background: #f4fbf7;
@@ -544,98 +556,152 @@
 .v3-band-content {
   width: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 
-.v3-save-stack {
+/* Type 1 Single Product: One-line YOU SAVE ₹38 */
+.v4-save-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  line-height: 1.15;
+  gap: 6px;
 }
 
-.v3-save-label {
-  font-size: 0.58rem;
-  font-weight: 700;
+.v4-save-label {
+  font-size: 0.7rem;
+  font-weight: 600;
   color: #166534;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 
-.v3-save-amount {
+.v4-save-val {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.02em;
 }
 
-.v3-bulk-stack {
+/* Type 2 Wholesale: GET 3 @ ₹276 ₹249 */
+.v4-bulk-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
   gap: 6px;
 }
 
-.v3-bulk-label {
-  font-size: 0.7rem;
+.v4-bulk-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #166534;
   letter-spacing: 0.02em;
 }
 
-.v3-bulk-price {
+.v4-bulk-struck {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.3rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: line-through;
+  text-decoration-color: #dc2626;
+  text-decoration-thickness: 1.5px;
+}
+
+.v4-bulk-hero {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.4rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.02em;
 }
 
-/* --- Type 3: Multiple MRP Selection Buttons --- */
-.multi-mrp-container {
-  width: 100%;
+/* --- Type 3: Multiple MRP Selection Screen --- */
+.v4-multi-hero-capsule {
+  background: #fef2f2;
+  border: 1px solid rgba(220, 38, 38, 0.15);
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.05), inset 0 1px 0 #ffffff;
+}
+
+.v4-multi-hero-title {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #b91c1c;
+  text-align: center;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.v4-multi-section-2 {
+  flex: 2 1 66.66%;
+  height: 100%;
+}
+
+.v4-multi-container {
+  width: 93%;
+  max-width: 325px;
+  height: 80%;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
   justify-content: center;
-  padding: 0 4px;
   box-sizing: border-box;
 }
 
 .multi-mrp-btn {
   flex: 1;
-  height: 42px;
+  height: 52px;
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  border-radius: 12px;
+  border-radius: 14px;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: #0f172a;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .multi-mrp-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
   border-color: #15803d;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-.result-footer-helper {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: #64748b;
-  text-align: center;
+/* --- V4 Micro Animations (180ms) --- */
+@keyframes v4HeroEnter {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes v4PriceEnter {
+  0% { opacity: 0; transform: scale(0.96); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes v4FooterEnter {
+  0% { opacity: 0; transform: translateY(5px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+#state-single.v4-animate-enter .result-section-1 {
+  animation: v4HeroEnter 180ms ease-out forwards;
+}
+
+#state-single.v4-animate-enter .result-section-2 {
+  animation: v4PriceEnter 180ms ease-out forwards;
+}
+
+#state-single.v4-animate-enter .result-section-3 {
+  animation: v4FooterEnter 180ms ease-out forwards;
 }
 
 /* Smooth in-place card content update animation */

@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202607312225";</script>
+  <script>window.HTML_BUILD = "202608011644";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -154,26 +154,19 @@
               </div>
             </div>
 
-            <!-- State 4: Multiple MRP Found (V2 Selection Card Layout) -->
+            <!-- State 4: Multiple MRP Found (V4 Luxury Selection Card Layout) -->
             <div id="state-multiple" class="scanner-v2-state" style="display: none;">
-              <!-- Section 1: Hero Title Capsule -->
+              <!-- Section 1: Top Third Hero Capsule -->
               <div class="result-section-1">
-                <div class="result-hero-capsule result-hero-capsule--multi">
-                  <span class="result-hero-name" id="multi-title">2 Products Found</span>
+                <div class="v3-hero-capsule v4-multi-hero-capsule">
+                  <span class="v4-multi-hero-title" id="multi-title">Tap the MRP<br>printed on your product</span>
                 </div>
               </div>
 
-              <!-- Section 2: MRP Selection Buttons Container -->
-              <div class="result-section-2">
-                <div class="multi-mrp-container" id="multi-list">
-                  <!-- Populated dynamically with MRP selection buttons by scanner.js -->
-                </div>
-              </div>
-
-              <!-- Section 3: Helper Text Footer -->
-              <div class="result-section-3">
-                <div class="result-footer-helper">
-                  <span>Select the MRP printed on your product</span>
+              <!-- Sections 2 & 3: Lower Two Thirds MRP Selection Buttons -->
+              <div class="result-section-2 v4-multi-section-2">
+                <div class="multi-mrp-container v4-multi-container" id="multi-list">
+                  <!-- Populated dynamically with large MRP selection buttons by scanner.js -->
                 </div>
               </div>
             </div>

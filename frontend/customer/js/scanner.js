@@ -735,9 +735,28 @@ function renderV2ProductCard(p, barcode) {
     announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
   }
 
-  // Section 1: Hero Name
+  // Trigger V4 180ms micro-animations
+  const stateSingle = document.getElementById('state-single');
+  if (stateSingle) {
+    stateSingle.classList.remove('v4-animate-enter');
+    void stateSingle.offsetWidth;
+    stateSingle.classList.add('v4-animate-enter');
+  }
+
+  // Section 1: Hero Name (with V4 dynamic font scaling)
   const nameEl = document.getElementById('single-name');
-  if (nameEl) nameEl.textContent = p.name;
+  if (nameEl) {
+    nameEl.textContent = p.name;
+    nameEl.classList.remove('hero-name--short', 'hero-name--medium', 'hero-name--long');
+    const len = (p.name || '').length;
+    if (len <= 16) {
+      nameEl.classList.add('hero-name--short');
+    } else if (len <= 30) {
+      nameEl.classList.add('hero-name--medium');
+    } else {
+      nameEl.classList.add('hero-name--long');
+    }
+  }
   const barcodeEl = document.getElementById('single-barcode');
   if (barcodeEl) barcodeEl.textContent = p.barcode;
 
@@ -777,13 +796,13 @@ function renderV2ProductCard(p, barcode) {
                     p.wholesaleQty !== undefined && p.wholesaleQty !== null;
 
     if (hasBulk) {
-      // Type 2: Bulk Offer (BUY Qty @ StruckSalePrice WholesalePrice)
+      // Type 2: Bulk Offer (GET Qty @ StruckSalePrice WholesalePrice)
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `<div class="v3-bulk-stack"><span class="v3-bulk-label">BUY ${p.wholesaleQty} @</span><span class="footer-struck-price">${formatCurrency(p.salePrice)}</span><span class="v3-bulk-price">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
+      footerText.innerHTML = `<div class="v4-bulk-row"><span class="v4-bulk-label">GET ${p.wholesaleQty} @</span><span class="v4-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v4-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
     } else {
-      // Type 1: Single Product (YOU SAVE ₹XX)
+      // Type 1: Single Product (YOU SAVE ₹XX on one line)
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
-      footerText.innerHTML = `<div class="v3-save-stack"><span class="v3-save-label">YOU SAVE</span><span class="v3-save-amount">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
+      footerText.innerHTML = `<div class="v4-save-row"><span class="v4-save-label">YOU SAVE</span><span class="v4-save-val">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
     }
   }
 
@@ -947,7 +966,7 @@ async function lookupBarcode(barcode) {
           }
 
           const multiTitle = document.getElementById('multi-title');
-          if (multiTitle) multiTitle.textContent = `${data.products.length} Products Found`;
+          if (multiTitle) multiTitle.innerHTML = `Tap the MRP<br>printed on your product`;
 
           const listContainer = document.getElementById('multi-list');
           if (listContainer) {
