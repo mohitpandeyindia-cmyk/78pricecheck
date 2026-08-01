@@ -735,15 +735,15 @@ function renderV2ProductCard(p, barcode) {
     announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
   }
 
-  // Trigger V4 180ms micro-animations
+  // Trigger V5 180ms micro-animations
   const stateSingle = document.getElementById('state-single');
   if (stateSingle) {
-    stateSingle.classList.remove('v4-animate-enter');
+    stateSingle.classList.remove('v5-animate-enter');
     void stateSingle.offsetWidth;
-    stateSingle.classList.add('v4-animate-enter');
+    stateSingle.classList.add('v5-animate-enter');
   }
 
-  // Section 1: Hero Name (with V4 dynamic font scaling)
+  // Band 1: Hero Name (with V5 dynamic font scaling)
   const nameEl = document.getElementById('single-name');
   if (nameEl) {
     nameEl.textContent = p.name;
@@ -760,7 +760,7 @@ function renderV2ProductCard(p, barcode) {
   const barcodeEl = document.getElementById('single-barcode');
   if (barcodeEl) barcodeEl.textContent = p.barcode;
 
-  // Section 2: 3-Column Pricing Grid
+  // Band 2: 3-Column Pricing Grid
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
     priceEl.innerHTML = formatV3PriceHTML(p.salePrice, true);
@@ -778,17 +778,17 @@ function renderV2ProductCard(p, barcode) {
   if (mrpVal > saleVal && mrpVal > 0) {
     discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
     if (discountEl) {
-      discountEl.innerHTML = `<div class="v3-discount-stack"><span class="v3-discount-num">${discountPercent}%</span><span class="v3-discount-off">OFF</span></div>`;
+      discountEl.innerHTML = `<div class="v5-discount-stack"><span class="v5-discount-num">${discountPercent}%</span><span class="v5-discount-off">OFF</span></div>`;
     }
     if (discountCol) discountCol.style.visibility = 'visible';
   } else {
     if (discountEl) {
-      discountEl.innerHTML = `<svg class="v3-cash-coin-icon" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>`;
+      discountEl.innerHTML = `<svg class="v5-cash-coin-icon" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>`;
     }
     if (discountCol) discountCol.style.visibility = 'visible';
   }
 
-  // Section 3: Dynamic Premium Band (Type 1: Single Savings / Type 2: Bulk Offer)
+  // Band 3: Dynamic Reward Capsule (Type 1: Single Savings / Type 2: Bulk Offer)
   const footerText = document.getElementById('single-footer-text');
   if (footerText) {
     const hasBulk = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
@@ -798,11 +798,11 @@ function renderV2ProductCard(p, barcode) {
     if (hasBulk) {
       // Type 2: Bulk Offer (GET Qty @ StruckSalePrice WholesalePrice)
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `<div class="v4-bulk-row"><span class="v4-bulk-label">GET ${p.wholesaleQty} @</span><span class="v4-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v4-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
+      footerText.innerHTML = `<div class="v5-bulk-row"><span class="v5-bulk-label">GET ${p.wholesaleQty} @</span><span class="v5-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v5-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
     } else {
       // Type 1: Single Product (YOU SAVE ₹XX on one line)
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
-      footerText.innerHTML = `<div class="v4-save-row"><span class="v4-save-label">YOU SAVE</span><span class="v4-save-val">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
+      footerText.innerHTML = `<div class="v5-save-row"><span class="v5-save-label">YOU SAVE</span><span class="v5-save-val">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
     }
   }
 

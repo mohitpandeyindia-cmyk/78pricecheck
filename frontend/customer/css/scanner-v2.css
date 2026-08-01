@@ -331,61 +331,57 @@
   align-items: center;
 }
 
-/* V4 LUXURY RESULT CARD STYLING (APPLE WALLET / AMEX HIGH-END DESIGN) */
-#state-single,
-#state-multiple {
+/* ==========================================================================
+   SECTION 3 — V5 AUTHORITATIVE 3-ROW GRID RESULT CARD (CONTAINER-INWARD)
+   ========================================================================== */
+
+#state-single.v5-result-grid,
+#state-multiple.v5-multi-grid {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-rows: 1fr 1fr 1fr;
   box-sizing: border-box;
-  padding: 2px 0;
+  padding: 4px 0;
+  row-gap: 0;
   transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
 }
 
-.result-section-1,
-.result-section-2,
-.result-section-3 {
+#state-multiple.v5-multi-grid {
+  grid-template-rows: 1fr 2fr;
+}
+
+.v5-band-1,
+.v5-band-2,
+.v5-band-3 {
   width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.result-section-1 {
-  flex: 1 1 33.33%;
-}
-
-.result-section-2 {
-  flex: 1 1 33.33%;
-}
-
-.result-section-3 {
-  flex: 1 1 33.33%;
-}
-
-/* --- Section 1: Hero Product Button Capsule (92-94% Width, 90-95% Height) --- */
-.v3-hero-capsule {
+/* --- Band 1: Hero Product Capsule --- */
+.v5-hero-capsule {
   width: 93%;
-  max-width: 325px;
-  height: 92%;
-  max-height: 58px;
-  margin: 0 auto;
+  max-width: 330px;
+  height: 90%;
+  margin: auto;
   padding: 4px 14px;
   background: #ffffff;
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.07);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
-  text-align: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
+  text-align: center;
   box-sizing: border-box;
 }
 
-.v3-hero-name {
+.v5-hero-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 800;
   color: #0f172a;
@@ -397,24 +393,28 @@
   overflow: hidden;
   text-align: center;
   word-break: break-word;
+  height: 75%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Dynamic font scaling according to product name length */
 .hero-name--short {
-  font-size: 1.12rem;
+  font-size: 1.18rem;
 }
 
 .hero-name--medium {
-  font-size: 0.96rem;
+  font-size: 1.0rem;
 }
 
 .hero-name--long {
-  font-size: 0.84rem;
+  font-size: 0.85rem;
 }
 
-/* --- Section 2: Premium Price Grid (25% | 50% | 25% Proportions) --- */
-.v3-pricing-grid {
+/* --- Band 2: Pricing Hero Grid (25% | 1px | 50% | 1px | 25%) --- */
+.v5-pricing-grid {
   width: 100%;
+  height: 100%;
   display: grid;
   grid-template-columns: 25% 1px 50% 1px 25%;
   align-items: center;
@@ -423,14 +423,15 @@
   box-sizing: border-box;
 }
 
-.v3-hairline-divider {
+.v5-hairline-divider {
   width: 1px;
-  height: 40px;
+  height: 80%;
   background: rgba(15, 23, 42, 0.08);
   align-self: center;
 }
 
 .mrp-col {
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -458,18 +459,21 @@
 }
 
 .sale-col {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+/* Sale Price expands to 80-85% of Band 2 height */
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 85%;
   font-size: 2.85rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.05em;
-  line-height: 0.95;
+  line-height: 0.88;
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
@@ -478,7 +482,7 @@
 .rupee-symbol {
   font-size: 0.65em;
   font-weight: 800;
-  margin-right: -2px;
+  margin-right: -1px;
 }
 
 .rupee-symbol--black {
@@ -498,12 +502,13 @@
 }
 
 .discount-col {
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.v3-discount-stack {
+.v5-discount-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -511,15 +516,15 @@
   line-height: 1;
 }
 
-.v3-discount-num {
+.v5-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.98rem;
+  font-size: 1.0rem;
   font-weight: 800;
   color: #16a34a;
   letter-spacing: -0.02em;
 }
 
-.v3-discount-off {
+.v5-discount-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.74rem;
   font-weight: 800;
@@ -529,47 +534,48 @@
   margin-top: 1px;
 }
 
-.v3-cash-coin-icon {
+.v5-cash-coin-icon {
   width: 26px;
   height: 26px;
   opacity: 0.75;
 }
 
-/* --- Section 3: Dynamic Premium Reward Band (Celebratory Mint Gradient Raised Surface) --- */
-.v3-premium-band {
+/* --- Band 3: Dynamic Reward Capsule --- */
+.v5-reward-capsule {
   width: 93%;
-  max-width: 325px;
-  height: 92%;
-  max-height: 54px;
-  margin: 0 auto;
+  max-width: 330px;
+  height: 90%;
+  margin: auto;
   padding: 4px 16px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
   border-radius: 14px;
   border: 1px solid rgba(22, 163, 74, 0.2);
-  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.08), inset 0 1px 0 #ffffff;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
 }
 
-.v3-band-content {
+.v5-capsule-content {
   width: 100%;
+  height: 70%;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
 }
 
-/* Type 1 Single Product: Celebratory One-line YOU SAVE ₹38 */
-.v4-save-row {
+/* Single Product: Celebratory One-line YOU SAVE ₹38 */
+.v5-save-row {
+  height: 100%;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 8px;
 }
 
-.v4-save-label {
+.v5-save-label {
   font-size: 0.62rem;
   font-weight: 700;
   color: #166534;
@@ -578,23 +584,24 @@
   opacity: 0.85;
 }
 
-.v4-save-val {
+.v5-save-val {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.03em;
 }
 
-/* Type 2 Wholesale: GET 3 @ ₹276 ₹249 */
-.v4-bulk-row {
+/* Wholesale Product: GET 4 @ ₹276 ₹249 */
+.v5-bulk-row {
+  height: 100%;
   display: flex;
   align-items: baseline;
   justify-content: center;
   gap: 8px;
 }
 
-.v4-bulk-label {
+.v5-bulk-label {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.85rem;
   font-weight: 800;
@@ -602,7 +609,7 @@
   letter-spacing: 0.02em;
 }
 
-.v4-bulk-struck {
+.v5-bulk-struck {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.82rem;
   font-weight: 600;
@@ -612,22 +619,22 @@
   text-decoration-thickness: 1.5px;
 }
 
-.v4-bulk-hero {
+.v5-bulk-hero {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.03em;
 }
 
-/* --- Type 3: Multiple MRP Selection Screen (Full 2nd & 3rd Space Vertically Stacked) --- */
-.v4-multi-hero-capsule {
+/* --- Multiple MRP Selection Screen --- */
+.v5-multi-hero-capsule {
   background: #fef2f2;
   border: 1px solid rgba(220, 38, 38, 0.15);
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.05), inset 0 1px 0 #ffffff;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.05);
 }
 
-.v4-multi-hero-title {
+.v5-multi-hero-title {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.95rem;
   font-weight: 800;
@@ -637,8 +644,7 @@
   letter-spacing: -0.01em;
 }
 
-.v4-multi-section-lower {
-  flex: 2 1 66.66%;
+.v5-multi-lower-bands {
   width: 100%;
   height: 100%;
   display: flex;
@@ -646,9 +652,9 @@
   justify-content: center;
 }
 
-.v4-multi-vertical-stack {
+.v5-multi-vertical-stack {
   width: 93%;
-  max-width: 325px;
+  max-width: 330px;
   height: 88%;
   display: flex;
   flex-direction: column;
@@ -661,7 +667,7 @@
 .multi-mrp-btn {
   width: 100%;
   flex: 1;
-  min-height: 54px;
+  min-height: 60px;
   background: #ffffff;
   border: 1.5px solid rgba(15, 23, 42, 0.12);
   border-radius: 14px;
@@ -669,9 +675,9 @@
   font-weight: 800;
   font-size: 1.15rem;
   color: #0f172a;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), inset 0 1px 0 #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -683,32 +689,38 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* --- V4 Staggered Micro Animations (180ms, 40ms/90ms Delays) --- */
-@keyframes v4HeroEnter {
+/* --- V5 Staggered Micro Animations (180ms, 40ms/90ms Delays) --- */
+@keyframes v5Band1Enter {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
 
-@keyframes v4PriceEnter {
+@keyframes v5Band2Enter {
   0% { opacity: 0; transform: scale(0.95); }
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes v4FooterEnter {
+@keyframes v5Band3Enter {
   0% { opacity: 0; transform: translateY(6px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-#state-single.v4-animate-enter .result-section-1 {
-  animation: v4HeroEnter 180ms ease-out 0ms forwards;
+#state-single.v5-animate-enter .v5-band-1 {
+  animation: v5Band1Enter 180ms ease-out 0ms forwards;
 }
 
-#state-single.v4-animate-enter .result-section-2 {
-  animation: v4PriceEnter 180ms ease-out 40ms forwards;
+#state-single.v5-animate-enter .v5-band-2 {
+  animation: v5Band2Enter 180ms ease-out 40ms forwards;
 }
 
-#state-single.v4-animate-enter .result-section-3 {
-  animation: v4FooterEnter 180ms ease-out 90ms forwards;
+#state-single.v5-animate-enter .v5-band-3 {
+  animation: v5Band3Enter 180ms ease-out 90ms forwards;
+}
+
+/* Smooth in-place card content update animation */
+.card-content-updating {
+  opacity: 0;
+  transform: scale(0.98);
 }
 
 /* Smooth in-place card content update animation */
