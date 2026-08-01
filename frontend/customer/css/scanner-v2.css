@@ -440,7 +440,7 @@
 }
 
 .mrp-label {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: #94a3b8;
   text-transform: uppercase;
@@ -450,7 +450,7 @@
 
 .mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.98rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
@@ -465,15 +465,15 @@
   justify-content: center;
 }
 
-/* Sale Price expands to 80-85% of Band 2 height */
+/* Sale Price visually occupies 85-90% of Band 2 vertical weight */
 .sale-price-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  height: 85%;
-  font-size: 2.85rem;
+  height: 90%;
+  font-size: 3.1rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.05em;
-  line-height: 0.88;
+  line-height: 0.85;
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
@@ -518,7 +518,7 @@
 
 .v5-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.0rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: #16a34a;
   letter-spacing: -0.02em;
@@ -526,7 +526,7 @@
 
 .v5-discount-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   font-weight: 800;
   color: #dc2626;
   letter-spacing: 0.05em;
