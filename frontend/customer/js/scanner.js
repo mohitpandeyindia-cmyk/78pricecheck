@@ -963,7 +963,7 @@ async function lookupBarcode(barcode) {
           }
 
           const multiTitle = document.getElementById('multi-title');
-          if (multiTitle) multiTitle.innerHTML = `Tap the MRP<br>printed on your product`;
+          if (multiTitle) multiTitle.innerHTML = `TAP MRP PRINTED<br>ON YOUR PRODUCT`;
 
           const listContainer = document.getElementById('multi-list');
           if (listContainer) {
@@ -971,7 +971,9 @@ async function lookupBarcode(barcode) {
             data.products.forEach(p => {
               const btn = document.createElement('button');
               btn.className = 'multi-mrp-btn';
-              btn.textContent = `MRP ${formatCurrency(p.mrp)}`;
+              const formattedMrp = Number(p.mrp).toFixed(2);
+              const parts = formattedMrp.split('.');
+              btn.innerHTML = `MRP ₹<span class="mrp-btn-whole">${parts[0]}</span><span class="mrp-btn-decimal">.${parts[1] || '00'}</span>`;
               btn.addEventListener('click', () => {
                 const detailsCard = document.getElementById('details-card');
                 if (detailsCard) detailsCard.classList.add('card-content-updating');

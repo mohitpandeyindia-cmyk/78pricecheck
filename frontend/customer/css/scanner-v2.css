@@ -663,66 +663,87 @@
   letter-spacing: -0.03em;
 }
 
-/* --- Multiple MRP Selection Screen --- */
+/* --- Multiple MRP Selection Screen (V2 3-Equal Band Layout) --- */
 .v5-multi-hero-capsule {
-  background: #fef2f2;
-  border: 1px solid rgba(220, 38, 38, 0.15);
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.05);
+  width: 96%;
+  max-width: 335px;
+  height: 95%;
+  margin: auto;
+  padding: 2px 12px;
+  background: #fafafa;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.05), inset 0 1px 0 #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .v5-multi-hero-title {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: #b91c1c;
   text-align: center;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-
-.v5-multi-lower-bands {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  line-height: 1.22;
+  letter-spacing: 0.03em;
 }
 
 .v5-multi-vertical-stack {
-  width: 93%;
-  max-width: 330px;
-  height: 88%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  row-gap: 4px;
   align-items: center;
-  justify-content: center;
+  justify-items: center;
   box-sizing: border-box;
 }
 
+/* Visually Identical to Hero Product Capsule (Surface, Shadow, Highlight, Border) */
 .multi-mrp-btn {
-  width: 100%;
-  flex: 1;
-  min-height: 60px;
-  background: #ffffff;
-  border: 1.5px solid rgba(15, 23, 42, 0.12);
+  width: 96%;
+  max-width: 335px;
+  height: 95%;
+  margin: auto;
+  background: #fafafa;
+  border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 14px;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: clamp(1.4rem, 5vh, 1.85rem);
   color: #0f172a;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 0 #ffffff;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 130ms cubic-bezier(0.16, 1, 0.3, 1), background 130ms ease, border-color 130ms ease, box-shadow 130ms ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* 120-150ms Touch Press State (Compresses, Brightens, Stronger Green Shadow) */
 .multi-mrp-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.975) translateY(1px);
+  background: #ffffff;
   border-color: #15803d;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.15), inset 0 1px 0 #ffffff;
+}
+
+.mrp-btn-whole {
+  font-weight: 900;
+}
+
+.mrp-btn-decimal {
+  font-size: 0.55em;
+  font-weight: 600;
+  opacity: 0.65;
+  margin-left: 1px;
+  align-self: baseline;
 }
 
 /* --- V5 Staggered Micro Animations (180ms, 40ms/90ms Delays) --- */

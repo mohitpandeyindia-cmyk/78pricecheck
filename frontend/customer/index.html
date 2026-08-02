@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608021644";</script>
+  <script>window.HTML_BUILD = "202608021942";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -154,20 +154,18 @@
               </div>
             </div>
 
-            <!-- State 4: Multiple MRP Found (V5 Selection Layout) -->
+            <!-- State 4: Multiple MRP Found (V5 Selection Layout - 3 Equal Bands) -->
             <div id="state-multiple" class="scanner-v2-state v5-multi-grid" style="display: none;">
-              <!-- Band 1: Natural Customer Instruction -->
+              <!-- Band 1: Customer Instruction Capsule -->
               <div class="v5-band-1">
                 <div class="v5-hero-capsule v5-multi-hero-capsule">
-                  <span class="v5-multi-hero-title" id="multi-title">Tap the MRP<br>printed on your product</span>
+                  <span class="v5-multi-hero-title" id="multi-title">TAP MRP PRINTED<br>ON YOUR PRODUCT</span>
                 </div>
               </div>
 
-              <!-- Bands 2 & 3: Full-Width Vertically Stacked MRP Buttons -->
-              <div class="v5-multi-lower-bands">
-                <div class="multi-mrp-container v5-multi-vertical-stack" id="multi-list">
-                  <!-- Populated dynamically with full-width vertically stacked MRP selection buttons by scanner.js -->
-                </div>
+              <!-- Bands 2 & 3: Two Full-Band MRP Buttons (1:1 per band) -->
+              <div class="multi-mrp-container v5-multi-vertical-stack" id="multi-list">
+                <!-- Populated dynamically with two full-band MRP selection buttons by scanner.js -->
               </div>
             </div>
 
