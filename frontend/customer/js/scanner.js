@@ -713,16 +713,13 @@ async function fetchHotDeals() {
   renderHotDealsCarousel();
 }
 
-// Format price with large whole number and small decimal place digits (.00)
+// Format price as whole number without decimals (V5.3 Specification)
 function formatV3PriceHTML(val, isRupeeBlack = true) {
   if (val === undefined || val === null) return 'N/A';
   const num = Number(val);
-  const formatted = isNaN(num) ? '0.00' : num.toFixed(2);
-  const parts = formatted.split('.');
-  const whole = parts[0];
-  const decimal = parts[1] || '00';
+  const whole = isNaN(num) ? '0' : Math.round(num).toString();
   const rupeeClass = isRupeeBlack ? 'rupee-symbol rupee-symbol--black' : 'rupee-symbol';
-  return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span><span class="price-decimal">.${decimal}</span>`;
+  return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span>`;
 }
 
 // Render V2 Premium Product Result Card (Type 1: Single Savings / Type 2: Bulk Offer)
@@ -796,9 +793,9 @@ function renderV2ProductCard(p, barcode) {
                     p.wholesaleQty !== undefined && p.wholesaleQty !== null;
 
     if (hasBulk) {
-      // Type 2: Bulk Offer (GET Qty @ StruckSalePrice WholesalePrice)
+      // Type 2: Bulk Offer (Spread throughout footer: GET Qty @ StruckSalePrice WholesalePrice)
       AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `<div class="v5-bulk-row"><span class="v5-bulk-label">GET ${p.wholesaleQty} @</span><span class="v5-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v5-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
+      footerText.innerHTML = `<div class="v5-bulk-row"><span class="v5-bulk-prefix">GET</span><span class="v5-bulk-qty">${p.wholesaleQty}</span><span class="v5-bulk-at">@</span><span class="v5-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v5-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
     } else {
       // Type 1: Single Product (YOU SAVE ₹XX on one line)
       const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;

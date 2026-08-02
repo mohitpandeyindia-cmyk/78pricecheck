@@ -501,7 +501,7 @@
 .rupee-symbol {
   font-size: 0.62em;
   font-weight: 800;
-  margin-right: -1px;
+  margin-right: 7px;
   align-self: center;
   line-height: 1;
 }
@@ -543,7 +543,7 @@
 
 .v5-discount-num {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.98rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #16a34a;
   letter-spacing: -0.02em;
@@ -551,7 +551,7 @@
 
 .v5-discount-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 800;
   color: #dc2626;
   letter-spacing: 0.05em;
@@ -560,8 +560,8 @@
 }
 
 .v5-cash-coin-icon {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   opacity: 0.75;
 }
 
@@ -571,7 +571,7 @@
   max-width: 335px;
   height: 95%;
   margin: auto;
-  padding: 4px 16px;
+  padding: 2px 12px;
   background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
   border-radius: 14px;
   border: 1px solid rgba(22, 163, 74, 0.2);
@@ -584,7 +584,7 @@
 
 .v5-capsule-content {
   width: 100%;
-  height: 70%;
+  height: 80%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -601,7 +601,7 @@
 }
 
 .v5-save-label {
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #166534;
   text-transform: uppercase;
@@ -611,32 +611,43 @@
 
 .v5-save-val {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.75rem;
+  font-size: 2.15rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.03em;
 }
 
-/* Wholesale Product: GET 4 @ ₹276 ₹249 */
+/* Wholesale Product: Spread throughout complete width & height space */
 .v5-bulk-row {
+  width: 100%;
   height: 100%;
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  box-sizing: border-box;
 }
 
-.v5-bulk-label {
+.v5-bulk-prefix,
+.v5-bulk-at {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #166534;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+}
+
+.v5-bulk-qty {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.85rem;
+  font-weight: 900;
+  color: #15803d;
+  letter-spacing: -0.03em;
 }
 
 .v5-bulk-struck {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
@@ -646,7 +657,7 @@
 
 .v5-bulk-hero {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.75rem;
+  font-size: 1.85rem;
   font-weight: 900;
   color: #15803d;
   letter-spacing: -0.03em;
@@ -748,11 +759,6 @@
   transform: scale(0.98);
 }
 
-/* Smooth in-place card content update animation */
-.card-content-updating {
-  opacity: 0;
-  transform: scale(0.98);
-}
 
 /* State Multiple: NON-SCROLLING BOUNDED PRESENTATION */
 #state-multiple {
