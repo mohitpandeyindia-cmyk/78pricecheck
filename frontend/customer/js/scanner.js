@@ -973,7 +973,7 @@ async function lookupBarcode(barcode) {
               btn.className = 'multi-mrp-btn';
               const formattedMrp = Number(p.mrp).toFixed(2);
               const parts = formattedMrp.split('.');
-              btn.innerHTML = `MRP ₹<span class="mrp-btn-whole">${parts[0]}</span><span class="mrp-btn-decimal">.${parts[1] || '00'}</span>`;
+              btn.innerHTML = `MRP ₹<span class="mrp-btn-value"><span class="mrp-btn-whole">${parts[0]}</span><span class="mrp-btn-decimal">.${parts[1] || '00'}</span></span>`;
               btn.addEventListener('click', () => {
                 const detailsCard = document.getElementById('details-card');
                 if (detailsCard) detailsCard.classList.add('card-content-updating');

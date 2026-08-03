@@ -678,8 +678,7 @@
 /* --- Multiple MRP Selection Screen (V2 3-Equal Band Layout) --- */
 .v5-multi-hero-capsule {
   width: 96%;
-  max-width: 335px;
-  height: 95%;
+  height: 92%;
   margin: auto;
   padding: 2px 12px;
   background: #fafafa;
@@ -717,8 +716,7 @@
 /* Visually Identical to Hero Product Capsule (Surface, Shadow, Highlight, Border) */
 .multi-mrp-btn {
   width: 96%;
-  max-width: 335px;
-  height: 95%;
+  height: 92%;
   margin: auto;
   background: #fafafa;
   border: 1px solid rgba(15, 23, 42, 0.06);
@@ -746,6 +744,12 @@
   box-shadow: 0 6px 18px rgba(22, 163, 74, 0.15), inset 0 1px 0 #ffffff;
 }
 
+.mrp-btn-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
 .mrp-btn-whole {
   font-weight: 900;
 }
@@ -754,77 +758,7 @@
   font-size: 0.55em;
   font-weight: 600;
   opacity: 0.65;
-  margin-left: 1px;
-  align-self: baseline;
-}
-
-/* --- V5 Staggered Micro Animations (180ms, 40ms/90ms Delays) --- */
-@keyframes v5Band1Enter {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
-}
-
-@keyframes v5Band2Enter {
-  0% { opacity: 0; transform: scale(0.95); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes v5Band3Enter {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
-#state-single.v5-animate-enter .v5-band-1 {
-  animation: v5Band1Enter 180ms ease-out 0ms forwards;
-}
-
-#state-single.v5-animate-enter .v5-band-2 {
-  animation: v5Band2Enter 180ms ease-out 40ms forwards;
-}
-
-#state-single.v5-animate-enter .v5-band-3 {
-  animation: v5Band3Enter 180ms ease-out 90ms forwards;
-}
-
-/* Smooth in-place card content update animation */
-.card-content-updating {
-  opacity: 0;
-  transform: scale(0.98);
-}
-
-
-/* State Multiple: NON-SCROLLING BOUNDED PRESENTATION */
-#state-multiple {
-  justify-content: flex-start;
-  align-items: stretch;
-  overflow: hidden;
-}
-
-.multi-header-row {
-  flex: 0 0 auto;
-  margin-bottom: 6px;
-}
-
-.multi-title {
-  font-size: 0.85rem;
-  font-weight: 800;
-  color: #111827;
-}
-
-.multi-subtitle {
-  font-size: 0.7rem;
-  color: #6b7280;
-}
-
-#multi-list {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow: hidden; /* STRICT ZERO SCROLLING CONTRACT */
-  box-sizing: border-box;
+  display: inline;
 }
 
 #multi-list .multi-item-card {
