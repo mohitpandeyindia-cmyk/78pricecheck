@@ -836,31 +836,34 @@
   width: 100%;
 }
 
-/* --- Section 4: Hot Deals 3-Card Apple Cover Flow Carousel V2.3 --- */
+/* --- Section 4: Hot Deals 5-Node Infinite Horizontal Track V2.4 --- */
 .scanner-v2-carousel-box {
   width: 100%;
   height: 100%;
   overflow: hidden;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   box-sizing: border-box;
   position: relative;
 }
 
 .scanner-v2-carousel-track {
-  width: 100%;
+  width: 166.666%;
   height: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 4px;
   box-sizing: border-box;
   position: relative;
+  transform: translateX(-20%);
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
 }
 
 .promo-card {
-  flex: 1;
+  flex: 0 0 calc(20% - 3.2px);
   height: 94%;
   border-radius: 12px;
   padding: 6px 8px;
@@ -868,7 +871,7 @@
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 360ms ease, opacity 360ms ease;
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 380ms ease, opacity 380ms ease;
   position: relative;
   overflow: hidden;
   cursor: pointer;
@@ -881,45 +884,25 @@
   transition: transform 120ms ease;
 }
 
-.promo-card--center {
-  transform: translateX(0) scale(1.06);
+/* Card Positions */
+.promo-card--hero {
+  transform: scale(1.06);
   opacity: 1;
   z-index: 3;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
 .promo-card--side {
-  transform: translateX(0) scale(0.93);
+  transform: scale(0.93);
   opacity: 0.82;
   z-index: 1;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
-/* Simultaneous Cover Flow Transition Classes (360ms) */
-.promo-card.cover-exit-left {
-  transform: translateX(-120%) scale(0.93) !important;
-  opacity: 0 !important;
-  z-index: 0 !important;
-}
-
-.promo-card.cover-hero-to-left {
-  transform: translateX(-104%) scale(0.93) !important;
-  opacity: 0.82 !important;
-  z-index: 1 !important;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
-}
-
-.promo-card.cover-right-to-hero {
-  transform: translateX(-104%) scale(1.06) !important;
-  opacity: 1 !important;
-  z-index: 3 !important;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14) !important;
-}
-
-.promo-card.cover-enter-right {
-  transform: translateX(-104%) scale(0.93) !important;
-  opacity: 0.82 !important;
-  z-index: 1 !important;
+.promo-card--hidden {
+  transform: scale(0.85);
+  opacity: 0;
+  z-index: 0;
 }
 
 /* Category Color Language Themes */
