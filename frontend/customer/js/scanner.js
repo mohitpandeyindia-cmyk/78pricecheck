@@ -414,7 +414,11 @@ function showState(activeStateKey) {
   Object.keys(states).forEach(key => {
     if (states[key]) {
       if (key === activeStateKey) {
-        states[key].style.display = 'flex';
+        if (states[key].classList.contains('v5-result-grid') || states[key].classList.contains('v5-multi-grid')) {
+          states[key].style.display = 'grid';
+        } else {
+          states[key].style.display = 'flex';
+        }
       } else {
         states[key].style.display = 'none';
       }
