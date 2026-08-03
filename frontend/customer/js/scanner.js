@@ -726,50 +726,66 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Keep exactly 3 DOM nodes in track
+  // Render initial 3 cards at rest
   track.innerHTML = '';
-  const nodeLeft = document.createElement('div');
-  const nodeCenter = document.createElement('div');
-  const nodeRight = document.createElement('div');
+
+  const getTrioForIndex = (idx) => {
+    const p0 = cachedHotDeals[idx % N];
+    const p1 = cachedHotDeals[(idx + 1) % N];
+    const p2 = cachedHotDeals[(idx + 2) % N];
+    const trio = [p0, p1, p2];
+    trio.sort((a, b) => (b.offerScore || 0) - (a.offerScore || 0));
+    return { left: trio[1], center: trio[0], right: trio[2] };
+  };
+
+  let initialWindow = getTrioForIndex(carouselIndex);
+
+  let nodeLeft = document.createElement('div');
+  let nodeCenter = document.createElement('div');
+  let nodeRight = document.createElement('div');
+
+  updateCoverFlowCardNode(nodeLeft, initialWindow.left, 'pos-left', false);
+  updateCoverFlowCardNode(nodeCenter, initialWindow.center, 'pos-center', true);
+  updateCoverFlowCardNode(nodeRight, initialWindow.right, 'pos-right', false);
 
   track.appendChild(nodeLeft);
   track.appendChild(nodeCenter);
   track.appendChild(nodeRight);
 
-  const updateWindow = () => {
-    // Pick 3 consecutive products from queue
-    const p0 = cachedHotDeals[carouselIndex % N];
-    const p1 = cachedHotDeals[(carouselIndex + 1) % N];
-    const p2 = cachedHotDeals[(carouselIndex + 2) % N];
-
-    const trio = [p0, p1, p2];
-
-    // Highest score product in current 3-card window occupies Center Hero
-    trio.sort((a, b) => (b.offerScore || 0) - (a.offerScore || 0));
-    const centerProduct = trio[0];
-    const remaining = [trio[1], trio[2]];
-
-    const leftProduct = remaining[0];
-    const rightProduct = remaining[1];
-
-    updateCoverFlowCardNode(nodeLeft, leftProduct, 'pos-left', false);
-    updateCoverFlowCardNode(nodeCenter, centerProduct, 'pos-center', true);
-    updateCoverFlowCardNode(nodeRight, rightProduct, 'pos-right', false);
-  };
-
-  updateWindow();
-
-  // Auto-slide 1 card every 4 seconds with physical FLIP leftward motion (350ms)
+  // Auto-slide 1 card every 4 seconds with 360ms Cover Flow motion
   carouselTimer = setInterval(() => {
-    track.classList.add('sliding-left');
+    const nextIndex = (carouselIndex + 1) % N;
+    const nextWindow = getTrioForIndex(nextIndex);
+
+    // Create temporary incoming card D offscreen right
+    const nodeIncoming = document.createElement('div');
+    nodeIncoming.style.transform = 'translateX(110%) scale(0.93)';
+    nodeIncoming.style.opacity = '0.82';
+    updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
+    track.appendChild(nodeIncoming);
+
+    // Trigger simultaneous CSS transition on next animation frame
+    requestAnimationFrame(() => {
+      nodeLeft.classList.add('cover-exit-left');
+      nodeCenter.classList.add('cover-hero-to-left');
+      nodeRight.classList.add('cover-right-to-hero');
+      nodeIncoming.classList.add('cover-enter-right');
+    });
+
+    // Clean up nodes after 360ms transition finishes
     setTimeout(() => {
-      carouselIndex = (carouselIndex + 1) % N;
-      track.style.transition = 'none';
-      track.classList.remove('sliding-left');
-      updateWindow();
-      void track.offsetWidth; // Force CSS reflow
-      track.style.transition = '';
-    }, 350);
+      carouselIndex = nextIndex;
+      nodeLeft.remove();
+
+      updateCoverFlowCardNode(nodeCenter, nextWindow.left, 'pos-left', false);
+      updateCoverFlowCardNode(nodeRight, nextWindow.center, 'pos-center', true);
+      updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
+
+      // Reassign active references for next step
+      nodeLeft = nodeCenter;
+      nodeCenter = nodeRight;
+      nodeRight = nodeIncoming;
+    }, 360);
   }, 4000);
 }
 
