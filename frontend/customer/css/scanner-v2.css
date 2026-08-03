@@ -340,7 +340,7 @@
 #state-multiple.v5-multi-grid {
   width: 100%;
   height: 100%;
-  display: grid !important;
+  display: grid;
   grid-template-rows: 1fr 1fr 1fr;
   box-sizing: border-box;
   padding: 0;
@@ -354,9 +354,7 @@
 }
 
 #state-multiple.v5-multi-grid {
-  display: grid !important;
   grid-template-rows: 1fr 2fr;
-  row-gap: 4px;
 }
 
 .v5-band-1,
