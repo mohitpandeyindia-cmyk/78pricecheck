@@ -44,10 +44,10 @@ export async function refreshHotDeals(db: Database): Promise<void> {
       WHERE discount_percent >= 15 AND sale_price > 0
     `);
 
-    // 2. Calculate weighted offer score
+    // 2. Calculate log-weighted offer score
     const scoredProducts = rawProducts.map(p => {
       const savings = p.mrp - p.salePrice;
-      const offerScore = (0.45 * p.discountPercent) + (0.35 * savings) + (0.20 * p.mrp);
+      const offerScore = (0.55 * p.discountPercent) + (0.30 * savings) + (0.15 * Math.log(p.mrp + 1));
       return { id: p.id, offerScore };
     });
 

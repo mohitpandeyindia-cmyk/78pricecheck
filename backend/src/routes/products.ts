@@ -121,13 +121,17 @@ router.get('/products/hot-deals', async (req: Request, res: Response): Promise<v
     const db = await getDb();
     const deals = await db.all(
       `SELECT p.barcode, p.name, p.mrp, p.sale_price as salePrice, p.discount_percent as discountPercent,
-              ((0.45 * p.discount_percent) + (0.35 * (p.mrp - p.sale_price)) + (0.20 * p.mrp)) as offerScore
+              ((0.55 * p.discount_percent) + (0.30 * (p.mrp - p.sale_price)) + (0.15 * LOG(p.mrp + 1))) as offerScore
        FROM hot_deals hd
        JOIN products p ON hd.product_id = p.id
        ORDER BY hd.position ASC`
     );
+    const today = new Date();
+    const seed = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
     res.json({
       success: true,
+      generatedAt: today.toISOString(),
+      seed: seed,
       products: deals
     });
   } catch (error: any) {

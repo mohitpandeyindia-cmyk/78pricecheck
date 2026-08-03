@@ -680,32 +680,22 @@ function getCategoryTheme(name) {
   return 'theme-purple';
 }
 
-function extractPackSize(name) {
-  const match = name.match(/(\d+(?:\.\d+)?\s*(?:g|kg|ml|l|L|grm|gram|litre|liter|pack|pcs|pc)\b)/i);
-  return match ? match[1] : '';
-}
-
-function createCoverFlowCard(p, posClass, isCenter) {
-  const card = document.createElement('div');
+function updateCoverFlowCardNode(card, p, posClass, isCenter) {
   const theme = getCategoryTheme(p.name);
   card.className = `promo-card ${posClass} ${theme} ${isCenter ? 'promo-card--center' : 'promo-card--side'}`;
 
-  const packSize = extractPackSize(p.name);
-  const cleanName = packSize ? p.name.replace(packSize, '').trim() : p.name;
   const mrpVal = Math.round(Number(p.mrp));
   const saleVal = Math.round(Number(p.salePrice));
   const discVal = Math.round(Number(p.discountPercent));
 
   card.innerHTML = `
     <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? '🔥 HOT' : `SAVE ${discVal}%`}</div>
-    <div class="promo-card-name">${escapeHtml(cleanName)}</div>
-    ${packSize ? `<div class="promo-card-pack">${escapeHtml(packSize)}</div>` : ''}
+    <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
-      <span class="promo-card-mrp">₹${mrpVal}</span>
       <span class="promo-card-sale">₹${saleVal}</span>
+      <span class="promo-card-mrp">MRP ₹${mrpVal}</span>
     </div>
   `;
-  return card;
 }
 
 function renderHotDealsCarousel() {
@@ -730,40 +720,40 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  const updateWindow = () => {
-    track.innerHTML = '';
+  // Keep exactly 3 DOM nodes in track
+  track.innerHTML = '';
+  const nodeLeft = document.createElement('div');
+  const nodeCenter = document.createElement('div');
+  const nodeRight = document.createElement('div');
 
+  track.appendChild(nodeLeft);
+  track.appendChild(nodeCenter);
+  track.appendChild(nodeRight);
+
+  const updateWindow = () => {
     // Pick 3 consecutive products from queue
     const p0 = cachedHotDeals[carouselIndex % N];
     const p1 = cachedHotDeals[(carouselIndex + 1) % N];
     const p2 = cachedHotDeals[(carouselIndex + 2) % N];
 
-    const trio = [
-      { product: p0, origPos: 0 },
-      { product: p1, origPos: 1 },
-      { product: p2, origPos: 2 }
-    ];
+    const trio = [p0, p1, p2];
 
-    // Highest score product is placed in Center
-    trio.sort((a, b) => (b.product.offerScore || 0) - (a.product.offerScore || 0));
-    const centerObj = trio[0];
+    // Highest score product in current 3-card window occupies Center Hero
+    trio.sort((a, b) => (b.offerScore || 0) - (a.offerScore || 0));
+    const centerProduct = trio[0];
     const remaining = [trio[1], trio[2]];
 
-    const leftObj = remaining[0];
-    const rightObj = remaining[1];
+    const leftProduct = remaining[0];
+    const rightProduct = remaining[1];
 
-    const leftCard = createCoverFlowCard(leftObj.product, 'pos-left', false);
-    const centerCard = createCoverFlowCard(centerObj.product, 'pos-center', true);
-    const rightCard = createCoverFlowCard(rightObj.product, 'pos-right', false);
-
-    track.appendChild(leftCard);
-    track.appendChild(centerCard);
-    track.appendChild(rightCard);
+    updateCoverFlowCardNode(nodeLeft, leftProduct, 'pos-left', false);
+    updateCoverFlowCardNode(nodeCenter, centerProduct, 'pos-center', true);
+    updateCoverFlowCardNode(nodeRight, rightProduct, 'pos-right', false);
   };
 
   updateWindow();
 
-  // Auto-slide 1 card every 4 seconds
+  // Auto-slide 1 card every 4 seconds with 350ms transition
   carouselTimer = setInterval(() => {
     carouselIndex = (carouselIndex + 1) % N;
     updateWindow();
