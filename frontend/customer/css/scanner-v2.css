@@ -288,7 +288,7 @@
   overflow: hidden;
 }
 
-/* Rule 2 & 7: Explicit State Layout Ownership (Flexbox for Informational/Error States) */
+/* Rule 2 & 9: Minimal Explicit Display Declarations & Layout Preservation */
 #state-idle,
 #state-loading,
 #state-not-found,
@@ -297,7 +297,6 @@
 #state-network-error,
 #state-server-error {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
