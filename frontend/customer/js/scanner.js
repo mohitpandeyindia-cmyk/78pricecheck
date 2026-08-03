@@ -680,24 +680,16 @@ function getCategoryTheme(name) {
   return 'theme-purple';
 }
 
-function updateCoverFlowCardNode(wrapperNode, p, stateClass, isHero) {
-  wrapperNode.className = 'promo-card-wrapper';
-
-  let surfaceNode = wrapperNode.querySelector('.promo-card-surface');
-  if (!surfaceNode) {
-    surfaceNode = document.createElement('div');
-    wrapperNode.appendChild(surfaceNode);
-  }
-
+function updateCoverFlowCardNode(card, p, posClass, isCenter) {
   const theme = getCategoryTheme(p.name);
-  surfaceNode.className = `promo-card-surface ${stateClass} ${theme}`;
+  card.className = `promo-card ${posClass} ${theme} ${isCenter ? 'promo-card--center' : 'promo-card--side'}`;
 
   const mrpVal = Math.round(Number(p.mrp));
   const saleVal = Math.round(Number(p.salePrice));
   const discVal = Math.round(Number(p.discountPercent));
 
-  surfaceNode.innerHTML = `
-    <div class="promo-card-badge ${isHero ? 'badge-hot' : ''}">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
+  card.innerHTML = `
+    <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
       <span class="promo-card-sale">₹${saleVal}</span>
@@ -706,7 +698,7 @@ function updateCoverFlowCardNode(wrapperNode, p, stateClass, isHero) {
   `;
 
   // Interactive preview: Clicking populates Section 3 via renderV2ProductCard
-  surfaceNode.onclick = () => {
+  card.onclick = () => {
     renderV2ProductCard(p, p.barcode);
     applyCardHighlight();
   };
@@ -734,7 +726,7 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Render initial 3 card wrappers at rest (V2.3 motion + V2.6 visuals)
+  // Render initial 3 cards at rest
   track.innerHTML = '';
 
   const getTrioForIndex = (idx) => {
@@ -748,61 +740,52 @@ function renderHotDealsCarousel() {
 
   let initialWindow = getTrioForIndex(carouselIndex);
 
-  let wrapperLeft = document.createElement('div');
-  let wrapperCenter = document.createElement('div');
-  let wrapperRight = document.createElement('div');
+  let nodeLeft = document.createElement('div');
+  let nodeCenter = document.createElement('div');
+  let nodeRight = document.createElement('div');
 
-  updateCoverFlowCardNode(wrapperLeft, initialWindow.left, 'promo-card--side', false);
-  updateCoverFlowCardNode(wrapperCenter, initialWindow.center, 'promo-card--hero', true);
-  updateCoverFlowCardNode(wrapperRight, initialWindow.right, 'promo-card--side', false);
+  updateCoverFlowCardNode(nodeLeft, initialWindow.left, 'pos-left', false);
+  updateCoverFlowCardNode(nodeCenter, initialWindow.center, 'pos-center', true);
+  updateCoverFlowCardNode(nodeRight, initialWindow.right, 'pos-right', false);
 
-  track.appendChild(wrapperLeft);
-  track.appendChild(wrapperCenter);
-  track.appendChild(wrapperRight);
+  track.appendChild(nodeLeft);
+  track.appendChild(nodeCenter);
+  track.appendChild(nodeRight);
 
-  // Auto-slide 1 card every 4 seconds with V2.3 380ms simultaneous Cover Flow motion
+  // Auto-slide 1 card every 4 seconds with 360ms Cover Flow motion
   carouselTimer = setInterval(() => {
     const nextIndex = (carouselIndex + 1) % N;
     const nextWindow = getTrioForIndex(nextIndex);
 
-    // Create temporary incoming card wrapper D offscreen right
-    const wrapperIncoming = document.createElement('div');
-    updateCoverFlowCardNode(wrapperIncoming, nextWindow.right, 'promo-card--side', false);
-
-    const surfaceIncoming = wrapperIncoming.querySelector('.promo-card-surface');
-    if (surfaceIncoming) {
-      surfaceIncoming.style.transform = 'translateX(110%) scale(0.93)';
-      surfaceIncoming.style.opacity = '0.82';
-    }
-
-    track.appendChild(wrapperIncoming);
-
-    const surfaceLeft = wrapperLeft.querySelector('.promo-card-surface');
-    const surfaceCenter = wrapperCenter.querySelector('.promo-card-surface');
-    const surfaceRight = wrapperRight.querySelector('.promo-card-surface');
+    // Create temporary incoming card D offscreen right
+    const nodeIncoming = document.createElement('div');
+    nodeIncoming.style.transform = 'translateX(110%) scale(0.93)';
+    nodeIncoming.style.opacity = '0.82';
+    updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
+    track.appendChild(nodeIncoming);
 
     // Trigger simultaneous CSS transition on next animation frame
     requestAnimationFrame(() => {
-      if (surfaceLeft) surfaceLeft.classList.add('cover-exit-left');
-      if (surfaceCenter) surfaceCenter.classList.add('cover-hero-to-left');
-      if (surfaceRight) surfaceRight.classList.add('cover-right-to-hero');
-      if (surfaceIncoming) surfaceIncoming.classList.add('cover-enter-right');
+      nodeLeft.classList.add('cover-exit-left');
+      nodeCenter.classList.add('cover-hero-to-left');
+      nodeRight.classList.add('cover-right-to-hero');
+      nodeIncoming.classList.add('cover-enter-right');
     });
 
-    // Clean up nodes & update data after 380ms transition finishes
+    // Clean up nodes after 360ms transition finishes
     setTimeout(() => {
       carouselIndex = nextIndex;
-      wrapperLeft.remove();
+      nodeLeft.remove();
 
-      updateCoverFlowCardNode(wrapperCenter, nextWindow.left, 'promo-card--side', false);
-      updateCoverFlowCardNode(wrapperRight, nextWindow.center, 'promo-card--hero', true);
-      updateCoverFlowCardNode(wrapperIncoming, nextWindow.right, 'promo-card--side', false);
+      updateCoverFlowCardNode(nodeCenter, nextWindow.left, 'pos-left', false);
+      updateCoverFlowCardNode(nodeRight, nextWindow.center, 'pos-center', true);
+      updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
 
       // Reassign active references for next step
-      wrapperLeft = wrapperCenter;
-      wrapperCenter = wrapperRight;
-      wrapperRight = wrapperIncoming;
-    }, 380);
+      nodeLeft = nodeCenter;
+      nodeCenter = nodeRight;
+      nodeRight = nodeIncoming;
+    }, 360);
   }, 4000);
 }
 
