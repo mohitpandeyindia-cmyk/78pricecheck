@@ -834,7 +834,7 @@
 }
 
 .scanner-v2-carousel-track {
-  width: calc(166.666667% + 4px);
+  width: max-content;
   height: 100%;
   display: flex;
   align-items: center;
@@ -842,13 +842,13 @@
   gap: 6px;
   box-sizing: border-box;
   position: relative;
-  transform: translateX(calc(-20% - 1.2px));
   transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
 .promo-card {
-  flex: 0 0 calc(20% - 4.8px);
+  width: 104px;
+  flex: 0 0 104px;
   height: 94%;
   border-radius: 12px;
   padding: 6px 8px;

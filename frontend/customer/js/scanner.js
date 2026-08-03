@@ -735,6 +735,43 @@ function renderHotDealsCarousel() {
     track.appendChild(card);
   }
 
+  // Helper to compute exact measured geometry in pixels
+  const getMeasuredGeometry = () => {
+    const box = document.querySelector('.scanner-v2-carousel-box');
+    if (!box || nodes.length < 5) return { restTranslate: 0, slideTranslate: 0 };
+
+    const viewportWidth = box.getBoundingClientRect().width;
+    const trackWidth = track.getBoundingClientRect().width;
+    const cardWidth = nodes[1].getBoundingClientRect().width || 104;
+    const computedGap = parseFloat(window.getComputedStyle(track).gap) || 6;
+    const pitch = cardWidth + computedGap;
+
+    const visibleGroupWidth = 3 * cardWidth + 2 * computedGap;
+    const sideMargin = Math.max(0, (viewportWidth - visibleGroupWidth) / 2);
+
+    const restTranslate = -pitch + sideMargin;
+    const slideTranslate = restTranslate - pitch;
+
+    console.table({
+      viewportWidth: Math.round(viewportWidth),
+      trackWidth: Math.round(trackWidth),
+      cardWidth: Math.round(cardWidth),
+      gap: Math.round(computedGap),
+      pitch: Math.round(pitch),
+      restTranslate: Math.round(restTranslate),
+      slideTranslate: Math.round(slideTranslate)
+    });
+
+    console.table({
+      left: { left: Math.round(nodes[1].getBoundingClientRect().left), width: Math.round(nodes[1].getBoundingClientRect().width) },
+      hero: { left: Math.round(nodes[2].getBoundingClientRect().left), width: Math.round(nodes[2].getBoundingClientRect().width) },
+      right: { left: Math.round(nodes[3].getBoundingClientRect().left), width: Math.round(nodes[3].getBoundingClientRect().width) },
+      viewport: { left: Math.round(box.getBoundingClientRect().left), width: Math.round(box.getBoundingClientRect().width) }
+    });
+
+    return { restTranslate, slideTranslate };
+  };
+
   // Helper to populate 5 nodes based on carouselIndex
   const populateNodesAtRest = () => {
     for (let i = 0; i < 5; i++) {
@@ -756,11 +793,17 @@ function renderHotDealsCarousel() {
 
   populateNodesAtRest();
 
-  // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
+  // Apply baseline position transform in pixels
+  let geom = getMeasuredGeometry() || { restTranslate: 0, slideTranslate: 0 };
+  track.style.transform = `translateX(${geom.restTranslate}px)`;
+
+  // Auto-slide 1 card every 4 seconds via single track transform translateX(slideTranslate)
   carouselTimer = setInterval(() => {
-    // Phase 1: Animate track transform to -40% - 2.4px over 380ms
+    geom = getMeasuredGeometry() || geom;
+
+    // Phase 1: Animate track transform over 380ms
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = 'translateX(calc(-40% - 2.4px))';
+    track.style.transform = `translateX(${geom.slideTranslate}px)`;
 
     // Update card scale/shadow classes continuously during slide
     const children = Array.from(track.children);
@@ -789,7 +832,7 @@ function renderHotDealsCarousel() {
         track.appendChild(firstNode);
       }
 
-      // Re-populate node data at baseline position (-20% - 1.2px)
+      // Re-populate node data at baseline position
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -807,8 +850,8 @@ function renderHotDealsCarousel() {
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
 
-      // Reset track transform to baseline (-20% - 1.2px)
-      track.style.transform = 'translateX(calc(-20% - 1.2px))';
+      // Reset track transform to baseline pixels
+      track.style.transform = `translateX(${geom.restTranslate}px)`;
       void track.offsetWidth; // Force CSS reflow
 
       // Re-enable CSS transition for next cycle
