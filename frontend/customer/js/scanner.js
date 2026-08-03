@@ -408,13 +408,13 @@ function initScannerBackground() {
   }
 }
 
-// State display helper
+// State display helper (Rule 1: Visibility Manager Only)
 function showState(activeStateKey) {
   const states = getStates();
   Object.keys(states).forEach(key => {
     if (states[key]) {
       if (key === activeStateKey) {
-        states[key].style.display = 'flex';
+        states[key].style.removeProperty('display');
       } else {
         states[key].style.display = 'none';
       }

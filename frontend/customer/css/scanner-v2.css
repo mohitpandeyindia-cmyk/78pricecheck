@@ -288,8 +288,16 @@
   overflow: hidden;
 }
 
-/* Idle State - Minimal Apple Control Panel */
-#state-idle {
+/* Rule 2 & 7: Explicit State Layout Ownership (Flexbox for Informational/Error States) */
+#state-idle,
+#state-loading,
+#state-not-found,
+#state-camera-denied,
+#state-camera-unavailable,
+#state-network-error,
+#state-server-error {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
 }
@@ -325,19 +333,12 @@
   margin: 0;
 }
 
-/* Loading State */
-#state-loading {
-  justify-content: center;
-  align-items: center;
-}
-
 /* ==========================================================================
    SECTION 3 — V5.2 SINGLE PRIMARY SURFACE & BAND 2 OPTICAL CENTERING
    ========================================================================== */
 
-/* Layout Containers Only: Strip background, border, radius, and shadows */
-#state-single.v5-result-grid,
-#state-multiple.v5-multi-grid {
+/* Rule 2 & 7: Grid Exists Only Inside Result States (#state-single & #state-multiple) */
+#state-single.v5-result-grid {
   width: 100%;
   height: 100%;
   display: grid;
@@ -354,7 +355,19 @@
 }
 
 #state-multiple.v5-multi-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
   grid-template-rows: 1fr 2fr;
+  row-gap: 4px;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
 }
 
 .v5-band-1,
