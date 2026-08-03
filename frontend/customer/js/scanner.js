@@ -734,147 +734,74 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM wrapper nodes in track
+  // Render initial 3 card wrappers at rest (V2.3 motion + V2.6 visuals)
   track.innerHTML = '';
-  const nodes = [];
-  for (let i = 0; i < 5; i++) {
-    const wrapper = document.createElement('div');
-    nodes.push(wrapper);
-    track.appendChild(wrapper);
-  }
 
-  // Helper to compute center-matching geometry using unscaled wrapper widths
-  const getMeasuredGeometry = () => {
-    const box = document.querySelector('.scanner-v2-carousel-box');
-    if (!box || nodes.length < 5) return { restTranslate: 0, slideTranslate: 0 };
-
-    const boxRect = box.getBoundingClientRect();
-    const viewportCenter = boxRect.width / 2;
-
-    const heroWrapper = nodes[2];
-    const nextHeroWrapper = nodes[3];
-    const heroSurface = heroWrapper.querySelector('.promo-card-surface');
-
-    // Unscaled wrapper dimensions (stable layout invariant)
-    const heroWrapperWidth = heroWrapper.offsetWidth;
-    const heroSurfaceWidth = heroSurface ? heroSurface.getBoundingClientRect().width : heroWrapperWidth;
-
-    const heroWrapperCenter = heroWrapper.offsetLeft + (heroWrapperWidth / 2);
-    const heroSurfaceCenter = heroSurface ? (heroSurface.getBoundingClientRect().left - boxRect.left + heroSurfaceWidth / 2) : heroWrapperCenter;
-
-    const nextHeroWrapperCenter = nextHeroWrapper.offsetLeft + (nextHeroWrapper.offsetWidth / 2);
-
-    // Exact center alignment formulas: match Hero wrapper center to Viewport center!
-    const restTranslate = viewportCenter - heroWrapperCenter;
-    const slideTranslate = viewportCenter - nextHeroWrapperCenter;
-
-    console.table({
-      heroWrapperWidth: Math.round(heroWrapperWidth),
-      heroSurfaceWidth: Math.round(heroSurfaceWidth),
-      heroWrapperCenter: Math.round(heroWrapperCenter),
-      heroSurfaceCenter: Math.round(heroSurfaceCenter)
-    });
-
-    console.table({
-      viewportCenter: Math.round(viewportCenter),
-      heroWrapperCenter: Math.round(heroWrapperCenter),
-      nextHeroWrapperCenter: Math.round(nextHeroWrapperCenter),
-      restTranslate: Math.round(restTranslate),
-      slideTranslate: Math.round(slideTranslate)
-    });
-
-    return { restTranslate, slideTranslate };
+  const getTrioForIndex = (idx) => {
+    const p0 = cachedHotDeals[idx % N];
+    const p1 = cachedHotDeals[(idx + 1) % N];
+    const p2 = cachedHotDeals[(idx + 2) % N];
+    const trio = [p0, p1, p2];
+    trio.sort((a, b) => (b.offerScore || 0) - (a.offerScore || 0));
+    return { left: trio[1], center: trio[0], right: trio[2] };
   };
 
-  // Helper to populate 5 nodes based on carouselIndex
-  const populateNodesAtRest = () => {
-    for (let i = 0; i < 5; i++) {
-      const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
-      const p = cachedHotDeals[prodIdx];
-      let stateClass = 'promo-card--side';
-      let isHero = false;
+  let initialWindow = getTrioForIndex(carouselIndex);
 
-      if (i === 0 || i === 4) {
-        stateClass = 'promo-card--hidden';
-      } else if (i === 2) {
-        stateClass = 'promo-card--hero';
-        isHero = true;
-      }
+  let wrapperLeft = document.createElement('div');
+  let wrapperCenter = document.createElement('div');
+  let wrapperRight = document.createElement('div');
 
-      updateCoverFlowCardNode(nodes[i], p, stateClass, isHero);
-    }
-  };
+  updateCoverFlowCardNode(wrapperLeft, initialWindow.left, 'promo-card--side', false);
+  updateCoverFlowCardNode(wrapperCenter, initialWindow.center, 'promo-card--hero', true);
+  updateCoverFlowCardNode(wrapperRight, initialWindow.right, 'promo-card--side', false);
 
-  populateNodesAtRest();
+  track.appendChild(wrapperLeft);
+  track.appendChild(wrapperCenter);
+  track.appendChild(wrapperRight);
 
-  // Apply baseline position transform in pixels
-  let geom = getMeasuredGeometry() || { restTranslate: 0, slideTranslate: 0 };
-  track.style.transform = `translateX(${geom.restTranslate}px)`;
-
-  // Auto-slide 1 card every 4 seconds via single track transform translateX(slideTranslate)
+  // Auto-slide 1 card every 4 seconds with V2.3 380ms simultaneous Cover Flow motion
   carouselTimer = setInterval(() => {
-    geom = getMeasuredGeometry() || geom;
+    const nextIndex = (carouselIndex + 1) % N;
+    const nextWindow = getTrioForIndex(nextIndex);
 
-    // Phase 1: Animate track transform over 380ms
-    track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = `translateX(${geom.slideTranslate}px)`;
+    // Create temporary incoming card wrapper D offscreen right
+    const wrapperIncoming = document.createElement('div');
+    updateCoverFlowCardNode(wrapperIncoming, nextWindow.right, 'promo-card--side', false);
 
-    // Update card scale/shadow classes continuously during slide
-    const children = Array.from(track.children);
-    if (children.length === 5) {
-      const p1 = cachedHotDeals[(carouselIndex + 0 + N * 100) % N];
-      const p2 = cachedHotDeals[(carouselIndex + 1 + N * 100) % N];
-      const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
-      const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
-
-      const surface1 = children[1].querySelector('.promo-card-surface');
-      const surface2 = children[2].querySelector('.promo-card-surface');
-      const surface3 = children[3].querySelector('.promo-card-surface');
-      const surface4 = children[4].querySelector('.promo-card-surface');
-
-      if (surface1) surface1.className = `promo-card-surface promo-card--hidden ${getCategoryTheme(p1.name)}`;
-      if (surface2) surface2.className = `promo-card-surface promo-card--side ${getCategoryTheme(p2.name)}`;
-      if (surface3) surface3.className = `promo-card-surface promo-card--hero ${getCategoryTheme(p3.name)}`;
-      if (surface4) surface4.className = `promo-card-surface promo-card--side ${getCategoryTheme(p4.name)}`;
+    const surfaceIncoming = wrapperIncoming.querySelector('.promo-card-surface');
+    if (surfaceIncoming) {
+      surfaceIncoming.style.transform = 'translateX(110%) scale(0.93)';
+      surfaceIncoming.style.opacity = '0.82';
     }
 
-    // Phase 2: After 380ms transition completes, recycle offscreen node & reset track instantly
+    track.appendChild(wrapperIncoming);
+
+    const surfaceLeft = wrapperLeft.querySelector('.promo-card-surface');
+    const surfaceCenter = wrapperCenter.querySelector('.promo-card-surface');
+    const surfaceRight = wrapperRight.querySelector('.promo-card-surface');
+
+    // Trigger simultaneous CSS transition on next animation frame
+    requestAnimationFrame(() => {
+      if (surfaceLeft) surfaceLeft.classList.add('cover-exit-left');
+      if (surfaceCenter) surfaceCenter.classList.add('cover-hero-to-left');
+      if (surfaceRight) surfaceRight.classList.add('cover-right-to-hero');
+      if (surfaceIncoming) surfaceIncoming.classList.add('cover-enter-right');
+    });
+
+    // Clean up nodes & update data after 380ms transition finishes
     setTimeout(() => {
-      carouselIndex = (carouselIndex + 1) % N;
+      carouselIndex = nextIndex;
+      wrapperLeft.remove();
 
-      // Disable transition for instant reset
-      track.style.transition = 'none';
+      updateCoverFlowCardNode(wrapperCenter, nextWindow.left, 'promo-card--side', false);
+      updateCoverFlowCardNode(wrapperRight, nextWindow.center, 'promo-card--hero', true);
+      updateCoverFlowCardNode(wrapperIncoming, nextWindow.right, 'promo-card--side', false);
 
-      // Move first card node (hidden-left) to end of track
-      const firstNode = track.firstElementChild;
-      if (firstNode) {
-        track.appendChild(firstNode);
-      }
-
-      // Re-populate node data at baseline position
-      const updatedNodes = Array.from(track.children);
-      for (let i = 0; i < 5; i++) {
-        const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
-        const p = cachedHotDeals[prodIdx];
-        let stateClass = 'promo-card--side';
-        let isHero = false;
-
-        if (i === 0 || i === 4) {
-          stateClass = 'promo-card--hidden';
-        } else if (i === 2) {
-          stateClass = 'promo-card--hero';
-          isHero = true;
-        }
-
-        updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
-      }
-
-      // Reset track transform to baseline pixels
-      track.style.transform = `translateX(${geom.restTranslate}px)`;
-      void track.offsetWidth; // Force CSS reflow
-
-      // Re-enable CSS transition for next cycle
-      track.style.transition = '';
+      // Reassign active references for next step
+      wrapperLeft = wrapperCenter;
+      wrapperCenter = wrapperRight;
+      wrapperRight = wrapperIncoming;
     }, 380);
   }, 4000);
 }
