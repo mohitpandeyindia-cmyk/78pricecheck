@@ -680,15 +680,23 @@ function getCategoryTheme(name) {
   return 'theme-purple';
 }
 
-function updateCoverFlowCardNode(card, p, stateClass, isHero) {
+function updateCoverFlowCardNode(wrapperNode, p, stateClass, isHero) {
+  wrapperNode.className = 'promo-card-wrapper';
+
+  let surfaceNode = wrapperNode.querySelector('.promo-card-surface');
+  if (!surfaceNode) {
+    surfaceNode = document.createElement('div');
+    wrapperNode.appendChild(surfaceNode);
+  }
+
   const theme = getCategoryTheme(p.name);
-  card.className = `promo-card ${stateClass} ${theme}`;
+  surfaceNode.className = `promo-card-surface ${stateClass} ${theme}`;
 
   const mrpVal = Math.round(Number(p.mrp));
   const saleVal = Math.round(Number(p.salePrice));
   const discVal = Math.round(Number(p.discountPercent));
 
-  card.innerHTML = `
+  surfaceNode.innerHTML = `
     <div class="promo-card-badge ${isHero ? 'badge-hot' : ''}">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
@@ -698,7 +706,7 @@ function updateCoverFlowCardNode(card, p, stateClass, isHero) {
   `;
 
   // Interactive preview: Clicking populates Section 3 via renderV2ProductCard
-  card.onclick = () => {
+  surfaceNode.onclick = () => {
     renderV2ProductCard(p, p.barcode);
     applyCardHighlight();
   };
@@ -726,47 +734,53 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM nodes in track
+  // Initialize exactly 5 DOM wrapper nodes in track
   track.innerHTML = '';
   const nodes = [];
   for (let i = 0; i < 5; i++) {
-    const card = document.createElement('div');
-    nodes.push(card);
-    track.appendChild(card);
+    const wrapper = document.createElement('div');
+    nodes.push(wrapper);
+    track.appendChild(wrapper);
   }
 
-  // Helper to compute exact measured geometry in pixels
+  // Helper to compute center-matching geometry using unscaled wrapper widths
   const getMeasuredGeometry = () => {
     const box = document.querySelector('.scanner-v2-carousel-box');
     if (!box || nodes.length < 5) return { restTranslate: 0, slideTranslate: 0 };
 
-    const viewportWidth = box.getBoundingClientRect().width;
-    const trackWidth = track.getBoundingClientRect().width;
-    const cardWidth = nodes[1].getBoundingClientRect().width || 104;
-    const computedGap = parseFloat(window.getComputedStyle(track).gap) || 6;
-    const pitch = cardWidth + computedGap;
+    const boxRect = box.getBoundingClientRect();
+    const viewportCenter = boxRect.width / 2;
 
-    const visibleGroupWidth = 3 * cardWidth + 2 * computedGap;
-    const sideMargin = Math.max(0, (viewportWidth - visibleGroupWidth) / 2);
+    const heroWrapper = nodes[2];
+    const nextHeroWrapper = nodes[3];
+    const heroSurface = heroWrapper.querySelector('.promo-card-surface');
 
-    const restTranslate = -pitch + sideMargin;
-    const slideTranslate = restTranslate - pitch;
+    // Unscaled wrapper dimensions (stable layout invariant)
+    const heroWrapperWidth = heroWrapper.offsetWidth;
+    const heroSurfaceWidth = heroSurface ? heroSurface.getBoundingClientRect().width : heroWrapperWidth;
+
+    const heroWrapperCenter = heroWrapper.offsetLeft + (heroWrapperWidth / 2);
+    const heroSurfaceCenter = heroSurface ? (heroSurface.getBoundingClientRect().left - boxRect.left + heroSurfaceWidth / 2) : heroWrapperCenter;
+
+    const nextHeroWrapperCenter = nextHeroWrapper.offsetLeft + (nextHeroWrapper.offsetWidth / 2);
+
+    // Exact center alignment formulas: match Hero wrapper center to Viewport center!
+    const restTranslate = viewportCenter - heroWrapperCenter;
+    const slideTranslate = viewportCenter - nextHeroWrapperCenter;
 
     console.table({
-      viewportWidth: Math.round(viewportWidth),
-      trackWidth: Math.round(trackWidth),
-      cardWidth: Math.round(cardWidth),
-      gap: Math.round(computedGap),
-      pitch: Math.round(pitch),
-      restTranslate: Math.round(restTranslate),
-      slideTranslate: Math.round(slideTranslate)
+      heroWrapperWidth: Math.round(heroWrapperWidth),
+      heroSurfaceWidth: Math.round(heroSurfaceWidth),
+      heroWrapperCenter: Math.round(heroWrapperCenter),
+      heroSurfaceCenter: Math.round(heroSurfaceCenter)
     });
 
     console.table({
-      left: { left: Math.round(nodes[1].getBoundingClientRect().left), width: Math.round(nodes[1].getBoundingClientRect().width) },
-      hero: { left: Math.round(nodes[2].getBoundingClientRect().left), width: Math.round(nodes[2].getBoundingClientRect().width) },
-      right: { left: Math.round(nodes[3].getBoundingClientRect().left), width: Math.round(nodes[3].getBoundingClientRect().width) },
-      viewport: { left: Math.round(box.getBoundingClientRect().left), width: Math.round(box.getBoundingClientRect().width) }
+      viewportCenter: Math.round(viewportCenter),
+      heroWrapperCenter: Math.round(heroWrapperCenter),
+      nextHeroWrapperCenter: Math.round(nextHeroWrapperCenter),
+      restTranslate: Math.round(restTranslate),
+      slideTranslate: Math.round(slideTranslate)
     });
 
     return { restTranslate, slideTranslate };
@@ -813,10 +827,15 @@ function renderHotDealsCarousel() {
       const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
       const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
 
-      children[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
-      children[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
-      children[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
-      children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
+      const surface1 = children[1].querySelector('.promo-card-surface');
+      const surface2 = children[2].querySelector('.promo-card-surface');
+      const surface3 = children[3].querySelector('.promo-card-surface');
+      const surface4 = children[4].querySelector('.promo-card-surface');
+
+      if (surface1) surface1.className = `promo-card-surface promo-card--hidden ${getCategoryTheme(p1.name)}`;
+      if (surface2) surface2.className = `promo-card-surface promo-card--side ${getCategoryTheme(p2.name)}`;
+      if (surface3) surface3.className = `promo-card-surface promo-card--hero ${getCategoryTheme(p3.name)}`;
+      if (surface4) surface4.className = `promo-card-surface promo-card--side ${getCategoryTheme(p4.name)}`;
     }
 
     // Phase 2: After 380ms transition completes, recycle offscreen node & reset track instantly

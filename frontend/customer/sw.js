@@ -1,4 +1,4 @@
-const CACHE_NAME = '78pricecheck-202608031948';
+const CACHE_NAME = '78pricecheck-202608032007';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
