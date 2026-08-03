@@ -689,13 +689,19 @@ function updateCoverFlowCardNode(card, p, posClass, isCenter) {
   const discVal = Math.round(Number(p.discountPercent));
 
   card.innerHTML = `
-    <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? '🔥 HOT' : `SAVE ${discVal}%`}</div>
+    <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
       <span class="promo-card-sale">₹${saleVal}</span>
       <span class="promo-card-mrp">MRP ₹${mrpVal}</span>
     </div>
   `;
+
+  // Interactive preview: Clicking populates Section 3 via renderV2ProductCard
+  card.onclick = () => {
+    renderV2ProductCard(p, p.barcode);
+    applyCardHighlight();
+  };
 }
 
 function renderHotDealsCarousel() {
@@ -753,10 +759,17 @@ function renderHotDealsCarousel() {
 
   updateWindow();
 
-  // Auto-slide 1 card every 4 seconds with 350ms transition
+  // Auto-slide 1 card every 4 seconds with physical FLIP leftward motion (350ms)
   carouselTimer = setInterval(() => {
-    carouselIndex = (carouselIndex + 1) % N;
-    updateWindow();
+    track.classList.add('sliding-left');
+    setTimeout(() => {
+      carouselIndex = (carouselIndex + 1) % N;
+      track.style.transition = 'none';
+      track.classList.remove('sliding-left');
+      updateWindow();
+      void track.offsetWidth; // Force CSS reflow
+      track.style.transition = '';
+    }, 350);
   }, 4000);
 }
 
