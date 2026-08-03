@@ -120,7 +120,8 @@ router.get('/products/hot-deals', async (req: Request, res: Response): Promise<v
   try {
     const db = await getDb();
     const deals = await db.all(
-      `SELECT p.barcode, p.name, p.mrp, p.sale_price as salePrice, p.discount_percent as discountPercent
+      `SELECT p.barcode, p.name, p.mrp, p.sale_price as salePrice, p.discount_percent as discountPercent,
+              ((0.45 * p.discount_percent) + (0.35 * (p.mrp - p.sale_price)) + (0.20 * p.mrp)) as offerScore
        FROM hot_deals hd
        JOIN products p ON hd.product_id = p.id
        ORDER BY hd.position ASC`

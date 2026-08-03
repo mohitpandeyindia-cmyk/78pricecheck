@@ -663,39 +663,111 @@ function renderRecentScans() {
   // Chips rendering is deprecated, history is now displayed inside the slide-up bottom sheet
 }
 
+let carouselIndex = 0;
+let carouselTimer = null;
+
+function getCategoryTheme(name) {
+  const lower = name.toLowerCase();
+  if (lower.includes('milk') || lower.includes('bread') || lower.includes('apple') || lower.includes('rice') || lower.includes('oil') || lower.includes('dal') || lower.includes('sugar') || lower.includes('flour') || lower.includes('atta') || lower.includes('salt') || lower.includes('biscuit') || lower.includes('noodle')) {
+    return 'theme-green';
+  }
+  if (lower.includes('cleaner') || lower.includes('detergent') || lower.includes('dish') || lower.includes('tide') || lower.includes('surf') || lower.includes('wash') || lower.includes('tissue') || lower.includes('spray')) {
+    return 'theme-orange';
+  }
+  if (lower.includes('shampoo') || lower.includes('toothpaste') || lower.includes('lotion') || lower.includes('cream') || lower.includes('hair') || lower.includes('face') || lower.includes('brush') || lower.includes('deodorant')) {
+    return 'theme-blue';
+  }
+  return 'theme-purple';
+}
+
+function extractPackSize(name) {
+  const match = name.match(/(\d+(?:\.\d+)?\s*(?:g|kg|ml|l|L|grm|gram|litre|liter|pack|pcs|pc)\b)/i);
+  return match ? match[1] : '';
+}
+
+function createCoverFlowCard(p, posClass, isCenter) {
+  const card = document.createElement('div');
+  const theme = getCategoryTheme(p.name);
+  card.className = `promo-card ${posClass} ${theme} ${isCenter ? 'promo-card--center' : 'promo-card--side'}`;
+
+  const packSize = extractPackSize(p.name);
+  const cleanName = packSize ? p.name.replace(packSize, '').trim() : p.name;
+  const mrpVal = Math.round(Number(p.mrp));
+  const saleVal = Math.round(Number(p.salePrice));
+  const discVal = Math.round(Number(p.discountPercent));
+
+  card.innerHTML = `
+    <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? '🔥 HOT' : `SAVE ${discVal}%`}</div>
+    <div class="promo-card-name">${escapeHtml(cleanName)}</div>
+    ${packSize ? `<div class="promo-card-pack">${escapeHtml(packSize)}</div>` : ''}
+    <div class="promo-card-prices">
+      <span class="promo-card-mrp">₹${mrpVal}</span>
+      <span class="promo-card-sale">₹${saleVal}</span>
+    </div>
+  `;
+  return card;
+}
+
 function renderHotDealsCarousel() {
   const track = document.getElementById('promo-carousel-track');
   if (!track) return;
 
-  track.innerHTML = '';
-
-  if (cachedHotDeals.length === 0) {
-    const fallbackSlide = document.createElement('div');
-    fallbackSlide.className = 'promo-slide active';
-    fallbackSlide.innerHTML = `
-      <div class="promo-details promo-details--empty">
-        <span class="promo-name">No offers available today.</span>
-      </div>
-    `;
-    track.appendChild(fallbackSlide);
-    return;
+  if (carouselTimer) {
+    clearInterval(carouselTimer);
+    carouselTimer = null;
   }
 
-  cachedHotDeals.forEach((p, index) => {
-    const slide = document.createElement('div');
-    slide.className = index === 0 ? 'promo-slide active' : 'promo-slide';
-    slide.innerHTML = `
-      <div class="promo-details">
-        <span class="promo-name">${escapeHtml(p.name)}</span>
-        <div class="promo-price-row">
-          <span class="promo-mrp">MRP <span class="mrp-strike">₹${p.mrp}</span></span>
-          <span class="promo-sale">₹${p.salePrice}</span>
-          <span class="promo-save">SAVE ${p.discountPercent}%</span>
+  if (!cachedHotDeals || cachedHotDeals.length === 0) {
+    track.innerHTML = `
+      <div class="promo-slide active">
+        <div class="promo-details promo-details--empty">
+          <span class="promo-name">No offers available today.</span>
         </div>
       </div>
     `;
-    track.appendChild(slide);
-  });
+    return;
+  }
+
+  const N = cachedHotDeals.length;
+
+  const updateWindow = () => {
+    track.innerHTML = '';
+
+    // Pick 3 consecutive products from queue
+    const p0 = cachedHotDeals[carouselIndex % N];
+    const p1 = cachedHotDeals[(carouselIndex + 1) % N];
+    const p2 = cachedHotDeals[(carouselIndex + 2) % N];
+
+    const trio = [
+      { product: p0, origPos: 0 },
+      { product: p1, origPos: 1 },
+      { product: p2, origPos: 2 }
+    ];
+
+    // Highest score product is placed in Center
+    trio.sort((a, b) => (b.product.offerScore || 0) - (a.product.offerScore || 0));
+    const centerObj = trio[0];
+    const remaining = [trio[1], trio[2]];
+
+    const leftObj = remaining[0];
+    const rightObj = remaining[1];
+
+    const leftCard = createCoverFlowCard(leftObj.product, 'pos-left', false);
+    const centerCard = createCoverFlowCard(centerObj.product, 'pos-center', true);
+    const rightCard = createCoverFlowCard(rightObj.product, 'pos-right', false);
+
+    track.appendChild(leftCard);
+    track.appendChild(centerCard);
+    track.appendChild(rightCard);
+  };
+
+  updateWindow();
+
+  // Auto-slide 1 card every 4 seconds
+  carouselTimer = setInterval(() => {
+    carouselIndex = (carouselIndex + 1) % N;
+    updateWindow();
+  }, 4000);
 }
 
 async function fetchHotDeals() {

@@ -836,64 +836,145 @@
   width: 100%;
 }
 
-.promo-slide {
-  flex: 0 0 100%;
+/* --- Section 4: Hot Deals 3-Card Apple Cover Flow Carousel V2 --- */
+.scanner-v2-carousel-box {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.scanner-v2-carousel-track {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
+  justify-content: space-around;
+  gap: 6px;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
-.promo-details {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.promo-info {
+.promo-card {
+  flex: 1;
+  height: 94%;
+  border-radius: 12px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+  transition: transform 350ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 350ms ease, opacity 350ms ease;
+  position: relative;
   overflow: hidden;
 }
 
-.promo-name {
-  font-size: 0.8rem;
+.promo-card--center {
+  transform: scale(1.06);
+  z-index: 3;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+}
+
+.promo-card--side {
+  transform: scale(0.93);
+  opacity: 0.82;
+  z-index: 1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+}
+
+/* Category Color Language Themes */
+.promo-card.theme-green {
+  background: #f0fdf4;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+}
+.promo-card.theme-green .promo-card-badge {
+  background: #15803d;
+  color: #ffffff;
+}
+
+.promo-card.theme-orange {
+  background: #fff7ed;
+  border: 1px solid rgba(234, 88, 12, 0.2);
+}
+.promo-card.theme-orange .promo-card-badge {
+  background: #c2410c;
+  color: #ffffff;
+}
+
+.promo-card.theme-blue {
+  background: #eff6ff;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+}
+.promo-card.theme-blue .promo-card-badge {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.promo-card.theme-purple {
+  background: #faf5ff;
+  border: 1px solid rgba(147, 51, 234, 0.2);
+}
+.promo-card.theme-purple .promo-card-badge {
+  background: #7e22ce;
+  color: #ffffff;
+}
+
+.promo-card-badge {
+  align-self: flex-start;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+}
+
+.promo-card-badge.badge-hot {
+  background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+.promo-card-name {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #111827;
-  white-space: nowrap;
+  color: #0f172a;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.promo-price-group {
+.promo-card-pack {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.promo-card-prices {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
 }
 
-.promo-sale-price {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: #16a34a;
-}
-
-.promo-mrp {
-  font-size: 0.7rem;
-  color: #9ca3af;
+.promo-card-mrp {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
   text-decoration: line-through;
 }
 
-.promo-badge {
-  background: #dcfce7;
-  color: #15803d;
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 3px 6px;
-  border-radius: 6px;
-  white-space: nowrap;
+.promo-card-sale {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: #0f172a;
 }
 
 /* --------------------------------------------------------------------------
