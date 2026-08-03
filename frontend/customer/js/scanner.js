@@ -758,9 +758,9 @@ function renderHotDealsCarousel() {
 
   // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
   carouselTimer = setInterval(() => {
-    // Phase 1: Animate track transform from -20% to -40% over 380ms
+    // Phase 1: Animate track transform to -40% - 2.4px over 380ms
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = 'translateX(-40%)';
+    track.style.transform = 'translateX(calc(-40% - 2.4px))';
 
     // Update card scale/shadow classes continuously during slide
     const children = Array.from(track.children);
@@ -789,7 +789,7 @@ function renderHotDealsCarousel() {
         track.appendChild(firstNode);
       }
 
-      // Re-populate node data at baseline position (-20%)
+      // Re-populate node data at baseline position (-20% - 1.2px)
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -807,8 +807,8 @@ function renderHotDealsCarousel() {
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
 
-      // Reset track transform to baseline -20%
-      track.style.transform = 'translateX(-20%)';
+      // Reset track transform to baseline (-20% - 1.2px)
+      track.style.transform = 'translateX(calc(-20% - 1.2px))';
       void track.offsetWidth; // Force CSS reflow
 
       // Re-enable CSS transition for next cycle
