@@ -792,17 +792,50 @@ function renderHotDealsCarousel() {
   }
 
   let cycleCount = 0;
-  const cycleLogs = [];
+  const renderPipelineLogs = [];
+
+  const getElementMetrics = (el, label) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const compStyle = window.getComputedStyle(el);
+    return {
+      label,
+      offsetLeft: el.offsetLeft,
+      rectLeft: Math.round(r.left),
+      rectWidth: Math.round(r.width),
+      rectRight: Math.round(r.right),
+      clientWidth: el.clientWidth,
+      offsetWidth: el.offsetWidth,
+      matrix: compStyle.transform,
+      transformOrigin: compStyle.transformOrigin
+    };
+  };
 
   // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
   carouselTimer = setInterval(() => {
     cycleCount++;
     const viewportBox = document.querySelector('.scanner-v2-carousel-box');
+    const nodesAtStart = Array.from(track.children);
 
-    const beforeRecycleOffsets = {
-      leftOffset: nodes[1] ? nodes[1].offsetLeft : null,
-      heroOffset: nodes[2] ? nodes[2].offsetLeft : null,
-      rightOffset: nodes[3] ? nodes[3].offsetLeft : null
+    const timeLog = {
+      t0_slideStart: performance.now(),
+      t1_midFrame: 0,
+      t2_timeoutFired: 0,
+      t3_nodeRecycled: 0,
+      t4_classesReassigned: 0,
+      t5_transformReset: 0,
+      t6_rAF: 0,
+      t7_paint: 0
+    };
+
+    // Phase 0: Rest State Metrics Before Animation
+    const scrollWidthBefore = track.scrollWidth;
+    const restMetrics = {
+      viewport: getElementMetrics(viewportBox, 'viewport'),
+      track: getElementMetrics(track, 'track'),
+      leftCard: getElementMetrics(nodesAtStart[1], 'leftCard'),
+      heroCard: getElementMetrics(nodesAtStart[2], 'heroCard'),
+      rightCard: getElementMetrics(nodesAtStart[3], 'rightCard')
     };
 
     // Phase 1: Animate track transform from -20% to -40% over 380ms
@@ -810,33 +843,47 @@ function renderHotDealsCarousel() {
     track.style.transform = 'translateX(-40%)';
 
     // Update card scale/shadow classes continuously during slide
-    const children = Array.from(track.children);
-    if (children.length === 5) {
+    if (nodesAtStart.length === 5) {
       const p1 = cachedHotDeals[(carouselIndex + 0 + N * 100) % N];
       const p2 = cachedHotDeals[(carouselIndex + 1 + N * 100) % N];
       const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
       const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
 
-      children[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
-      children[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
-      children[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
-      children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
+      nodesAtStart[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
+      nodesAtStart[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
+      nodesAtStart[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
+      nodesAtStart[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
     }
+
+    // Capture Mid-Animation Compositor State at 190ms
+    let midMetrics = null;
+    setTimeout(() => {
+      timeLog.t1_midFrame = performance.now();
+      midMetrics = {
+        trackMatrix: window.getComputedStyle(track).transform,
+        leftRect: nodesAtStart[1] ? Math.round(nodesAtStart[1].getBoundingClientRect().left) : 0,
+        heroRect: nodesAtStart[2] ? Math.round(nodesAtStart[2].getBoundingClientRect().left) : 0,
+        rightRect: nodesAtStart[3] ? Math.round(nodesAtStart[3].getBoundingClientRect().left) : 0
+      };
+    }, 190);
 
     // Phase 2: After 380ms transition completes, recycle offscreen node & reset track instantly
     setTimeout(() => {
+      timeLog.t2_timeoutFired = performance.now();
+
       carouselIndex = (carouselIndex + 1) % N;
 
       // Disable transition for instant reset
       track.style.transition = 'none';
 
-      // Move first card node (hidden-left) to end of track
+      // DOM Recycling
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
+      timeLog.t3_nodeRecycled = performance.now();
 
-      // Re-populate node data at baseline position (-20%)
+      // Class Reassignment & Content Update
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -853,55 +900,66 @@ function renderHotDealsCarousel() {
 
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
-
-      const afterRecycleOffsets = {
-        leftOffset: updatedNodes[1] ? updatedNodes[1].offsetLeft : null,
-        heroOffset: updatedNodes[2] ? updatedNodes[2].offsetLeft : null,
-        rightOffset: updatedNodes[3] ? updatedNodes[3].offsetLeft : null
-      };
-
-      const computedTrackStyle = window.getComputedStyle(track);
-
-      const cycleData = {
-        cycleNumber: cycleCount,
-        activeIndices: [
-          (carouselIndex - 1 + N) % N,
-          carouselIndex % N,
-          (carouselIndex + 1) % N,
-          (carouselIndex + 2) % N,
-          (carouselIndex + 3) % N
-        ].join(','),
-        trackTransform: computedTrackStyle.transform,
-        transitionEnabled: track.style.transition !== 'none',
-        leftNodeIdx: 1,
-        heroNodeIdx: 2,
-        rightNodeIdx: 3,
-        trackClientWidth: track.clientWidth,
-        trackScrollWidth: track.scrollWidth,
-        viewportClientWidth: viewportBox ? viewportBox.clientWidth : null,
-        beforeLeft: beforeRecycleOffsets.leftOffset,
-        beforeHero: beforeRecycleOffsets.heroOffset,
-        beforeRight: beforeRecycleOffsets.rightOffset,
-        afterLeft: afterRecycleOffsets.leftOffset,
-        afterHero: afterRecycleOffsets.heroOffset,
-        afterRight: afterRecycleOffsets.rightOffset
-      };
-
-      cycleLogs.push(cycleData);
-      if (cycleLogs.length <= 20) {
-        console.log(`[FORENSIC CYCLE ${cycleCount}]`, cycleData);
-      }
-      if (cycleCount === 20) {
-        console.log('=== FORENSIC 20-CYCLE SUMMARY TRACE ===');
-        console.table(cycleLogs);
-      }
+      timeLog.t4_classesReassigned = performance.now();
 
       // Reset track transform to baseline -20%
       track.style.transform = 'translateX(-20%)';
       void track.offsetWidth; // Force CSS reflow
+      timeLog.t5_transformReset = performance.now();
 
       // Re-enable CSS transition for next cycle
       track.style.transition = '';
+
+      requestAnimationFrame(() => {
+        timeLog.t6_rAF = performance.now();
+        requestAnimationFrame(() => {
+          timeLog.t7_paint = performance.now();
+
+          const scrollWidthAfter = track.scrollWidth;
+          const postMetrics = {
+            viewport: getElementMetrics(viewportBox, 'viewport'),
+            track: getElementMetrics(track, 'track'),
+            leftCard: getElementMetrics(updatedNodes[1], 'leftCard'),
+            heroCard: getElementMetrics(updatedNodes[2], 'heroCard'),
+            rightCard: getElementMetrics(updatedNodes[3], 'rightCard')
+          };
+
+          const logEntry = {
+            cycle: cycleCount,
+            scrollWidthBefore,
+            scrollWidthAfter,
+            scrollWidthDelta: scrollWidthAfter - scrollWidthBefore,
+            restMetrics,
+            midMetrics,
+            postMetrics,
+            timeLog: {
+              slideDurationMs: Math.round(timeLog.t2_timeoutFired - timeLog.t0_slideStart),
+              recycleToResetMs: +(timeLog.t5_transformReset - timeLog.t3_nodeRecycled).toFixed(2),
+              resetToPaintMs: +(timeLog.t7_paint - timeLog.t5_transformReset).toFixed(2)
+            }
+          };
+
+          renderPipelineLogs.push(logEntry);
+
+          if (cycleCount <= 5 || cycleCount === 20) {
+            console.log(`[RENDERING PIPELINE TRACE - CYCLE ${cycleCount}]`, logEntry);
+          }
+          if (cycleCount === 20) {
+            console.log('=== 20-CYCLE RENDERING PIPELINE FORENSIC SUMMARY ===');
+            console.table(renderPipelineLogs.map(l => ({
+              cycle: l.cycle,
+              scrollDelta: l.scrollWidthDelta,
+              slideMs: l.timeLog.slideDurationMs,
+              recycleToResetMs: l.timeLog.recycleToResetMs,
+              resetToPaintMs: l.timeLog.resetToPaintMs,
+              restHeroRectLeft: l.restMetrics.heroCard ? l.restMetrics.heroCard.rectLeft : null,
+              postHeroRectLeft: l.postMetrics.heroCard ? l.postMetrics.heroCard.rectLeft : null,
+              restTrackMatrix: l.restMetrics.track ? l.restMetrics.track.matrix : null,
+              postTrackMatrix: l.postMetrics.track ? l.postMetrics.track.matrix : null
+            })));
+          }
+        });
+      });
     }, 380);
   }, 4000);
 }
