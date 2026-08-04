@@ -791,8 +791,20 @@ function renderHotDealsCarousel() {
     console.error('Diagnostic error:', e);
   }
 
+  let cycleCount = 0;
+  const cycleLogs = [];
+
   // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
   carouselTimer = setInterval(() => {
+    cycleCount++;
+    const viewportBox = document.querySelector('.scanner-v2-carousel-box');
+
+    const beforeRecycleOffsets = {
+      leftOffset: nodes[1] ? nodes[1].offsetLeft : null,
+      heroOffset: nodes[2] ? nodes[2].offsetLeft : null,
+      rightOffset: nodes[3] ? nodes[3].offsetLeft : null
+    };
+
     // Phase 1: Animate track transform from -20% to -40% over 380ms
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
     track.style.transform = 'translateX(-40%)';
@@ -840,6 +852,48 @@ function renderHotDealsCarousel() {
         }
 
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
+      }
+
+      const afterRecycleOffsets = {
+        leftOffset: updatedNodes[1] ? updatedNodes[1].offsetLeft : null,
+        heroOffset: updatedNodes[2] ? updatedNodes[2].offsetLeft : null,
+        rightOffset: updatedNodes[3] ? updatedNodes[3].offsetLeft : null
+      };
+
+      const computedTrackStyle = window.getComputedStyle(track);
+
+      const cycleData = {
+        cycleNumber: cycleCount,
+        activeIndices: [
+          (carouselIndex - 1 + N) % N,
+          carouselIndex % N,
+          (carouselIndex + 1) % N,
+          (carouselIndex + 2) % N,
+          (carouselIndex + 3) % N
+        ].join(','),
+        trackTransform: computedTrackStyle.transform,
+        transitionEnabled: track.style.transition !== 'none',
+        leftNodeIdx: 1,
+        heroNodeIdx: 2,
+        rightNodeIdx: 3,
+        trackClientWidth: track.clientWidth,
+        trackScrollWidth: track.scrollWidth,
+        viewportClientWidth: viewportBox ? viewportBox.clientWidth : null,
+        beforeLeft: beforeRecycleOffsets.leftOffset,
+        beforeHero: beforeRecycleOffsets.heroOffset,
+        beforeRight: beforeRecycleOffsets.rightOffset,
+        afterLeft: afterRecycleOffsets.leftOffset,
+        afterHero: afterRecycleOffsets.heroOffset,
+        afterRight: afterRecycleOffsets.rightOffset
+      };
+
+      cycleLogs.push(cycleData);
+      if (cycleLogs.length <= 20) {
+        console.log(`[FORENSIC CYCLE ${cycleCount}]`, cycleData);
+      }
+      if (cycleCount === 20) {
+        console.log('=== FORENSIC 20-CYCLE SUMMARY TRACE ===');
+        console.table(cycleLogs);
       }
 
       // Reset track transform to baseline -20%
