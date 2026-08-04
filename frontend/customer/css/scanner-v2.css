@@ -883,7 +883,23 @@
   transition: transform 120ms ease;
 }
 
-/* Card Positions */
+/* Card Positions & Visual Layout Calibration (V2.8) */
+.promo-card {
+  transform-origin: center center;
+}
+
+.promo-card:nth-child(2) {
+  transform-origin: left center;
+}
+
+.promo-card:nth-child(3) {
+  transform-origin: center center;
+}
+
+.promo-card:nth-child(4) {
+  transform-origin: right center;
+}
+
 .promo-card--hero {
   transform: scale(1.06);
   opacity: 1;
