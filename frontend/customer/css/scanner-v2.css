@@ -870,11 +870,10 @@
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 380ms ease, opacity 380ms ease;
+  transform-origin: center center;
   position: relative;
   overflow: visible;
   cursor: pointer;
-  will-change: transform, opacity, box-shadow;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -883,23 +882,7 @@
   transition: transform 120ms ease;
 }
 
-/* Card Positions & Visual Layout Calibration (V2.8) */
-.promo-card {
-  transform-origin: center center;
-}
-
-.promo-card:nth-child(2) {
-  transform-origin: left center;
-}
-
-.promo-card:nth-child(3) {
-  transform-origin: center center;
-}
-
-.promo-card:nth-child(4) {
-  transform-origin: right center;
-}
-
+/* Role-Driven Card Styling (V3 Contract: No :nth-child transform-origin rules) */
 .promo-card--hero {
   transform: scale(1.06);
   opacity: 1;

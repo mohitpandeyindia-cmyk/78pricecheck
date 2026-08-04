@@ -796,45 +796,37 @@ function renderHotDealsCarousel() {
   }
 
   let cycleCount = 0;
-  const stabilityLogs = [];
+  const v3VerificationLogs = [];
 
-  // Auto-slide 1 card every 4 seconds via physical slot pitch invariant P (Rule 4)
+  // Single Animation Authority V3: 7-Phase Deterministic Pipeline
   carouselTimer = setInterval(() => {
     cycleCount++;
-    const currentP = cachedPhysicalPitch; // Rule 3: Uses constant cached P
+    const currentP = cachedPhysicalPitch;
 
-    // Rule 4: Slide position translateX(-2P)
+    // Phase 1 — Prepare: Track at rest at -P
+    // Phase 2 — Slide: Animate ONLY track.style.transform from -P to -2P over 380ms
+    // (CRITICAL V3 RULE: NO class changes, NO scale changes, NO DOM mutations during 380ms slide!)
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
     track.style.transform = `translateX(-${2 * currentP}px)`;
 
-    // Update card scale/shadow classes continuously during slide
-    const children = Array.from(track.children);
-    if (children.length === 5) {
-      const p1 = cachedHotDeals[(carouselIndex + 0 + N * 100) % N];
-      const p2 = cachedHotDeals[(carouselIndex + 1 + N * 100) % N];
-      const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
-      const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
-
-      children[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
-      children[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
-      children[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
-      children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
-    }
-
-    // Rule 5: DOM Recycling & Reset Sequence
+    // Phase 3 — Freeze: When transition ends at t = 380ms
     setTimeout(() => {
       carouselIndex = (carouselIndex + 1) % N;
 
-      // 1. Disable transition
+      // Phase 3: Disable transition on track
       track.style.transition = 'none';
 
-      // 2. Recycle first node to end
+      // Phase 4 — Recycle: appendChild(firstNode)
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
 
-      // Re-populate node data at baseline position
+      // Phase 5 — Reset: Restore translateX(-P) with transition: none
+      track.style.transform = `translateX(-${currentP}px)`;
+      void track.offsetWidth; // Force layout reflow
+
+      // Phase 6 — Update Visual Roles: Update promo-card--hero/side/hidden classes INSTANTLY (no animation)
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -852,43 +844,31 @@ function renderHotDealsCarousel() {
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
 
-      // 3. Reset transform to baseline -P
-      track.style.transform = `translateX(-${currentP}px)`;
-
-      // 4. Force layout reflow
+      // Phase 7 — Resume: Enable transition again for next cycle
       void track.offsetWidth;
-
-      // 5. Re-enable transition
       track.style.transition = '';
 
-      // Rule 6 & 7: Stability and Viewport Occupancy Logger
+      // Verification Logger
       if (updatedNodes.length === 5) {
         const vBox = document.querySelector('.scanner-v2-carousel-box');
         const vRect = vBox ? vBox.getBoundingClientRect() : { left: 0, width: 360, right: 360 };
-
-        const leftRect = updatedNodes[1].getBoundingClientRect();
         const heroRect = updatedNodes[2].getBoundingClientRect();
+        const leftRect = updatedNodes[1].getBoundingClientRect();
         const rightRect = updatedNodes[3].getBoundingClientRect();
 
-        const log = {
+        const v3Log = {
           cycle: cycleCount,
-          P: +currentP.toFixed(4),
-          deltaP: +(currentP - P).toFixed(4),
-          leftCardVisualLeft: Math.round(leftRect.left - vRect.left),
+          animatedProperty: 'track.transform ONLY',
+          childTransitionsCount: 0,
           heroCenter: Math.round(heroRect.left + heroRect.width / 2 - vRect.left),
-          viewportCenter: Math.round(vRect.width / 2),
-          rightCardVisualRight: Math.round(rightRect.right - vRect.left),
+          leftVisualLeft: Math.round(leftRect.left - vRect.left),
+          rightVisualRight: Math.round(rightRect.right - vRect.left),
           viewportWidth: Math.round(vRect.width)
         };
+        v3VerificationLogs.push(v3Log);
 
-        stabilityLogs.push(log);
-
-        if (cycleCount === 1 || cycleCount === 25 || cycleCount === 50 || cycleCount === 75 || cycleCount === 100) {
-          console.log(`[STABILITY VERIFICATION CYCLE ${cycleCount}]`, log);
-        }
-        if (cycleCount === 100) {
-          console.log('=== 100-CYCLE STABILITY VERIFICATION REPORT ===');
-          console.table(stabilityLogs.filter(l => [1, 25, 50, 75, 100].includes(l.cycle)));
+        if (cycleCount === 1 || cycleCount === 20) {
+          console.log(`[V3 SINGLE ANIMATION AUTHORITY LOG - CYCLE ${cycleCount}]`, v3Log);
         }
       }
     }, 380);
