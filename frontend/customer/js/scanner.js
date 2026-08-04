@@ -680,16 +680,16 @@ function getCategoryTheme(name) {
   return 'theme-purple';
 }
 
-function updateCoverFlowCardNode(card, p, posClass, isCenter) {
+function updateCoverFlowCardNode(card, p, stateClass, isHero) {
   const theme = getCategoryTheme(p.name);
-  card.className = `promo-card ${posClass} ${theme} ${isCenter ? 'promo-card--center' : 'promo-card--side'}`;
+  card.className = `promo-card ${stateClass} ${theme}`;
 
   const mrpVal = Math.round(Number(p.mrp));
   const saleVal = Math.round(Number(p.salePrice));
   const discVal = Math.round(Number(p.discountPercent));
 
   card.innerHTML = `
-    <div class="promo-card-badge ${isCenter ? 'badge-hot' : ''}">${isCenter ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
+    <div class="promo-card-badge ${isHero ? 'badge-hot' : ''}">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
       <span class="promo-card-sale">₹${saleVal}</span>
@@ -726,66 +726,94 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Render initial 3 cards at rest
+  // Initialize exactly 5 DOM nodes in track
   track.innerHTML = '';
+  const nodes = [];
+  for (let i = 0; i < 5; i++) {
+    const card = document.createElement('div');
+    nodes.push(card);
+    track.appendChild(card);
+  }
 
-  const getTrioForIndex = (idx) => {
-    const p0 = cachedHotDeals[idx % N];
-    const p1 = cachedHotDeals[(idx + 1) % N];
-    const p2 = cachedHotDeals[(idx + 2) % N];
-    const trio = [p0, p1, p2];
-    trio.sort((a, b) => (b.offerScore || 0) - (a.offerScore || 0));
-    return { left: trio[1], center: trio[0], right: trio[2] };
+  // Helper to populate 5 nodes based on carouselIndex
+  const populateNodesAtRest = () => {
+    for (let i = 0; i < 5; i++) {
+      const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
+      const p = cachedHotDeals[prodIdx];
+      let stateClass = 'promo-card--side';
+      let isHero = false;
+
+      if (i === 0 || i === 4) {
+        stateClass = 'promo-card--hidden';
+      } else if (i === 2) {
+        stateClass = 'promo-card--hero';
+        isHero = true;
+      }
+
+      updateCoverFlowCardNode(nodes[i], p, stateClass, isHero);
+    }
   };
 
-  let initialWindow = getTrioForIndex(carouselIndex);
+  populateNodesAtRest();
 
-  let nodeLeft = document.createElement('div');
-  let nodeCenter = document.createElement('div');
-  let nodeRight = document.createElement('div');
-
-  updateCoverFlowCardNode(nodeLeft, initialWindow.left, 'pos-left', false);
-  updateCoverFlowCardNode(nodeCenter, initialWindow.center, 'pos-center', true);
-  updateCoverFlowCardNode(nodeRight, initialWindow.right, 'pos-right', false);
-
-  track.appendChild(nodeLeft);
-  track.appendChild(nodeCenter);
-  track.appendChild(nodeRight);
-
-  // Auto-slide 1 card every 4 seconds with 360ms Cover Flow motion
+  // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
   carouselTimer = setInterval(() => {
-    const nextIndex = (carouselIndex + 1) % N;
-    const nextWindow = getTrioForIndex(nextIndex);
+    // Phase 1: Animate track transform from -20% to -40% over 380ms
+    track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
+    track.style.transform = 'translateX(-40%)';
 
-    // Create temporary incoming card D offscreen right
-    const nodeIncoming = document.createElement('div');
-    nodeIncoming.style.transform = 'translateX(110%) scale(0.93)';
-    nodeIncoming.style.opacity = '0.82';
-    updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
-    track.appendChild(nodeIncoming);
+    // Update card scale/shadow classes continuously during slide
+    const children = Array.from(track.children);
+    if (children.length === 5) {
+      const p1 = cachedHotDeals[(carouselIndex + 0 + N * 100) % N];
+      const p2 = cachedHotDeals[(carouselIndex + 1 + N * 100) % N];
+      const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
+      const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
 
-    // Trigger simultaneous CSS transition on next animation frame
-    requestAnimationFrame(() => {
-      nodeLeft.classList.add('cover-exit-left');
-      nodeCenter.classList.add('cover-hero-to-left');
-      nodeRight.classList.add('cover-right-to-hero');
-      nodeIncoming.classList.add('cover-enter-right');
-    });
+      children[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
+      children[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
+      children[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
+      children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
+    }
 
-    // Clean up nodes after 360ms transition finishes
+    // Phase 2: After 380ms transition completes, recycle offscreen node & reset track instantly
     setTimeout(() => {
-      carouselIndex = nextIndex;
-      nodeLeft.remove();
+      carouselIndex = (carouselIndex + 1) % N;
 
-      updateCoverFlowCardNode(nodeCenter, nextWindow.left, 'pos-left', false);
-      updateCoverFlowCardNode(nodeRight, nextWindow.center, 'pos-center', true);
-      updateCoverFlowCardNode(nodeIncoming, nextWindow.right, 'pos-right', false);
+      // Disable transition for instant reset
+      track.style.transition = 'none';
 
-      // Reassign active references for next step
-      nodeLeft = nodeCenter;
-      nodeCenter = nodeRight;
-      nodeRight = nodeIncoming;
-    }, 360);
+      // Move first card node (hidden-left) to end of track
+      const firstNode = track.firstElementChild;
+      if (firstNode) {
+        track.appendChild(firstNode);
+      }
+
+      // Re-populate node data at baseline position (-20%)
+      const updatedNodes = Array.from(track.children);
+      for (let i = 0; i < 5; i++) {
+        const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
+        const p = cachedHotDeals[prodIdx];
+        let stateClass = 'promo-card--side';
+        let isHero = false;
+
+        if (i === 0 || i === 4) {
+          stateClass = 'promo-card--hidden';
+        } else if (i === 2) {
+          stateClass = 'promo-card--hero';
+          isHero = true;
+        }
+
+        updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
+      }
+
+      // Reset track transform to baseline -20%
+      track.style.transform = 'translateX(-20%)';
+      void track.offsetWidth; // Force CSS reflow
+
+      // Re-enable CSS transition for next cycle
+      track.style.transition = '';
+    }, 380);
   }, 4000);
 }
 
