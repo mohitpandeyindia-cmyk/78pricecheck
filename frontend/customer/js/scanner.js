@@ -756,6 +756,41 @@ function renderHotDealsCarousel() {
 
   populateNodesAtRest();
 
+  // Diagnostic Bounding Box Report
+  try {
+    const box = document.querySelector('.scanner-v2-carousel-box');
+    if (box && nodes.length === 5) {
+      const vRect = box.getBoundingClientRect();
+      const tRect = track.getBoundingClientRect();
+      const getLayoutBox = (el) => ({
+        left: Math.round(el.offsetLeft + tRect.left - vRect.left),
+        width: Math.round(el.offsetWidth),
+        right: Math.round(el.offsetLeft + tRect.left - vRect.left + el.offsetWidth)
+      });
+      const getVisualBox = (el) => {
+        const r = el.getBoundingClientRect();
+        return {
+          left: Math.round(r.left - vRect.left),
+          width: Math.round(r.width),
+          right: Math.round(r.right - vRect.left)
+        };
+      };
+
+      console.log('=== V2.4 CAROUSEL GEOMETRY DIAGNOSIS ===');
+      console.table({
+        VIEWPORT: { left: 0, width: Math.round(vRect.width), right: Math.round(vRect.width) },
+        CARD_1_LEFT_UnscaledLayout: getLayoutBox(nodes[1]),
+        CARD_1_LEFT_TransformedVisual: getVisualBox(nodes[1]),
+        CARD_2_HERO_UnscaledLayout: getLayoutBox(nodes[2]),
+        CARD_2_HERO_TransformedVisual: getVisualBox(nodes[2]),
+        CARD_3_RIGHT_UnscaledLayout: getLayoutBox(nodes[3]),
+        CARD_3_RIGHT_TransformedVisual: getVisualBox(nodes[3])
+      });
+    }
+  } catch (e) {
+    console.error('Diagnostic error:', e);
+  }
+
   // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
   carouselTimer = setInterval(() => {
     // Phase 1: Animate track transform from -20% to -40% over 380ms
