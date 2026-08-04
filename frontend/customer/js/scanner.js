@@ -666,29 +666,63 @@ function renderRecentScans() {
 let carouselIndex = 0;
 let carouselTimer = null;
 
-function getCategoryTheme(name) {
-  const lower = name.toLowerCase();
-  if (lower.includes('milk') || lower.includes('bread') || lower.includes('apple') || lower.includes('rice') || lower.includes('oil') || lower.includes('dal') || lower.includes('sugar') || lower.includes('flour') || lower.includes('atta') || lower.includes('salt') || lower.includes('biscuit') || lower.includes('noodle')) {
+// Global physical slot pitch invariant state
+let cachedPhysicalPitch = 0;
+
+function computePhysicalSlotPitch() {
+  const track = document.getElementById('promo-carousel-track');
+  if (!track || track.children.length < 2) return 0;
+
+  const cardNode = track.children[1] || track.firstElementChild;
+  const cardRect = cardNode.getBoundingClientRect();
+  const style = window.getComputedStyle(track);
+  const gap = parseFloat(style.columnGap || style.gap) || 4;
+
+  // Rule 2: Measure from rendered geometry (cardRect.width + gap)
+  cachedPhysicalPitch = cardRect.width + gap;
+  return cachedPhysicalPitch;
+}
+
+// Rule 3: Re-measure P ONLY on window resize / orientation change
+window.addEventListener('resize', () => {
+  const oldP = cachedPhysicalPitch;
+  const newP = computePhysicalSlotPitch();
+  if (newP > 0 && newP !== oldP) {
+    const track = document.getElementById('promo-carousel-track');
+    if (track) {
+      track.style.transition = 'none';
+      track.style.transform = `translateX(-${newP}px)`;
+      void track.offsetWidth;
+      track.style.transition = '';
+    }
+  }
+});
+
+function getCategoryTheme(productName) {
+  if (!productName) return 'theme-green';
+  const nameLower = productName.toLowerCase();
+
+  if (nameLower.includes('wash') || nameLower.includes('detergent') || nameLower.includes('surf') || nameLower.includes('soap')) {
     return 'theme-green';
   }
-  if (lower.includes('cleaner') || lower.includes('detergent') || lower.includes('dish') || lower.includes('tide') || lower.includes('surf') || lower.includes('wash') || lower.includes('tissue') || lower.includes('spray')) {
+  if (nameLower.includes('tea') || nameLower.includes('coffee') || nameLower.includes('beverage') || nameLower.includes('drink')) {
     return 'theme-orange';
   }
-  if (lower.includes('shampoo') || lower.includes('toothpaste') || lower.includes('lotion') || lower.includes('cream') || lower.includes('hair') || lower.includes('face') || lower.includes('brush') || lower.includes('deodorant')) {
+  if (nameLower.includes('oil') || nameLower.includes('ghee') || nameLower.includes('butter') || nameLower.includes('food')) {
     return 'theme-blue';
   }
   return 'theme-purple';
 }
 
-function updateCoverFlowCardNode(card, p, stateClass, isHero) {
+function updateCoverFlowCardNode(cardNode, p, stateClass, isHero) {
   const theme = getCategoryTheme(p.name);
-  card.className = `promo-card ${stateClass} ${theme}`;
+  cardNode.className = `promo-card ${stateClass} ${theme}`;
 
   const mrpVal = Math.round(Number(p.mrp));
   const saleVal = Math.round(Number(p.salePrice));
   const discVal = Math.round(Number(p.discountPercent));
 
-  card.innerHTML = `
+  cardNode.innerHTML = `
     <div class="promo-card-badge ${isHero ? 'badge-hot' : ''}">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
@@ -698,7 +732,7 @@ function updateCoverFlowCardNode(card, p, stateClass, isHero) {
   `;
 
   // Interactive preview: Clicking populates Section 3 via renderV2ProductCard
-  card.onclick = () => {
+  cardNode.onclick = () => {
     renderV2ProductCard(p, p.barcode);
     applyCardHighlight();
   };
@@ -726,7 +760,7 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM nodes in track
+  // Initialize exactly 5 DOM nodes in track (V2.4 5-node architecture)
   track.innerHTML = '';
   const nodes = [];
   for (let i = 0; i < 5; i++) {
@@ -735,7 +769,6 @@ function renderHotDealsCarousel() {
     track.appendChild(card);
   }
 
-  // Helper to populate 5 nodes based on carouselIndex
   const populateNodesAtRest = () => {
     for (let i = 0; i < 5; i++) {
       const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -754,27 +787,25 @@ function renderHotDealsCarousel() {
     }
   };
 
-  // Physical Slot Pitch Invariant: Card Width + CSS Gap
-  const getPhysicalCardPitch = () => {
-    if (!nodes || nodes.length < 2) return 0;
-    const cardWidth = nodes[1].offsetWidth || (track.offsetWidth * 0.2);
-    const computedGap = parseFloat(window.getComputedStyle(track).gap) || 4;
-    return cardWidth + computedGap;
-  };
-
   populateNodesAtRest();
 
-  // Set baseline resting position in physical slot units (-1 Pitch)
-  let physicalPitch = getPhysicalCardPitch();
-  track.style.transform = `translateX(-${physicalPitch}px)`;
+  // Rule 2 & Rule 3: Measure physical pitch P ONCE from initial rendered geometry
+  const P = computePhysicalSlotPitch();
+  if (P > 0) {
+    track.style.transform = `translateX(-${P}px)`;
+  }
 
-  // Auto-slide 1 card every 4 seconds via physical slot translation (-2 Pitch)
+  let cycleCount = 0;
+  const stabilityLogs = [];
+
+  // Auto-slide 1 card every 4 seconds via physical slot pitch invariant P (Rule 4)
   carouselTimer = setInterval(() => {
-    physicalPitch = getPhysicalCardPitch() || physicalPitch;
+    cycleCount++;
+    const currentP = cachedPhysicalPitch; // Rule 3: Uses constant cached P
 
-    // Phase 1: Animate track transform from -1 Pitch to -2 Pitch over 380ms
+    // Rule 4: Slide position translateX(-2P)
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = `translateX(-${2 * physicalPitch}px)`;
+    track.style.transform = `translateX(-${2 * currentP}px)`;
 
     // Update card scale/shadow classes continuously during slide
     const children = Array.from(track.children);
@@ -790,20 +821,20 @@ function renderHotDealsCarousel() {
       children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
     }
 
-    // Phase 2: After 380ms transition completes, recycle offscreen node & reset track to baseline -1 Pitch instantly
+    // Rule 5: DOM Recycling & Reset Sequence
     setTimeout(() => {
       carouselIndex = (carouselIndex + 1) % N;
 
-      // Disable transition for instant reset
+      // 1. Disable transition
       track.style.transition = 'none';
 
-      // DOM Recycling: Move first node to end
+      // 2. Recycle first node to end
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
 
-      // Re-populate node data at baseline position (-1 Pitch)
+      // Re-populate node data at baseline position
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -821,13 +852,45 @@ function renderHotDealsCarousel() {
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
 
-      // Reset track transform to physical baseline (-1 Pitch)
-      physicalPitch = getPhysicalCardPitch() || physicalPitch;
-      track.style.transform = `translateX(-${physicalPitch}px)`;
-      void track.offsetWidth; // Force CSS reflow
+      // 3. Reset transform to baseline -P
+      track.style.transform = `translateX(-${currentP}px)`;
 
-      // Re-enable CSS transition for next cycle
+      // 4. Force layout reflow
+      void track.offsetWidth;
+
+      // 5. Re-enable transition
       track.style.transition = '';
+
+      // Rule 6 & 7: Stability and Viewport Occupancy Logger
+      if (updatedNodes.length === 5) {
+        const vBox = document.querySelector('.scanner-v2-carousel-box');
+        const vRect = vBox ? vBox.getBoundingClientRect() : { left: 0, width: 360, right: 360 };
+
+        const leftRect = updatedNodes[1].getBoundingClientRect();
+        const heroRect = updatedNodes[2].getBoundingClientRect();
+        const rightRect = updatedNodes[3].getBoundingClientRect();
+
+        const log = {
+          cycle: cycleCount,
+          P: +currentP.toFixed(4),
+          deltaP: +(currentP - P).toFixed(4),
+          leftCardVisualLeft: Math.round(leftRect.left - vRect.left),
+          heroCenter: Math.round(heroRect.left + heroRect.width / 2 - vRect.left),
+          viewportCenter: Math.round(vRect.width / 2),
+          rightCardVisualRight: Math.round(rightRect.right - vRect.left),
+          viewportWidth: Math.round(vRect.width)
+        };
+
+        stabilityLogs.push(log);
+
+        if (cycleCount === 1 || cycleCount === 25 || cycleCount === 50 || cycleCount === 75 || cycleCount === 100) {
+          console.log(`[STABILITY VERIFICATION CYCLE ${cycleCount}]`, log);
+        }
+        if (cycleCount === 100) {
+          console.log('=== 100-CYCLE STABILITY VERIFICATION REPORT ===');
+          console.table(stabilityLogs.filter(l => [1, 25, 50, 75, 100].includes(l.cycle)));
+        }
+      }
     }, 380);
   }, 4000);
 }
