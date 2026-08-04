@@ -754,136 +754,56 @@ function renderHotDealsCarousel() {
     }
   };
 
-  populateNodesAtRest();
-
-  // Diagnostic Bounding Box Report
-  try {
-    const box = document.querySelector('.scanner-v2-carousel-box');
-    if (box && nodes.length === 5) {
-      const vRect = box.getBoundingClientRect();
-      const tRect = track.getBoundingClientRect();
-      const getLayoutBox = (el) => ({
-        left: Math.round(el.offsetLeft + tRect.left - vRect.left),
-        width: Math.round(el.offsetWidth),
-        right: Math.round(el.offsetLeft + tRect.left - vRect.left + el.offsetWidth)
-      });
-      const getVisualBox = (el) => {
-        const r = el.getBoundingClientRect();
-        return {
-          left: Math.round(r.left - vRect.left),
-          width: Math.round(r.width),
-          right: Math.round(r.right - vRect.left)
-        };
-      };
-
-      console.log('=== V2.4 CAROUSEL GEOMETRY DIAGNOSIS ===');
-      console.table({
-        VIEWPORT: { left: 0, width: Math.round(vRect.width), right: Math.round(vRect.width) },
-        CARD_1_LEFT_UnscaledLayout: getLayoutBox(nodes[1]),
-        CARD_1_LEFT_TransformedVisual: getVisualBox(nodes[1]),
-        CARD_2_HERO_UnscaledLayout: getLayoutBox(nodes[2]),
-        CARD_2_HERO_TransformedVisual: getVisualBox(nodes[2]),
-        CARD_3_RIGHT_UnscaledLayout: getLayoutBox(nodes[3]),
-        CARD_3_RIGHT_TransformedVisual: getVisualBox(nodes[3])
-      });
-    }
-  } catch (e) {
-    console.error('Diagnostic error:', e);
-  }
-
-  let cycleCount = 0;
-  const renderPipelineLogs = [];
-
-  const getElementMetrics = (el, label) => {
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    const compStyle = window.getComputedStyle(el);
-    return {
-      label,
-      offsetLeft: el.offsetLeft,
-      rectLeft: Math.round(r.left),
-      rectWidth: Math.round(r.width),
-      rectRight: Math.round(r.right),
-      clientWidth: el.clientWidth,
-      offsetWidth: el.offsetWidth,
-      matrix: compStyle.transform,
-      transformOrigin: compStyle.transformOrigin
-    };
+  // Physical Slot Pitch Invariant: Card Width + CSS Gap
+  const getPhysicalCardPitch = () => {
+    if (!nodes || nodes.length < 2) return 0;
+    const cardWidth = nodes[1].offsetWidth || (track.offsetWidth * 0.2);
+    const computedGap = parseFloat(window.getComputedStyle(track).gap) || 4;
+    return cardWidth + computedGap;
   };
 
-  // Auto-slide 1 card every 4 seconds via single track transform translateX(-40%)
+  populateNodesAtRest();
+
+  // Set baseline resting position in physical slot units (-1 Pitch)
+  let physicalPitch = getPhysicalCardPitch();
+  track.style.transform = `translateX(-${physicalPitch}px)`;
+
+  // Auto-slide 1 card every 4 seconds via physical slot translation (-2 Pitch)
   carouselTimer = setInterval(() => {
-    cycleCount++;
-    const viewportBox = document.querySelector('.scanner-v2-carousel-box');
-    const nodesAtStart = Array.from(track.children);
+    physicalPitch = getPhysicalCardPitch() || physicalPitch;
 
-    const timeLog = {
-      t0_slideStart: performance.now(),
-      t1_midFrame: 0,
-      t2_timeoutFired: 0,
-      t3_nodeRecycled: 0,
-      t4_classesReassigned: 0,
-      t5_transformReset: 0,
-      t6_rAF: 0,
-      t7_paint: 0
-    };
-
-    // Phase 0: Rest State Metrics Before Animation
-    const scrollWidthBefore = track.scrollWidth;
-    const restMetrics = {
-      viewport: getElementMetrics(viewportBox, 'viewport'),
-      track: getElementMetrics(track, 'track'),
-      leftCard: getElementMetrics(nodesAtStart[1], 'leftCard'),
-      heroCard: getElementMetrics(nodesAtStart[2], 'heroCard'),
-      rightCard: getElementMetrics(nodesAtStart[3], 'rightCard')
-    };
-
-    // Phase 1: Animate track transform from -20% to -40% over 380ms
+    // Phase 1: Animate track transform from -1 Pitch to -2 Pitch over 380ms
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = 'translateX(-40%)';
+    track.style.transform = `translateX(-${2 * physicalPitch}px)`;
 
     // Update card scale/shadow classes continuously during slide
-    if (nodesAtStart.length === 5) {
+    const children = Array.from(track.children);
+    if (children.length === 5) {
       const p1 = cachedHotDeals[(carouselIndex + 0 + N * 100) % N];
       const p2 = cachedHotDeals[(carouselIndex + 1 + N * 100) % N];
       const p3 = cachedHotDeals[(carouselIndex + 2 + N * 100) % N];
       const p4 = cachedHotDeals[(carouselIndex + 3 + N * 100) % N];
 
-      nodesAtStart[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
-      nodesAtStart[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
-      nodesAtStart[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
-      nodesAtStart[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
+      children[1].className = `promo-card promo-card--hidden ${getCategoryTheme(p1.name)}`;
+      children[2].className = `promo-card promo-card--side ${getCategoryTheme(p2.name)}`;
+      children[3].className = `promo-card promo-card--hero ${getCategoryTheme(p3.name)}`;
+      children[4].className = `promo-card promo-card--side ${getCategoryTheme(p4.name)}`;
     }
 
-    // Capture Mid-Animation Compositor State at 190ms
-    let midMetrics = null;
+    // Phase 2: After 380ms transition completes, recycle offscreen node & reset track to baseline -1 Pitch instantly
     setTimeout(() => {
-      timeLog.t1_midFrame = performance.now();
-      midMetrics = {
-        trackMatrix: window.getComputedStyle(track).transform,
-        leftRect: nodesAtStart[1] ? Math.round(nodesAtStart[1].getBoundingClientRect().left) : 0,
-        heroRect: nodesAtStart[2] ? Math.round(nodesAtStart[2].getBoundingClientRect().left) : 0,
-        rightRect: nodesAtStart[3] ? Math.round(nodesAtStart[3].getBoundingClientRect().left) : 0
-      };
-    }, 190);
-
-    // Phase 2: After 380ms transition completes, recycle offscreen node & reset track instantly
-    setTimeout(() => {
-      timeLog.t2_timeoutFired = performance.now();
-
       carouselIndex = (carouselIndex + 1) % N;
 
       // Disable transition for instant reset
       track.style.transition = 'none';
 
-      // DOM Recycling
+      // DOM Recycling: Move first node to end
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
-      timeLog.t3_nodeRecycled = performance.now();
 
-      // Class Reassignment & Content Update
+      // Re-populate node data at baseline position (-1 Pitch)
       const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
         const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
@@ -900,66 +820,14 @@ function renderHotDealsCarousel() {
 
         updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
       }
-      timeLog.t4_classesReassigned = performance.now();
 
-      // Reset track transform to baseline -20%
-      track.style.transform = 'translateX(-20%)';
+      // Reset track transform to physical baseline (-1 Pitch)
+      physicalPitch = getPhysicalCardPitch() || physicalPitch;
+      track.style.transform = `translateX(-${physicalPitch}px)`;
       void track.offsetWidth; // Force CSS reflow
-      timeLog.t5_transformReset = performance.now();
 
       // Re-enable CSS transition for next cycle
       track.style.transition = '';
-
-      requestAnimationFrame(() => {
-        timeLog.t6_rAF = performance.now();
-        requestAnimationFrame(() => {
-          timeLog.t7_paint = performance.now();
-
-          const scrollWidthAfter = track.scrollWidth;
-          const postMetrics = {
-            viewport: getElementMetrics(viewportBox, 'viewport'),
-            track: getElementMetrics(track, 'track'),
-            leftCard: getElementMetrics(updatedNodes[1], 'leftCard'),
-            heroCard: getElementMetrics(updatedNodes[2], 'heroCard'),
-            rightCard: getElementMetrics(updatedNodes[3], 'rightCard')
-          };
-
-          const logEntry = {
-            cycle: cycleCount,
-            scrollWidthBefore,
-            scrollWidthAfter,
-            scrollWidthDelta: scrollWidthAfter - scrollWidthBefore,
-            restMetrics,
-            midMetrics,
-            postMetrics,
-            timeLog: {
-              slideDurationMs: Math.round(timeLog.t2_timeoutFired - timeLog.t0_slideStart),
-              recycleToResetMs: +(timeLog.t5_transformReset - timeLog.t3_nodeRecycled).toFixed(2),
-              resetToPaintMs: +(timeLog.t7_paint - timeLog.t5_transformReset).toFixed(2)
-            }
-          };
-
-          renderPipelineLogs.push(logEntry);
-
-          if (cycleCount <= 5 || cycleCount === 20) {
-            console.log(`[RENDERING PIPELINE TRACE - CYCLE ${cycleCount}]`, logEntry);
-          }
-          if (cycleCount === 20) {
-            console.log('=== 20-CYCLE RENDERING PIPELINE FORENSIC SUMMARY ===');
-            console.table(renderPipelineLogs.map(l => ({
-              cycle: l.cycle,
-              scrollDelta: l.scrollWidthDelta,
-              slideMs: l.timeLog.slideDurationMs,
-              recycleToResetMs: l.timeLog.recycleToResetMs,
-              resetToPaintMs: l.timeLog.resetToPaintMs,
-              restHeroRectLeft: l.restMetrics.heroCard ? l.restMetrics.heroCard.rectLeft : null,
-              postHeroRectLeft: l.postMetrics.heroCard ? l.postMetrics.heroCard.rectLeft : null,
-              restTrackMatrix: l.restMetrics.track ? l.restMetrics.track.matrix : null,
-              postTrackMatrix: l.postMetrics.track ? l.postMetrics.track.matrix : null
-            })));
-          }
-        });
-      });
     }, 380);
   }, 4000);
 }
