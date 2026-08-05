@@ -759,34 +759,66 @@ function renderHotDealsCarousel() {
   track.style.transition = 'none';
   track.style.transform = 'translateX(-20%)';
 
-  // V4.1 True Conveyor Track Timer Pipeline (Every 4 seconds)
+  // Synchronized 380ms Conveyor Track Timer Pipeline (Every 4 seconds)
   carouselTimer = setInterval(() => {
-    // Phase 1 — Slide: Move physical conveyor strip 1 slot leftward (-20% -> -40% over 380ms)
-    // FORBIDDEN DURING THIS 380ms: innerHTML changes, title/price/discount changes, class changes, DOM mutations
+    // 1. Initiate synchronized 380ms slide AND card scale/shadow transitions simultaneously at t = 0
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
     track.style.transform = 'translateX(-40%)';
 
-    // Phase 2 — Recycle & Reset at transition end (t = 380ms)
+    // Simultaneously update class roles for the 380ms movement so cards scale smoothly while translating:
+    // Node 1 (Left card): moves offscreen left, scales 0.93 -> 0.85, fades out
+    // Node 2 (Hero card): moves to Left slot, shrinks 1.06 -> 0.93
+    // Node 3 (Right card): moves to Hero center slot, grows 0.93 -> 1.06
+    // Node 4 (Hidden Right card): slides into Right slot from offscreen right, scales 0.85 -> 0.93, fades in
+    const slidingNodes = Array.from(track.children);
+    if (slidingNodes.length === 5) {
+      const theme1 = slidingNodes[1].getAttribute('data-theme') || 'theme-green';
+      const theme2 = slidingNodes[2].getAttribute('data-theme') || 'theme-green';
+      const theme3 = slidingNodes[3].getAttribute('data-theme') || 'theme-green';
+      const theme4 = slidingNodes[4].getAttribute('data-theme') || 'theme-green';
+
+      slidingNodes[1].className = `promo-card promo-card--hidden ${theme1}`;
+      slidingNodes[2].className = `promo-card promo-card--side ${theme2}`;
+      slidingNodes[3].className = `promo-card promo-card--hero ${theme3}`;
+      slidingNodes[4].className = `promo-card promo-card--side ${theme4}`;
+
+      const b2 = slidingNodes[2].querySelector('.promo-card-badge');
+      if (b2) {
+        b2.classList.remove('badge-hot');
+        b2.textContent = b2.textContent.replace('🔥 ', '');
+      }
+      const b3 = slidingNodes[3].querySelector('.promo-card-badge');
+      if (b3) {
+        b3.classList.add('badge-hot');
+        if (!b3.textContent.includes('🔥')) {
+          b3.textContent = '🔥 ' + b3.textContent;
+        }
+      }
+    }
+
+    // 2. Invisible DOM Recycling & Rest Reset at transition end (t = 380ms)
     setTimeout(() => {
       carouselIndex = (carouselIndex + 1) % N;
 
-      // 1. Disable transition
+      // Disable transitions temporarily during DOM re-parenting and rest reset
       track.style.transition = 'none';
+      const currentNodes = Array.from(track.children);
+      currentNodes.forEach(card => card.style.transition = 'none');
 
-      // 2. Move offscreen left node (DOM Index 0) to end of track (DOM Index 4)
+      // Move offscreen left node (DOM Index 0) to end of track (DOM Index 4)
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
 
-      // 3. Reset transform to baseline rest position (-20%)
+      // Reset transform to baseline rest position (-20%)
       track.style.transform = 'translateX(-20%)';
       void track.offsetWidth; // Force layout reflow
 
-      // 4. Update visual role classes for traveling nodes (0..3) & populate ONLY recycled end node (4)
-      const currentNodes = Array.from(track.children);
+      // Re-assign classes and populate ONLY recycled offscreen end node (DOM Index 4)
+      const updatedNodes = Array.from(track.children);
       for (let i = 0; i < 5; i++) {
-        const cardNode = currentNodes[i];
+        const cardNode = updatedNodes[i];
         let stateClass = 'promo-card--side';
         let isHero = false;
 
@@ -803,27 +835,16 @@ function renderHotDealsCarousel() {
           const p = cachedHotDeals[prodIdx];
           updateV4CardContent(cardNode, p, stateClass, isHero);
         } else {
-          // Traveling nodes (0..3): Keep existing innerHTML & product! Update ONLY visual role classes
+          // Traveling nodes (0..3): Retain innerHTML & product! Apply baseline rest state class
           const theme = cardNode.getAttribute('data-theme') || 'theme-green';
           cardNode.className = `promo-card ${stateClass} ${theme}`;
-          const badge = cardNode.querySelector('.promo-card-badge');
-          if (badge) {
-            if (isHero) {
-              badge.classList.add('badge-hot');
-              if (!badge.textContent.includes('🔥')) {
-                badge.textContent = '🔥 ' + badge.textContent;
-              }
-            } else {
-              badge.classList.remove('badge-hot');
-              badge.textContent = badge.textContent.replace('🔥 ', '');
-            }
-          }
         }
       }
 
-      // 5. Re-enable transition for next cycle
+      // Re-enable transitions on track and cards for next cycle
       void track.offsetWidth;
       track.style.transition = '';
+      updatedNodes.forEach(card => card.style.transition = '');
     }, 380);
   }, 4000);
 }
