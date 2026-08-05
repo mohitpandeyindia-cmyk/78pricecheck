@@ -684,6 +684,7 @@ function getCategoryTheme(productName) {
 
 function updateV4CardContent(cardNode, p, stateClass, isHero) {
   const theme = getCategoryTheme(p.name);
+  cardNode.setAttribute('data-theme', theme);
   cardNode.className = `promo-card ${stateClass} ${theme}`;
 
   const mrpVal = Math.round(Number(p.mrp));
@@ -728,7 +729,7 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM nodes in track (V4 Conveyor Track)
+  // Initialize exactly 5 DOM nodes in track (V4.1 Conveyor Track)
   track.innerHTML = '';
   const nodes = [];
   for (let i = 0; i < 5; i++) {
@@ -737,55 +738,92 @@ function renderHotDealsCarousel() {
     track.appendChild(card);
   }
 
-  const populateNodes = () => {
-    const currentNodes = Array.from(track.children);
-    for (let i = 0; i < 5; i++) {
-      const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
-      const p = cachedHotDeals[prodIdx];
-      let stateClass = 'promo-card--side';
-      let isHero = false;
+  // Initial full population of all 5 nodes at rest
+  for (let i = 0; i < 5; i++) {
+    const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
+    const p = cachedHotDeals[prodIdx];
+    let stateClass = 'promo-card--side';
+    let isHero = false;
 
-      if (i === 0 || i === 4) {
-        stateClass = 'promo-card--hidden';
-      } else if (i === 2) {
-        stateClass = 'promo-card--hero';
-        isHero = true;
-      }
-
-      updateV4CardContent(currentNodes[i], p, stateClass, isHero);
+    if (i === 0 || i === 4) {
+      stateClass = 'promo-card--hidden';
+    } else if (i === 2) {
+      stateClass = 'promo-card--hero';
+      isHero = true;
     }
-  };
+
+    updateV4CardContent(nodes[i], p, stateClass, isHero);
+  }
 
   // Baseline rest position (-20% track width = -33.33% viewport width)
   track.style.transition = 'none';
   track.style.transform = 'translateX(-20%)';
-  populateNodes();
 
-  // V4 Conveyor Track Timer Pipeline (Every 4 seconds)
+  // V4.1 True Conveyor Track Timer Pipeline (Every 4 seconds)
   carouselTimer = setInterval(() => {
-    // 1. Slide conveyor strip 1 slot leftward (-20% -> -40% track transform over 380ms)
+    // Phase 1 — Slide: Move physical conveyor strip 1 slot leftward (-20% -> -40% over 380ms)
+    // FORBIDDEN DURING THIS 380ms: innerHTML changes, title/price/discount changes, class changes, DOM mutations
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
     track.style.transform = 'translateX(-40%)';
 
-    // 2. Recycle & Reset at transition end (t = 380ms)
+    // Phase 2 — Recycle & Reset at transition end (t = 380ms)
     setTimeout(() => {
       carouselIndex = (carouselIndex + 1) % N;
 
-      // Disable transition
+      // 1. Disable transition
       track.style.transition = 'none';
 
-      // Move first node to end of track
+      // 2. Move offscreen left node (DOM Index 0) to end of track (DOM Index 4)
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
 
-      // Reset transform to baseline rest position (-20%)
+      // 3. Reset transform to baseline rest position (-20%)
       track.style.transform = 'translateX(-20%)';
       void track.offsetWidth; // Force layout reflow
 
-      // Re-assign card contents & visual role classes instantly
-      populateNodes();
+      // 4. Update visual role classes for traveling nodes (0..3) & populate ONLY recycled end node (4)
+      const currentNodes = Array.from(track.children);
+      for (let i = 0; i < 5; i++) {
+        const cardNode = currentNodes[i];
+        let stateClass = 'promo-card--side';
+        let isHero = false;
+
+        if (i === 0 || i === 4) {
+          stateClass = 'promo-card--hidden';
+        } else if (i === 2) {
+          stateClass = 'promo-card--hero';
+          isHero = true;
+        }
+
+        if (i === 4) {
+          // Newly recycled end node: Populate with next incoming product
+          const prodIdx = (carouselIndex + 3 + N * 100) % N;
+          const p = cachedHotDeals[prodIdx];
+          updateV4CardContent(cardNode, p, stateClass, isHero);
+        } else {
+          // Traveling nodes (0..3): Keep existing innerHTML & product! Update ONLY visual role classes
+          const theme = cardNode.getAttribute('data-theme') || 'theme-green';
+          cardNode.className = `promo-card ${stateClass} ${theme}`;
+          const badge = cardNode.querySelector('.promo-card-badge');
+          if (badge) {
+            if (isHero) {
+              badge.classList.add('badge-hot');
+              if (!badge.textContent.includes('🔥')) {
+                badge.textContent = '🔥 ' + badge.textContent;
+              }
+            } else {
+              badge.classList.remove('badge-hot');
+              badge.textContent = badge.textContent.replace('🔥 ', '');
+            }
+          }
+        }
+      }
+
+      // 5. Re-enable transition for next cycle
+      void track.offsetWidth;
+      track.style.transition = '';
     }, 380);
   }, 4000);
 }
