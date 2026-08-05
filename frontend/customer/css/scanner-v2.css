@@ -856,6 +856,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  gap: 6px; /* 6px minimal breathing space between visible cards */
   box-sizing: border-box;
   position: relative;
   transform: translateX(-20%); /* Baseline rest position: Node 0 offscreen left */
@@ -863,9 +864,9 @@
 }
 
 .promo-card {
-  flex: 0 0 20%; /* 20% of track width = 33.333333% of carousel viewport */
+  flex: 0 0 calc(20% - 4.8px); /* 20% track width - 4.8px gap compensation = 33.33% viewport */
   height: 94%;
-  padding: 6px;
+  padding: 7px 8px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -890,7 +891,7 @@
   transform: scale(1.06);
   opacity: 1;
   z-index: 3;
-  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
 }
 
 .promo-card--side {
@@ -906,10 +907,10 @@
   z-index: 0;
 }
 
-/* Category Color Language Themes */
+/* Category Color Language Themes (Subtle 3-6% Saturation Tints) */
 .promo-card.theme-green {
   background: #f0fdf4;
-  border: 1px solid rgba(22, 163, 74, 0.2);
+  border: 1px solid rgba(22, 163, 74, 0.22);
 }
 .promo-card.theme-green .promo-card-badge {
   background: #15803d;
@@ -918,7 +919,7 @@
 
 .promo-card.theme-orange {
   background: #fff7ed;
-  border: 1px solid rgba(234, 88, 12, 0.2);
+  border: 1px solid rgba(234, 88, 12, 0.22);
 }
 .promo-card.theme-orange .promo-card-badge {
   background: #c2410c;
@@ -927,7 +928,7 @@
 
 .promo-card.theme-blue {
   background: #eff6ff;
-  border: 1px solid rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(37, 99, 235, 0.22);
 }
 .promo-card.theme-blue .promo-card-badge {
   background: #1d4ed8;
@@ -936,32 +937,34 @@
 
 .promo-card.theme-purple {
   background: #faf5ff;
-  border: 1px solid rgba(147, 51, 234, 0.2);
+  border: 1px solid rgba(147, 51, 234, 0.22);
 }
 .promo-card.theme-purple .promo-card-badge {
   background: #7e22ce;
   color: #ffffff;
 }
 
+/* Dominant SAVE Badge (Right-Corner Alignment, 25% Larger Weight) */
 .promo-card-badge {
-  align-self: flex-start;
+  align-self: flex-end; /* Position on top RIGHT corner of the card */
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 6px;
-  letter-spacing: 0.02em;
+  font-size: 0.72rem;
+  font-weight: 900;
+  padding: 3px 7px;
+  border-radius: 7px;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
 }
 
 .promo-card-badge.badge-hot {
   background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.32);
 }
 
 .promo-card-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #0f172a;
   line-height: 1.15;
@@ -994,7 +997,7 @@
 
 .promo-card-sale {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.02rem;
+  font-size: 1.15rem;
   font-weight: 900;
   color: #0f172a;
 }
