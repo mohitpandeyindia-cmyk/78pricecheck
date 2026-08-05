@@ -196,15 +196,15 @@ const ThemeManager = {
   ],
 
   NIGHT_BACKGROUNDS: [
-    'assets/backgrounds/night_1.jpg',
-    'assets/backgrounds/night_2.jpg',
-    'assets/backgrounds/night_3.jpg',
-    'assets/backgrounds/night_4.jpg',
-    'assets/backgrounds/night_5.jpg',
-    'assets/backgrounds/night_6.jpg',
-    'assets/backgrounds/night_7.jpg',
-    'assets/backgrounds/night_8.jpg',
-    'assets/backgrounds/night_9.jpg'
+    'assets/backgrounds/night_1.png',
+    'assets/backgrounds/night_2.png',
+    'assets/backgrounds/night_3.png',
+    'assets/backgrounds/night_4.png',
+    'assets/backgrounds/night_5.png',
+    'assets/backgrounds/night_6.png',
+    'assets/backgrounds/night_7.png',
+    'assets/backgrounds/night_8.png',
+    'assets/backgrounds/night_9.png'
   ],
 
   getKolkataTime(dateObj = new Date()) {
