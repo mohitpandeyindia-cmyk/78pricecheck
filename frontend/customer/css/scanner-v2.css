@@ -1040,9 +1040,9 @@
 }
 
 .scanner-v2-history-handle {
-  background: linear-gradient(180deg, #374151 0%, #1f2937 45%, #111827 100%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: none;
+  border-radius: 20px;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
@@ -1050,21 +1050,23 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 18px;
+  padding: 6px 16px;
   margin: 0;
   width: auto;
   height: auto;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   pointer-events: auto;
   overflow: hidden;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .scanner-v2-handle-chevron {
-  color: #9ca3af;
+  color: #d1d5db;
   transition: transform 0.2s ease;
 }
 
@@ -1072,12 +1074,13 @@
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.4px;
-  color: #f3f4f6;
+  color: #ffffff;
   text-transform: uppercase;
 }
 
 .scanner-v2-history-handle:active {
   transform: scale(0.96);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 100%);
 }
 
 .scanner-v2-history-handle:active .scanner-v2-handle-chevron {
