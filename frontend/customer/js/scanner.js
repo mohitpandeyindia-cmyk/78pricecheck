@@ -666,24 +666,19 @@ function renderRecentScans() {
 let carouselIndex = 0;
 let carouselTimer = null;
 
-function getCategoryTheme(productName) {
-  if (!productName) return 'theme-green';
-  const nameLower = productName.toLowerCase();
+const CAROUSEL_THEMES = ['theme-green', 'theme-blue', 'theme-yellow', 'theme-orange', 'theme-purple', 'theme-red'];
 
-  if (nameLower.includes('wash') || nameLower.includes('detergent') || nameLower.includes('surf') || nameLower.includes('soap')) {
-    return 'theme-green';
+function getCategoryTheme(prodIdx, usedThemes = []) {
+  let themeIdx = Math.abs((prodIdx * 7 + 13) % CAROUSEL_THEMES.length);
+  let attempts = 0;
+  while (usedThemes.includes(CAROUSEL_THEMES[themeIdx]) && attempts < CAROUSEL_THEMES.length) {
+    themeIdx = (themeIdx + 1) % CAROUSEL_THEMES.length;
+    attempts++;
   }
-  if (nameLower.includes('tea') || nameLower.includes('coffee') || nameLower.includes('beverage') || nameLower.includes('drink')) {
-    return 'theme-orange';
-  }
-  if (nameLower.includes('oil') || nameLower.includes('ghee') || nameLower.includes('butter') || nameLower.includes('food')) {
-    return 'theme-blue';
-  }
-  return 'theme-purple';
+  return CAROUSEL_THEMES[themeIdx];
 }
 
-function updateV4CardContent(cardNode, p, stateClass, isHero) {
-  const theme = getCategoryTheme(p.name);
+function updateV4CardContent(cardNode, p, stateClass, isHero, theme) {
   cardNode.setAttribute('data-theme', theme);
   cardNode.className = `promo-card ${stateClass} ${theme}`;
 
@@ -692,11 +687,11 @@ function updateV4CardContent(cardNode, p, stateClass, isHero) {
   const discVal = Math.round(Number(p.discountPercent));
 
   cardNode.innerHTML = `
-    <div class="promo-card-badge ${isHero ? 'badge-hot' : ''}">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
+    <div class="promo-card-badge">${isHero ? `🔥 SAVE ${discVal}%` : `SAVE ${discVal}%`}</div>
     <div class="promo-card-name">${escapeHtml(p.name)}</div>
     <div class="promo-card-prices">
       <span class="promo-card-sale">₹${saleVal}</span>
-      <span class="promo-card-mrp">MRP ₹${mrpVal}</span>
+      <span class="promo-card-mrp"><span class="promo-card-mrp-label">MRP</span> <span class="promo-card-mrp-val">₹${mrpVal}</span></span>
     </div>
   `;
 
@@ -729,7 +724,7 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM nodes in track (V4.1 Conveyor Track)
+  // Initialize exactly 5 DOM nodes in track (V4.4 Conveyor Track)
   track.innerHTML = '';
   const nodes = [];
   for (let i = 0; i < 5; i++) {
@@ -738,7 +733,8 @@ function renderHotDealsCarousel() {
     track.appendChild(card);
   }
 
-  // Initial full population of all 5 nodes at rest
+  // Initial full population of all 5 nodes at rest with 3 distinct visible themes
+  const usedThemes = [];
   for (let i = 0; i < 5; i++) {
     const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
     const p = cachedHotDeals[prodIdx];
@@ -752,7 +748,12 @@ function renderHotDealsCarousel() {
       isHero = true;
     }
 
-    updateV4CardContent(nodes[i], p, stateClass, isHero);
+    const theme = getCategoryTheme(prodIdx, usedThemes);
+    if (i >= 1 && i <= 3) {
+      usedThemes.push(theme); // Track themes used by visible cards
+    }
+
+    updateV4CardContent(nodes[i], p, stateClass, isHero, theme);
   }
 
   // Baseline rest position (-20% track width = -33.33% viewport width)
@@ -782,17 +783,14 @@ function renderHotDealsCarousel() {
       slidingNodes[3].className = `promo-card promo-card--hero ${theme3}`;
       slidingNodes[4].className = `promo-card promo-card--side ${theme4}`;
 
+      // Update 🔥 icon to follow Hero position exclusively
       const b2 = slidingNodes[2].querySelector('.promo-card-badge');
       if (b2) {
-        b2.classList.remove('badge-hot');
         b2.textContent = b2.textContent.replace('🔥 ', '');
       }
       const b3 = slidingNodes[3].querySelector('.promo-card-badge');
-      if (b3) {
-        b3.classList.add('badge-hot');
-        if (!b3.textContent.includes('🔥')) {
-          b3.textContent = '🔥 ' + b3.textContent;
-        }
+      if (b3 && !b3.textContent.includes('🔥')) {
+        b3.textContent = '🔥 ' + b3.textContent;
       }
     }
 
@@ -817,6 +815,12 @@ function renderHotDealsCarousel() {
 
       // Re-assign classes and populate ONLY recycled offscreen end node (DOM Index 4)
       const updatedNodes = Array.from(track.children);
+      const visibleThemes = [
+        updatedNodes[1].getAttribute('data-theme'),
+        updatedNodes[2].getAttribute('data-theme'),
+        updatedNodes[3].getAttribute('data-theme')
+      ];
+
       for (let i = 0; i < 5; i++) {
         const cardNode = updatedNodes[i];
         let stateClass = 'promo-card--side';
@@ -830,10 +834,11 @@ function renderHotDealsCarousel() {
         }
 
         if (i === 4) {
-          // Newly recycled end node: Populate with next incoming product
+          // Newly recycled end node: Populate with next incoming product & distinct non-duplicate theme
           const prodIdx = (carouselIndex + 3 + N * 100) % N;
           const p = cachedHotDeals[prodIdx];
-          updateV4CardContent(cardNode, p, stateClass, isHero);
+          const theme = getCategoryTheme(prodIdx, visibleThemes);
+          updateV4CardContent(cardNode, p, stateClass, isHero, theme);
         } else {
           // Traveling nodes (0..3): Retain innerHTML & product! Apply baseline rest state class
           const theme = cardNode.getAttribute('data-theme') || 'theme-green';

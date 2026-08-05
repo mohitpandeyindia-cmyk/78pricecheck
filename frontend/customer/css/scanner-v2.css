@@ -907,22 +907,13 @@
   z-index: 0;
 }
 
-/* Category Color Language Themes (Subtle 3-6% Saturation Tints) */
+/* Category Color Language Themes (Subtle 3-6% Saturation Tints & matching badge accents) */
 .promo-card.theme-green {
   background: #f0fdf4;
   border: 1px solid rgba(22, 163, 74, 0.22);
 }
 .promo-card.theme-green .promo-card-badge {
   background: #15803d;
-  color: #ffffff;
-}
-
-.promo-card.theme-orange {
-  background: #fff7ed;
-  border: 1px solid rgba(234, 88, 12, 0.22);
-}
-.promo-card.theme-orange .promo-card-badge {
-  background: #c2410c;
   color: #ffffff;
 }
 
@@ -935,12 +926,39 @@
   color: #ffffff;
 }
 
+.promo-card.theme-yellow {
+  background: #fefce8;
+  border: 1px solid rgba(202, 138, 4, 0.28);
+}
+.promo-card.theme-yellow .promo-card-badge {
+  background: #b45309;
+  color: #ffffff;
+}
+
+.promo-card.theme-orange {
+  background: #fff7ed;
+  border: 1px solid rgba(234, 88, 12, 0.22);
+}
+.promo-card.theme-orange .promo-card-badge {
+  background: #c2410c;
+  color: #ffffff;
+}
+
 .promo-card.theme-purple {
   background: #faf5ff;
   border: 1px solid rgba(147, 51, 234, 0.22);
 }
 .promo-card.theme-purple .promo-card-badge {
   background: #7e22ce;
+  color: #ffffff;
+}
+
+.promo-card.theme-red {
+  background: #fef2f2;
+  border: 1px solid rgba(220, 38, 38, 0.22);
+}
+.promo-card.theme-red .promo-card-badge {
+  background: #b91c1c;
   color: #ffffff;
 }
 
@@ -956,20 +974,15 @@
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
 }
 
-.promo-card-badge.badge-hot {
-  background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%) !important;
-  color: #ffffff !important;
-  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.32);
-}
-
 .promo-card-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
   color: #0f172a;
   line-height: 1.15;
+  margin-top: 2px; /* Positioned higher by reducing top gap */
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3; /* Increased capacity to 3 lines */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -992,7 +1005,16 @@
   font-size: 0.68rem;
   font-weight: 600;
   color: #94a3b8;
-  text-decoration: line-through;
+}
+
+.promo-card-mrp-label {
+  text-decoration: none; /* "MRP" remains normal text */
+  color: #94a3b8;
+}
+
+.promo-card-mrp-val {
+  text-decoration: line-through; /* ONLY numeric price is struck through */
+  color: #94a3b8;
 }
 
 .promo-card-sale {
