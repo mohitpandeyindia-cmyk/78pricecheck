@@ -1040,9 +1040,9 @@
 }
 
 .scanner-v2-history-handle {
-  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 20px;
+  background: linear-gradient(180deg, #374151 0%, #1f2937 45%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
@@ -1050,11 +1050,11 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 6px 16px;
+  padding: 7px 18px;
   margin: 0;
   width: auto;
   height: auto;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   outline: none;
