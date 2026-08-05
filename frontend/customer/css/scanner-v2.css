@@ -1040,38 +1040,44 @@
 }
 
 .scanner-v2-history-handle {
-  background: transparent;
-  border: none;
-  color: #333333;
+  background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  color: #ffffff;
   cursor: pointer;
   display: inline-flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  padding: 0 16px;
+  gap: 6px;
+  padding: 6px 16px;
   margin: 0;
   width: auto;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
   outline: none;
   pointer-events: auto;
   overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .scanner-v2-handle-chevron {
-  color: #555555;
+  color: #9ca3af;
   transition: transform 0.2s ease;
 }
 
 .scanner-v2-handle-text {
   font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #444444;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #f3f4f6;
   text-transform: uppercase;
+}
+
+.scanner-v2-history-handle:active {
+  transform: scale(0.96);
 }
 
 .scanner-v2-history-handle:active .scanner-v2-handle-chevron {
