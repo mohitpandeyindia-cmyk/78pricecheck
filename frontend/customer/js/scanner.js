@@ -666,38 +666,6 @@ function renderRecentScans() {
 let carouselIndex = 0;
 let carouselTimer = null;
 
-// Global physical slot pitch invariant state
-let cachedPhysicalPitch = 0;
-
-function computePhysicalSlotPitch() {
-  const track = document.getElementById('promo-carousel-track');
-  if (!track || track.children.length < 2) return 0;
-
-  const cardNode = track.children[1] || track.firstElementChild;
-  const cardRect = cardNode.getBoundingClientRect();
-  const style = window.getComputedStyle(track);
-  const gap = parseFloat(style.columnGap || style.gap) || 4;
-
-  // Rule 2: Measure from rendered geometry (cardRect.width + gap)
-  cachedPhysicalPitch = cardRect.width + gap;
-  return cachedPhysicalPitch;
-}
-
-// Rule 3: Re-measure P ONLY on window resize / orientation change
-window.addEventListener('resize', () => {
-  const oldP = cachedPhysicalPitch;
-  const newP = computePhysicalSlotPitch();
-  if (newP > 0 && newP !== oldP) {
-    const track = document.getElementById('promo-carousel-track');
-    if (track) {
-      track.style.transition = 'none';
-      track.style.transform = `translateX(-${newP}px)`;
-      void track.offsetWidth;
-      track.style.transition = '';
-    }
-  }
-});
-
 function getCategoryTheme(productName) {
   if (!productName) return 'theme-green';
   const nameLower = productName.toLowerCase();
@@ -714,7 +682,7 @@ function getCategoryTheme(productName) {
   return 'theme-purple';
 }
 
-function updateCoverFlowCardNode(cardNode, p, stateClass, isHero) {
+function updateV4CardContent(cardNode, p, stateClass, isHero) {
   const theme = getCategoryTheme(p.name);
   cardNode.className = `promo-card ${stateClass} ${theme}`;
 
@@ -731,7 +699,7 @@ function updateCoverFlowCardNode(cardNode, p, stateClass, isHero) {
     </div>
   `;
 
-  // Interactive preview: Clicking populates Section 3 via renderV2ProductCard
+  // Preserved Click-to-Preview behavior (Section 3 integration)
   cardNode.onclick = () => {
     renderV2ProductCard(p, p.barcode);
     applyCardHighlight();
@@ -760,7 +728,7 @@ function renderHotDealsCarousel() {
 
   const N = cachedHotDeals.length;
 
-  // Initialize exactly 5 DOM nodes in track (V2.4 5-node architecture)
+  // Initialize exactly 5 DOM nodes in track (V4 Conveyor Track)
   track.innerHTML = '';
   const nodes = [];
   for (let i = 0; i < 5; i++) {
@@ -769,7 +737,8 @@ function renderHotDealsCarousel() {
     track.appendChild(card);
   }
 
-  const populateNodesAtRest = () => {
+  const populateNodes = () => {
+    const currentNodes = Array.from(track.children);
     for (let i = 0; i < 5; i++) {
       const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
       const p = cachedHotDeals[prodIdx];
@@ -783,94 +752,40 @@ function renderHotDealsCarousel() {
         isHero = true;
       }
 
-      updateCoverFlowCardNode(nodes[i], p, stateClass, isHero);
+      updateV4CardContent(currentNodes[i], p, stateClass, isHero);
     }
   };
 
-  populateNodesAtRest();
+  // Baseline rest position (-20% track width = -33.33% viewport width)
+  track.style.transition = 'none';
+  track.style.transform = 'translateX(-20%)';
+  populateNodes();
 
-  // Rule 2 & Rule 3: Measure physical pitch P ONCE from initial rendered geometry
-  const P = computePhysicalSlotPitch();
-  if (P > 0) {
-    track.style.transform = `translateX(-${P}px)`;
-  }
-
-  let cycleCount = 0;
-  const v3VerificationLogs = [];
-
-  // Single Animation Authority V3: 7-Phase Deterministic Pipeline
+  // V4 Conveyor Track Timer Pipeline (Every 4 seconds)
   carouselTimer = setInterval(() => {
-    cycleCount++;
-    const currentP = cachedPhysicalPitch;
-
-    // Phase 1 — Prepare: Track at rest at -P
-    // Phase 2 — Slide: Animate ONLY track.style.transform from -P to -2P over 380ms
-    // (CRITICAL V3 RULE: NO class changes, NO scale changes, NO DOM mutations during 380ms slide!)
+    // 1. Slide conveyor strip 1 slot leftward (-20% -> -40% track transform over 380ms)
     track.style.transition = 'transform 380ms cubic-bezier(0.22, 1, 0.36, 1)';
-    track.style.transform = `translateX(-${2 * currentP}px)`;
+    track.style.transform = 'translateX(-40%)';
 
-    // Phase 3 — Freeze: When transition ends at t = 380ms
+    // 2. Recycle & Reset at transition end (t = 380ms)
     setTimeout(() => {
       carouselIndex = (carouselIndex + 1) % N;
 
-      // Phase 3: Disable transition on track
+      // Disable transition
       track.style.transition = 'none';
 
-      // Phase 4 — Recycle: appendChild(firstNode)
+      // Move first node to end of track
       const firstNode = track.firstElementChild;
       if (firstNode) {
         track.appendChild(firstNode);
       }
 
-      // Phase 5 — Reset: Restore translateX(-P) with transition: none
-      track.style.transform = `translateX(-${currentP}px)`;
+      // Reset transform to baseline rest position (-20%)
+      track.style.transform = 'translateX(-20%)';
       void track.offsetWidth; // Force layout reflow
 
-      // Phase 6 — Update Visual Roles: Update promo-card--hero/side/hidden classes INSTANTLY (no animation)
-      const updatedNodes = Array.from(track.children);
-      for (let i = 0; i < 5; i++) {
-        const prodIdx = (carouselIndex + i - 1 + N * 100) % N;
-        const p = cachedHotDeals[prodIdx];
-        let stateClass = 'promo-card--side';
-        let isHero = false;
-
-        if (i === 0 || i === 4) {
-          stateClass = 'promo-card--hidden';
-        } else if (i === 2) {
-          stateClass = 'promo-card--hero';
-          isHero = true;
-        }
-
-        updateCoverFlowCardNode(updatedNodes[i], p, stateClass, isHero);
-      }
-
-      // Phase 7 — Resume: Enable transition again for next cycle
-      void track.offsetWidth;
-      track.style.transition = '';
-
-      // Verification Logger
-      if (updatedNodes.length === 5) {
-        const vBox = document.querySelector('.scanner-v2-carousel-box');
-        const vRect = vBox ? vBox.getBoundingClientRect() : { left: 0, width: 360, right: 360 };
-        const heroRect = updatedNodes[2].getBoundingClientRect();
-        const leftRect = updatedNodes[1].getBoundingClientRect();
-        const rightRect = updatedNodes[3].getBoundingClientRect();
-
-        const v3Log = {
-          cycle: cycleCount,
-          animatedProperty: 'track.transform ONLY',
-          childTransitionsCount: 0,
-          heroCenter: Math.round(heroRect.left + heroRect.width / 2 - vRect.left),
-          leftVisualLeft: Math.round(leftRect.left - vRect.left),
-          rightVisualRight: Math.round(rightRect.right - vRect.left),
-          viewportWidth: Math.round(vRect.width)
-        };
-        v3VerificationLogs.push(v3Log);
-
-        if (cycleCount === 1 || cycleCount === 20) {
-          console.log(`[V3 SINGLE ANIMATION AUTHORITY LOG - CYCLE ${cycleCount}]`, v3Log);
-        }
-      }
+      // Re-assign card contents & visual role classes instantly
+      populateNodes();
     }, 380);
   }, 4000);
 }
