@@ -454,15 +454,15 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Zone 3 — Price Area (Shifted Downward by 10% to top: 49.5%) */
+/* Zone 3 — Price Area (Shifted 2% Upward to top: 47.5%, MRP Baseline Aligned with Rupee Symbol Baseline) */
 .esl-price-zone {
   position: absolute;
-  top: 49.5%; /* Shifted downward by 10% from 39.5% */
+  top: 47.5%; /* Shifted 2% upward from 49.5% */
   left: 6.5%;
   width: 86%;
   height: 35%;
   display: flex;
-  align-items: baseline; /* MRP & Sale Price aligned by bottom baseline */
+  align-items: baseline; /* MRP baseline aligned with Rupee symbol baseline */
   justify-content: flex-start;
   gap: 12px;
   box-sizing: border-box;
@@ -477,7 +477,7 @@
   justify-content: flex-end;
   line-height: 1.1;
   flex-shrink: 0;
-  align-self: baseline; /* Aligned by bottom baseline */
+  align-self: baseline; /* Aligned with Rupee symbol placement baseline */
   padding-bottom: 2px;
 }
 
@@ -500,10 +500,10 @@
   text-decoration-thickness: 1px;
 }
 
-/* Sale Price: Dominant Visual Focal Point (+50% Height Stretch, +25% Breadth Stretch) */
+/* Sale Price: Dominant Visual Focal Point (-5% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
 .esl-sale-block {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.6rem, 11.5vw, 4.8rem);
+  font-size: clamp(3.42rem, 10.9vw, 4.56rem); /* Reduced overall size by 5% */
   font-weight: 900; /* Black weight */
   line-height: 0.90;
   letter-spacing: -0.045em;
@@ -512,7 +512,7 @@
   margin-left: 2px;
   transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
   transform-origin: left bottom;
-  align-self: baseline; /* Aligned by bottom baseline */
+  align-self: baseline; /* Aligned by bottom baseline matching Rupee symbol placement */
 }
 
 .esl-rupee {
@@ -521,6 +521,7 @@
   color: #0f172a !important; /* Black Rupee symbol */
   -webkit-text-fill-color: #0f172a !important;
   margin-right: 4px; /* Natural space between symbol and sale price */
+  align-self: baseline;
 }
 
 .esl-sale-num {
