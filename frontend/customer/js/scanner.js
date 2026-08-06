@@ -971,7 +971,7 @@ function renderV2ProductCard(p, barcode) {
       }
       badgeEl.innerHTML = `
         <div class="esl-badge-mode-a">
-          <span class="esl-ba-pct">${discountPercent}%</span>
+          <span class="esl-ba-pct"><span class="esl-ba-num">${discountPercent}</span><span class="esl-ba-sym">%</span></span>
           <span class="esl-ba-off">OFF</span>
         </div>
       `;

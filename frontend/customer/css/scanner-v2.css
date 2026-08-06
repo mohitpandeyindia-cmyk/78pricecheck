@@ -454,15 +454,15 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Zone 3 — Price Area (Shifted 30% Upwards, MRP & Sale Price Aligned at Same Height) */
+/* Zone 3 — Price Area (Shifted 15% Upwards, MRP & Sale Price Aligned at Bottom Baseline) */
 .esl-price-zone {
   position: absolute;
-  top: 26%; /* Shifted 30% upwards from 37% */
+  top: 31.5%; /* Shifted 15% upwards from 37% */
   left: 6.5%;
   width: 86%;
   height: 42%;
   display: flex;
-  align-items: center; /* MRP & Sale Price aligned on exact same height line */
+  align-items: baseline; /* Aligned by bottom baseline */
   justify-content: flex-start;
   gap: 12px;
   box-sizing: border-box;
@@ -474,10 +474,11 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-end;
   line-height: 1.1;
   flex-shrink: 0;
-  align-self: center; /* Aligned at exact same vertical center height as sale price */
+  align-self: baseline; /* Aligned by bottom baseline */
+  padding-bottom: 3px;
 }
 
 .esl-mrp-label {
@@ -510,8 +511,8 @@
   align-items: baseline;
   margin-left: 2px;
   transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
-  transform-origin: left center;
-  align-self: center; /* Aligned at exact same vertical center height as MRP */
+  transform-origin: left bottom;
+  align-self: baseline; /* Aligned by bottom baseline */
 }
 
 .esl-rupee {
@@ -571,13 +572,13 @@
   margin-left: 3px;
 }
 
-/* Zone 5 — Top Right Yellow Ribbon Badge (Occupies 80% of Length & Breadth) */
+/* Zone 5 — Top Right Yellow Ribbon Badge (Occupies 95% of Length & Breadth, 42px Vertical Gap) */
 .esl-badge-zone {
   position: absolute;
-  top: 2.2%;
-  right: 4.2%;
-  width: 26.8%;
-  height: 58%;
+  top: 1.8%;
+  right: 3.5%;
+  width: 27.5%;
+  height: 60%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -589,39 +590,47 @@
   z-index: 2;
 }
 
-/* Mode A: Normal Discount Product (60% OFF - 80% Occupancy with Vertical Gap) */
+/* Mode A: Normal Discount Product (60% OFF - 95% Occupancy with 42px Vertical Gap) */
 .esl-badge-mode-a {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 96%;
+  width: 98%;
+  height: 98%;
   line-height: 0.88;
-  gap: 14px; /* Distinct space between percentage number and OFF text below it */
+  gap: 42px; /* 42px space between percentage number & OFF text */
 }
 
 .esl-ba-pct {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.25rem, 4.0vw, 1.70rem); /* Scaled to 80% length/breadth occupancy */
+  font-size: clamp(1.4rem, 4.5vw, 1.95rem); /* Scaled to 95% length/breadth occupancy */
   font-weight: 900; /* Black weight */
   color: #0f172a;
   letter-spacing: -0.04em;
-  transform: scale(1.4, 2.2); /* Scaled transform for 80% badge space fill */
+  transform: scale(1.65, 2.6); /* 95% badge space fill transform */
   transform-origin: center center;
-  display: inline-block;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.esl-ba-sym {
+  font-size: 0.65em; /* Percentage symbol keeps same proportional size */
+  font-weight: 800;
+  margin-left: 1px;
 }
 
 .esl-ba-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.25rem, 4.0vw, 1.70rem); /* Exact same size as percentage number */
+  font-size: clamp(1.4rem, 4.5vw, 1.95rem); /* Matches complete width of text above (number + % symbol) */
   font-weight: 900; /* Black weight */
   color: #0f172a;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  transform: scale(1.4, 2.2); /* Exact same stretch transform */
+  letter-spacing: 0.28em; /* Stretches letter spacing to match complete width of number+% above */
+  transform: scale(1.65, 2.6); /* Matches exact same stretch transform */
   transform-origin: center center;
   display: inline-block;
+  text-align: center;
 }
 
 /* Mode B: Wholesale Product (BUY 4 @ ₹820 - High Contrast Black Text on Yellow Ribbon) */
