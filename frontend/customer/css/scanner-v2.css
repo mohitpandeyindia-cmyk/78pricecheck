@@ -569,7 +569,7 @@
   margin-left: 3px;
 }
 
-/* Zone 5 — Top Right Green Ribbon Badge (Calculated Coordinates for High-Res Artwork) */
+/* Zone 5 — Top Right Yellow Ribbon Badge (Calculated Coordinates for High-Res Yellow Artwork) */
 .esl-badge-zone {
   position: absolute;
   top: 3.0%;
@@ -581,13 +581,13 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: #ffffff;
+  color: #0f172a;
   box-sizing: border-box;
   overflow: hidden;
   z-index: 2;
 }
 
-/* Mode A: Normal Discount Product (60% OFF - Stretched +150% Height & +50% Width) */
+/* Mode A: Normal Discount Product (60% OFF - High Contrast Black Text on Yellow Ribbon) */
 .esl-badge-mode-a {
   display: flex;
   flex-direction: column;
@@ -603,7 +603,7 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.05rem, 3.4vw, 1.45rem);
   font-weight: 900; /* Black weight */
-  color: #ffffff;
+  color: #0f172a;
   letter-spacing: -0.04em;
   transform: scale(1.5, 2.5); /* +50% width stretch (scaleX=1.5), +150% height stretch (scaleY=2.5) */
   transform-origin: center center;
@@ -614,7 +614,7 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.05rem, 3.4vw, 1.45rem); /* Exact same size as percentage number */
   font-weight: 900; /* Black weight */
-  color: #ffffff;
+  color: #0f172a;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   transform: scale(1.5, 2.5); /* Exact same stretch transform */
@@ -622,7 +622,7 @@
   display: inline-block;
 }
 
-/* Mode B: Wholesale Product (BUY 4 @ ₹820) */
+/* Mode B: Wholesale Product (BUY 4 @ ₹820 - High Contrast Black Text on Yellow Ribbon) */
 .esl-badge-mode-b {
   display: flex;
   flex-direction: column;
@@ -630,7 +630,7 @@
   justify-content: center;
   width: 92%;
   height: 90%;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .esl-wb-row1 {
@@ -644,7 +644,7 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.6rem, 1.8vw, 0.72rem);
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
   text-transform: uppercase;
 }
 
@@ -652,7 +652,7 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.15rem, 3.5vw, 1.5rem);
   font-weight: 900;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .esl-wb-row2 {
@@ -667,14 +667,14 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.6rem, 1.8vw, 0.72rem);
   font-weight: 800;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 .esl-wb-price {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.15rem, 3.5vw, 1.5rem);
   font-weight: 900;
-  color: #ffffff;
+  color: #0f172a;
 }
 
 /* --- Multiple MRP Selection Screen (V2 3-Equal Band Layout) --- */
