@@ -498,16 +498,18 @@
   text-decoration-thickness: 1px;
 }
 
-/* Sale Price: Dominant Visual Focal Point (+50% Larger Height & Width) */
+/* Sale Price: Dominant Visual Focal Point (+50% Height Stretch, +25% Breadth Stretch) */
 .esl-sale-block {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.6rem, 11.5vw, 4.8rem); /* +50% larger typography */
+  font-size: clamp(3.6rem, 11.5vw, 4.8rem);
   font-weight: 900; /* Black weight */
   line-height: 0.90;
   letter-spacing: -0.045em;
   display: flex;
   align-items: baseline;
   margin-left: 2px;
+  transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
+  transform-origin: left center;
 }
 
 .esl-rupee {
