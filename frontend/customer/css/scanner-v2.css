@@ -415,7 +415,7 @@
   z-index: 1;
 }
 
-/* Zone 1 — Product Name (Top Left, Max 2 lines, Left-Aligned, ExtraBold ALL-CAPS, +35% Size) */
+/* Zone 1 — Product Name (Top Left, Max 2 lines, Left-Aligned, ExtraBold ALL-CAPS, +75% Size) */
 .esl-name-zone {
   position: absolute;
   top: 5.5%;
@@ -432,13 +432,13 @@
 
 .esl-product-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.10rem, 3.4vw, 1.46rem); /* +35% larger typography */
+  font-size: clamp(1.43rem, 4.38vw, 1.89rem); /* +75% larger typography */
   font-weight: 800; /* ExtraBold */
   color: #0f172a;
   text-transform: uppercase; /* Retail ALL-CAPS */
   text-align: left; /* Left-aligned */
-  line-height: 1.12;
-  letter-spacing: 0.01em;
+  line-height: 1.10;
+  letter-spacing: 0.008em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -447,11 +447,11 @@
 }
 
 .esl-product-name.esl-name--medium {
-  font-size: clamp(0.98rem, 3.0vw, 1.25rem);
+  font-size: clamp(1.20rem, 3.6vw, 1.52rem);
 }
 
 .esl-product-name.esl-name--long {
-  font-size: clamp(0.88rem, 2.6vw, 1.10rem);
+  font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
 /* Zone 3 — Price Area (Below divider, 50% Larger Dominant Sale Price) */
