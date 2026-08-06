@@ -896,18 +896,23 @@ function renderV2ProductCard(p, barcode) {
     stateSingle.classList.add('v5-animate-enter');
   }
 
-  // Zone 1: Product Name (Max 2 lines)
+  // Zone 1: Product Name (Max 2 lines, Retail Heavy All-Caps)
   const nameEl = document.getElementById('single-name');
   if (nameEl) {
-    nameEl.textContent = p.name;
+    nameEl.textContent = (p.name || '').toUpperCase();
   }
   const barcodeEl = document.getElementById('single-barcode');
   if (barcodeEl) barcodeEl.textContent = p.barcode;
 
   // Calculate numeric prices
   const mrpVal = Math.round(Number(p.mrp));
-  const saleVal = Math.round(Number(p.salePrice));
+  const rawSale = Number(p.salePrice);
+  const saleVal = Math.round(rawSale);
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
+
+  // Check if decimal digits exist (e.g. 149.50 vs 149.00)
+  const hasDecimal = (rawSale % 1) !== 0;
+  const decimalStr = hasDecimal ? (rawSale % 1).toFixed(2).substring(1) : '';
 
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
@@ -917,7 +922,11 @@ function renderV2ProductCard(p, barcode) {
 
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span>`;
+    if (hasDecimal) {
+      priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${Math.floor(rawSale)}<span class="esl-sale-dec">${decimalStr}</span></span>`;
+    } else {
+      priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span>`;
+    }
   }
 
   // Zone 4: Lower Green Band Left (YOU SAVE ₹XX)

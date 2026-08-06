@@ -384,7 +384,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   PREMIUM ELECTRONIC SHELF LABEL (ESL) ARCHITECTURE (V1)
+   PREMIUM ELECTRONIC SHELF LABEL (ESL) ARCHITECTURE (V1 - RETAIL REFINEMENT)
    -------------------------------------------------------------------------- */
 .esl-shelf-label-card {
   width: 100%;
@@ -397,10 +397,20 @@
   border-radius: 14px;
   overflow: hidden;
   box-sizing: border-box;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  box-shadow: inset 0 0 12px rgba(15, 23, 42, 0.08), 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
-/* Zone 1 — Product Name (Top Left, Max 2 lines) */
+/* Material Realism: Soft vertical light sheen across paper surface */
+.esl-shelf-label-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 35%, rgba(15, 23, 42, 0.03) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Zone 1 — Product Name (Top Left, Max 2 lines, Left-Aligned, ExtraBold ALL-CAPS) */
 .esl-name-zone {
   position: absolute;
   top: 6%;
@@ -412,15 +422,18 @@
   justify-content: flex-start;
   box-sizing: border-box;
   overflow: hidden;
+  z-index: 2;
 }
 
 .esl-product-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.8rem, 2.4vw, 1.05rem);
-  font-weight: 800;
+  font-size: clamp(0.82rem, 2.5vw, 1.08rem);
+  font-weight: 800; /* ExtraBold */
   color: #0f172a;
-  line-height: 1.18;
-  letter-spacing: -0.01em;
+  text-transform: uppercase; /* Retail ALL-CAPS */
+  text-align: left; /* Left-aligned */
+  line-height: 1.15;
+  letter-spacing: 0.015em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -428,20 +441,22 @@
   word-break: break-word;
 }
 
-/* Zone 3 — Price Area (Below divider, contains MRP & Sale Price) */
+/* Zone 3 — Price Area (Below divider, 45-50% Visual Weight Sale Price Dominance) */
 .esl-price-zone {
   position: absolute;
-  top: 40%;
+  top: 38%;
   left: 6.5%;
   width: 86%;
-  height: 35%;
+  height: 38%;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 10px;
   box-sizing: border-box;
+  z-index: 2;
 }
 
+/* Quieter MRP (Background Information Level, Medium 500 weight, Light/Darker Grey, Thin Red Strike) */
 .esl-mrp-block {
   display: flex;
   flex-direction: column;
@@ -453,44 +468,58 @@
 
 .esl-mrp-label {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #64748b;
+  font-size: 0.62rem;
+  font-weight: 500; /* Medium */
+  color: #94a3b8; /* Light Grey */
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .esl-mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.90rem;
+  font-weight: 500; /* Medium (No bold) */
+  color: #64748b; /* Darker Grey */
   text-decoration: line-through;
-  text-decoration-color: #ef4444;
-  text-decoration-thickness: 1.5px;
+  text-decoration-color: #ef4444; /* Thin red strike ONLY through number */
+  text-decoration-thickness: 1px;
 }
 
+/* Sale Price: Dominant 45-50% Visual Weight (Black Rupee Symbol, Textured Green Numerals) */
 .esl-sale-block {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(2.0rem, 6.2vw, 2.75rem);
-  font-weight: 900;
-  color: #0f172a;
+  font-size: clamp(2.6rem, 8.2vw, 3.6rem);
+  font-weight: 900; /* Black weight */
+  line-height: 0.95;
   letter-spacing: -0.04em;
-  line-height: 1;
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  margin-left: 2px;
 }
 
 .esl-rupee {
-  font-size: 0.6em;
-  font-weight: 800;
-  color: #0f172a;
+  font-size: 0.52em;
+  font-weight: 900;
+  color: #0f172a !important; /* Black Rupee symbol */
+  -webkit-text-fill-color: #0f172a !important;
+  margin-right: 5px; /* Natural space between symbol and sale price */
 }
 
 .esl-sale-num {
-  font-weight: 900;
-  color: #0f172a;
+  font-weight: 900; /* Black weight */
+  background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: #15803d;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.esl-sale-dec {
+  font-size: 0.5em;
+  font-weight: 700;
+  opacity: 0.85;
+  vertical-align: baseline;
 }
 
 /* Zone 4 — Lower Green Band Left (YOU SAVE ₹XX) */
@@ -504,12 +533,13 @@
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
+  z-index: 2;
 }
 
 .esl-save-text {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.72rem, 2.1vw, 0.92rem);
-  font-weight: 800;
+  font-weight: 700; /* Bold */
   color: #166534;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -524,13 +554,13 @@
   margin-left: 3px;
 }
 
-/* Zone 5 — Top Right Green Ribbon Badge */
+/* Zone 5 — Top Right Green Ribbon Badge (90% Height/Breadth Occupancy) */
 .esl-badge-zone {
   position: absolute;
   top: 3.5%;
   right: 7.2%;
   width: 20.5%;
-  height: 50%;
+  height: 48%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -539,35 +569,36 @@
   color: #ffffff;
   box-sizing: border-box;
   overflow: hidden;
+  z-index: 2;
 }
 
-/* Mode A: Normal Discount Product (60% OFF) */
+/* Mode A: Normal Discount Product (60% OFF - Occupies 90% height & breadth) */
 .esl-badge-mode-a {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  line-height: 1;
+  width: 92%;
+  height: 90%;
+  line-height: 0.92;
 }
 
 .esl-ba-pct {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.1rem, 3.5vw, 1.55rem);
-  font-weight: 900;
+  font-size: clamp(1.45rem, 4.8vw, 1.95rem);
+  font-weight: 900; /* ExtraBold / Black */
   color: #ffffff;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
 .esl-ba-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.7rem, 2.1vw, 0.9rem);
-  font-weight: 800;
+  font-size: clamp(0.78rem, 2.4vw, 1.05rem);
+  font-weight: 800; /* ExtraBold */
   color: #ffffff;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 2px;
+  letter-spacing: 0.1em;
+  margin-top: 1px;
 }
 
 /* Mode B: Wholesale Product (BUY 4 @ ₹820) */
@@ -576,8 +607,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
+  width: 92%;
+  height: 90%;
   color: #ffffff;
 }
 
@@ -598,7 +629,7 @@
 
 .esl-wb-qty {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.1rem, 3.3vw, 1.45rem);
+  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
   font-weight: 900;
   color: #ffffff;
 }
@@ -620,7 +651,7 @@
 
 .esl-wb-price {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.1rem, 3.3vw, 1.45rem);
+  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
   font-weight: 900;
   color: #ffffff;
 }
