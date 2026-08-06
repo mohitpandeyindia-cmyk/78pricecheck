@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608052211";</script>
+  <script>window.HTML_BUILD = "202608061812";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -118,39 +118,29 @@
               <p class="state-instruction">Looking up price...</p>
             </div>
 
-            <!-- State 3: Single / Bulk Product Found (V5 Authoritative 3-Band Grid Layout) -->
-            <div id="state-single" class="scanner-v2-state v5-result-grid" style="display: none;">
-              <!-- Band 1: Hero Product Capsule -->
-              <div class="v5-band-1">
-                <div class="v5-hero-capsule">
-                  <span class="v5-hero-name" id="single-name"><span class="skeleton-line skeleton-line--title"></span></span>
-                  <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
-                </div>
+            <!-- State 3: Single / Bulk Product Found (Premium ESL Shelf Label Architecture) -->
+            <div id="state-single" class="scanner-v2-state esl-shelf-label-card" style="display: none;">
+              <!-- Zone 5: Top Right Green Badge (Mode A / Mode B) -->
+              <div class="esl-badge-zone" id="esl-badge"></div>
+
+              <!-- Zone 1: Product Name (Max 2 lines) -->
+              <div class="esl-name-zone">
+                <span class="esl-product-name" id="single-name"></span>
+                <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
               </div>
 
-              <!-- Band 2: Pricing Hero Grid (25% | 1px | 50% | 1px | 25%) -->
-              <div class="v5-band-2">
-                <div class="v5-pricing-grid">
-                  <div class="mrp-col" id="single-mrp-col">
-                    <span class="mrp-label">MRP</span>
-                    <span class="mrp-value" id="single-mrp"></span>
-                  </div>
-                  <div class="v5-hairline-divider"></div>
-                  <div class="sale-col" id="single-sale-col">
-                    <span class="sale-price-value" id="single-sale-price"></span>
-                  </div>
-                  <div class="v5-hairline-divider"></div>
-                  <div class="discount-col" id="single-discount-col">
-                    <div class="v5-discount-stack" id="single-discount-percent"></div>
-                  </div>
+              <!-- Zone 3: Price Area (MRP & Sale Price) -->
+              <div class="esl-price-zone">
+                <div class="esl-mrp-block" id="single-mrp-col">
+                  <span class="esl-mrp-label">MRP</span>
+                  <span class="esl-mrp-value" id="single-mrp"></span>
                 </div>
+                <div class="esl-sale-block" id="single-sale-price"></div>
               </div>
 
-              <!-- Band 3: Dynamic Reward Capsule -->
-              <div class="v5-band-3">
-                <div class="v5-reward-capsule" id="single-footer-strip">
-                  <div class="v5-capsule-content" id="single-footer-text"></div>
-                </div>
+              <!-- Zone 4: Lower Green Band Left (YOU SAVE ₹XX) -->
+              <div class="esl-footer-zone">
+                <div class="esl-save-text" id="esl-save-text"></div>
               </div>
             </div>
 

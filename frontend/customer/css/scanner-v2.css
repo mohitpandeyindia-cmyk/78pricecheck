@@ -383,296 +383,246 @@
   padding: 0;
 }
 
-/* Layer 3: Hero Product Capsule (Sits directly on #details-card primary surface) */
-.v5-hero-capsule {
-  width: 96%;
-  max-width: 335px;
-  height: 95%;
-  margin: auto;
-  padding: 2px 12px;
-  background: #fafafa;
+/* --------------------------------------------------------------------------
+   PREMIUM ELECTRONIC SHELF LABEL (ESL) ARCHITECTURE (V1)
+   -------------------------------------------------------------------------- */
+.esl-shelf-label-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background-image: url('../assets/esl-shelf-label.jpg');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
   border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 0 #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  overflow: hidden;
   box-sizing: border-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
-.v5-hero-name {
+/* Zone 1 — Product Name (Top Left, Max 2 lines) */
+.esl-name-zone {
+  position: absolute;
+  top: 6%;
+  left: 6.5%;
+  width: 63%;
+  height: 32%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.esl-product-name {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(0.8rem, 2.4vw, 1.05rem);
   font-weight: 800;
   color: #0f172a;
   line-height: 1.18;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-align: center;
   word-break: break-word;
-  height: 80%;
+}
+
+/* Zone 3 — Price Area (Below divider, contains MRP & Sale Price) */
+.esl-price-zone {
+  position: absolute;
+  top: 40%;
+  left: 6.5%;
+  width: 86%;
+  height: 35%;
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-/* +20% Product Name Typography Scaling */
-.hero-name--short {
-  font-size: 1.38rem;
-}
-
-.hero-name--medium {
-  font-size: 1.20rem;
-}
-
-.hero-name--long {
-  font-size: 1.0rem;
-}
-
-/* --- Band 2: Pricing Hero Grid (Full-height Vertically Centered Columns) --- */
-.v5-pricing-grid {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 25% 1px 50% 1px 25%;
-  align-items: center;
-  justify-items: center;
-  text-align: center;
-  padding: 0 2px;
-  margin: 0;
+  justify-content: flex-start;
+  gap: 12px;
   box-sizing: border-box;
 }
 
-/* Divider lines centered vertically spanning 72% of Band 2 height */
-.v5-hairline-divider {
-  width: 1px;
-  height: 72%;
-  background: rgba(15, 23, 42, 0.08);
-  align-self: center;
-  justify-self: center;
-  margin: 0 auto;
-}
-
-.mrp-col,
-.sale-col,
-.discount-col {
-  width: 100%;
-  height: 100%;
+.esl-mrp-block {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  line-height: 1.1;
+  flex-shrink: 0;
 }
 
-.mrp-label {
+.esl-mrp-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1px;
 }
 
-.mrp-value {
+.esl-mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: #64748b;
   text-decoration: line-through;
-  text-decoration-color: #dc2626;
+  text-decoration-color: #ef4444;
   text-decoration-thickness: 1.5px;
 }
 
-/* Sale Price: Single flex row optically centered in Band 2 */
-.sale-price-value {
+.esl-sale-block {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  width: 100%;
-  height: 100%;
-  font-size: 3.5rem;
+  font-size: clamp(2.0rem, 6.2vw, 2.75rem);
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.esl-rupee {
+  font-size: 0.6em;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.esl-sale-num {
+  font-weight: 900;
+  color: #0f172a;
+}
+
+/* Zone 4 — Lower Green Band Left (YOU SAVE ₹XX) */
+.esl-footer-zone {
+  position: absolute;
+  top: 79%;
+  left: 7.5%;
+  width: 48%;
+  height: 16%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+.esl-save-text {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(0.72rem, 2.1vw, 0.92rem);
+  font-weight: 800;
+  color: #166534;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.esl-save-num {
   font-weight: 900;
   color: #15803d;
-  letter-spacing: -0.05em;
-  line-height: 1;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  transform: translateY(1px);
+  margin-left: 3px;
 }
 
-.rupee-symbol {
-  font-size: 0.62em;
-  font-weight: 800;
-  margin-right: 7px;
-  align-self: center;
-  line-height: 1;
-}
-
-.rupee-symbol--black {
-  color: #0f172a !important;
-}
-
-.price-whole {
-  font-weight: 900;
-  align-self: center;
-  line-height: 1;
-}
-
-.price-decimal {
-  font-size: 0.42em;
-  font-weight: 600;
-  opacity: 0.65;
-  margin-left: 0.5px;
-  align-self: center;
-  transform: translateY(-0.15em);
-  line-height: 1;
-}
-
-.discount-col {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.v5-discount-stack {
+/* Zone 5 — Top Right Green Ribbon Badge */
+.esl-badge-zone {
+  position: absolute;
+  top: 3.5%;
+  right: 7.2%;
+  width: 20.5%;
+  height: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+  color: #ffffff;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Mode A: Normal Discount Product (60% OFF) */
+.esl-badge-mode-a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
   line-height: 1;
 }
 
-.v5-discount-num {
+.esl-ba-pct {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #16a34a;
-  letter-spacing: -0.02em;
+  font-size: clamp(1.1rem, 3.5vw, 1.55rem);
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.03em;
 }
 
-.v5-discount-off {
+.esl-ba-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.82rem;
+  font-size: clamp(0.7rem, 2.1vw, 0.9rem);
   font-weight: 800;
-  color: #dc2626;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-top: 1px;
-}
-
-.v5-cash-coin-icon {
-  width: 28px;
-  height: 28px;
-  opacity: 0.75;
-}
-
-/* Layer 3: Dynamic Reward Capsule (Celebratory Mint Banner) */
-.v5-reward-capsule {
-  width: 96%;
-  max-width: 335px;
-  height: 95%;
-  margin: auto;
-  padding: 2px 12px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
-  border-radius: 14px;
-  border: 1px solid rgba(22, 163, 74, 0.2);
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08), inset 0 1px 0 #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-}
-
-.v5-capsule-content {
-  width: 100%;
-  height: 80%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-/* Single Product: Single-line YOU SAVE ₹38 (65-70% Height Fill) */
-.v5-save-row {
-  height: 100%;
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
-}
-
-.v5-save-label {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: #166534;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  opacity: 0.88;
+  margin-top: 2px;
 }
 
-.v5-save-val {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 2.15rem;
-  font-weight: 900;
-  color: #15803d;
-  letter-spacing: -0.03em;
-}
-
-/* Wholesale Product: Spread throughout complete width & height space */
-.v5-bulk-row {
+/* Mode B: Wholesale Product (BUY 4 @ ₹820) */
+.esl-badge-mode-b {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
+  color: #ffffff;
+}
+
+.esl-wb-row1 {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
-  box-sizing: border-box;
+  align-items: baseline;
+  gap: 3px;
+  line-height: 1;
 }
 
-.v5-bulk-prefix,
-.v5-bulk-at {
+.esl-wb-buy {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #166534;
-  letter-spacing: 0.04em;
+  font-size: clamp(0.6rem, 1.8vw, 0.72rem);
+  font-weight: 800;
+  color: #ffffff;
+  text-transform: uppercase;
 }
 
-.v5-bulk-qty {
+.esl-wb-qty {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.85rem;
+  font-size: clamp(1.1rem, 3.3vw, 1.45rem);
   font-weight: 900;
-  color: #15803d;
-  letter-spacing: -0.03em;
+  color: #ffffff;
 }
 
-.v5-bulk-struck {
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #64748b;
-  text-decoration: line-through;
-  text-decoration-color: #dc2626;
-  text-decoration-thickness: 1.5px;
+.esl-wb-row2 {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  line-height: 1;
+  margin-top: 2px;
 }
 
-.v5-bulk-hero {
+.esl-wb-at {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.85rem;
+  font-size: clamp(0.6rem, 1.8vw, 0.72rem);
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.esl-wb-price {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.1rem, 3.3vw, 1.45rem);
   font-weight: 900;
-  color: #15803d;
-  letter-spacing: -0.03em;
+  color: #ffffff;
 }
 
 /* --- Multiple MRP Selection Screen (V2 3-Equal Band Layout) --- */

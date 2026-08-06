@@ -878,7 +878,7 @@ function formatV3PriceHTML(val, isRupeeBlack = true) {
   return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span>`;
 }
 
-// Render V2 Premium Product Result Card (Type 1: Single Savings / Type 2: Bulk Offer)
+// Render V2 Premium Product Result Card (ESL Shelf Label Architecture)
 function renderV2ProductCard(p, barcode) {
   resetBarcodeCollapse();
 
@@ -888,7 +888,7 @@ function renderV2ProductCard(p, barcode) {
     announcer.textContent = `Product found: ${p.name}. Price is ${formatCurrency(p.salePrice)}.`;
   }
 
-  // Trigger V5 180ms micro-animations
+  // Trigger micro-animation enter
   const stateSingle = document.getElementById('state-single');
   if (stateSingle) {
     stateSingle.classList.remove('v5-animate-enter');
@@ -896,66 +896,68 @@ function renderV2ProductCard(p, barcode) {
     stateSingle.classList.add('v5-animate-enter');
   }
 
-  // Band 1: Hero Name (with V5 dynamic font scaling)
+  // Zone 1: Product Name (Max 2 lines)
   const nameEl = document.getElementById('single-name');
   if (nameEl) {
     nameEl.textContent = p.name;
-    nameEl.classList.remove('hero-name--short', 'hero-name--medium', 'hero-name--long');
-    const len = (p.name || '').length;
-    if (len <= 16) {
-      nameEl.classList.add('hero-name--short');
-    } else if (len <= 30) {
-      nameEl.classList.add('hero-name--medium');
-    } else {
-      nameEl.classList.add('hero-name--long');
-    }
   }
   const barcodeEl = document.getElementById('single-barcode');
   if (barcodeEl) barcodeEl.textContent = p.barcode;
 
-  // Band 2: 3-Column Pricing Grid
+  // Calculate numeric prices
+  const mrpVal = Math.round(Number(p.mrp));
+  const saleVal = Math.round(Number(p.salePrice));
+  const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
+
+  // Zone 3: Price Area (MRP & Sale Price)
+  const mrpEl = document.getElementById('single-mrp');
+  if (mrpEl) {
+    mrpEl.textContent = `₹${mrpVal}`;
+  }
+
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    priceEl.innerHTML = formatV3PriceHTML(p.salePrice, true);
+    priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span>`;
   }
 
-  const mrpEl = document.getElementById('single-mrp');
-  if (mrpEl) mrpEl.textContent = formatCurrency(p.mrp);
-
-  const mrpVal = Number(p.mrp);
-  const saleVal = Number(p.salePrice);
-  const discountCol = document.getElementById('single-discount-col');
-  const discountEl = document.getElementById('single-discount-percent');
-
-  let discountPercent = 0;
-  if (mrpVal > saleVal && mrpVal > 0) {
-    discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-    if (discountEl) {
-      discountEl.innerHTML = `<div class="v5-discount-stack"><span class="v5-discount-num">${discountPercent}%</span><span class="v5-discount-off">OFF</span></div>`;
-    }
-    if (discountCol) discountCol.style.visibility = 'visible';
-  } else {
-    if (discountEl) {
-      discountEl.innerHTML = `<svg class="v5-cash-coin-icon" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a1.5 1.5 0 0 1 0 3H9.5a1.5 1.5 0 0 0 0 3H15"/></svg>`;
-    }
-    if (discountCol) discountCol.style.visibility = 'visible';
-  }
-
-  // Band 3: Dynamic Reward Capsule (Type 1: Single Savings / Type 2: Bulk Offer)
-  const footerText = document.getElementById('single-footer-text');
-  if (footerText) {
-    const hasBulk = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
-                    p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
-                    p.wholesaleQty !== undefined && p.wholesaleQty !== null;
-
-    if (hasBulk) {
-      // Type 2: Bulk Offer (Spread throughout footer: GET Qty @ StruckSalePrice WholesalePrice)
-      AnalyticsService.logEvent('bulk_offer_shown', { barcode: p.barcode });
-      footerText.innerHTML = `<div class="v5-bulk-row"><span class="v5-bulk-prefix">GET</span><span class="v5-bulk-qty">${p.wholesaleQty}</span><span class="v5-bulk-at">@</span><span class="v5-bulk-struck">${formatCurrency(p.salePrice)}</span><span class="v5-bulk-hero">${formatV3PriceHTML(p.wholesalePrice, false)}</span></div>`;
+  // Zone 4: Lower Green Band Left (YOU SAVE ₹XX)
+  const saveEl = document.getElementById('esl-save-text');
+  if (saveEl) {
+    if (savingsVal > 0) {
+      saveEl.innerHTML = `YOU SAVE <span class="esl-save-num">₹${savingsVal}</span>`;
     } else {
-      // Type 1: Single Product (YOU SAVE ₹XX on one line)
-      const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
-      footerText.innerHTML = `<div class="v5-save-row"><span class="v5-save-label">YOU SAVE</span><span class="v5-save-val">${formatV3PriceHTML(savingsVal, false)}</span></div>`;
+      saveEl.innerHTML = `BEST PRICE GUARANTEED`;
+    }
+  }
+
+  // Zone 5: Top Right Green Ribbon Badge (Mode A: Normal Discount / Mode B: Wholesale Offer)
+  const badgeEl = document.getElementById('esl-badge');
+  if (badgeEl) {
+    const hasWholesale = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
+                         p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
+                         p.wholesaleQty !== undefined && p.wholesaleQty !== null;
+
+    if (hasWholesale) {
+      // MODE B: Wholesale Product (BUY 4 @ ₹820)
+      const wPrice = Math.round(Number(p.wholesalePrice));
+      badgeEl.innerHTML = `
+        <div class="esl-badge-mode-b">
+          <div class="esl-wb-row1"><span class="esl-wb-buy">BUY</span> <span class="esl-wb-qty">${p.wholesaleQty}</span></div>
+          <div class="esl-wb-row2"><span class="esl-wb-at">@</span> <span class="esl-wb-price">₹${wPrice}</span></div>
+        </div>
+      `;
+    } else {
+      // MODE A: Normal Discount Product (60% OFF)
+      let discountPercent = 0;
+      if (mrpVal > saleVal && mrpVal > 0) {
+        discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+      }
+      badgeEl.innerHTML = `
+        <div class="esl-badge-mode-a">
+          <span class="esl-ba-pct">${discountPercent}%</span>
+          <span class="esl-ba-off">OFF</span>
+        </div>
+      `;
     }
   }
 
