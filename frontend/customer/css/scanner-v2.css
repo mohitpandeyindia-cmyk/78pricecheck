@@ -454,13 +454,13 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Zone 3 — Price Area (Shifted 15% Upward to 35%, MRP & Sale Price Aligned at Bottom Baseline) */
+/* Zone 3 — Price Area (Shifted Downward to Sit Right in Between Separator & Bottom Green Band) */
 .esl-price-zone {
   position: absolute;
-  top: 35%; /* Shifted 15% upward from 41% */
+  top: 39.5%; /* Optically centered right in between dashed separator line and bottom green band */
   left: 6.5%;
   width: 86%;
-  height: 40%;
+  height: 37%;
   display: flex;
   align-items: baseline; /* MRP & Sale Price aligned by bottom baseline */
   justify-content: flex-start;
