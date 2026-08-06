@@ -569,13 +569,13 @@
   margin-left: 3px;
 }
 
-/* Zone 5 — Top Right Green Ribbon Badge (90% Height/Breadth Occupancy) */
+/* Zone 5 — Top Right Green Ribbon Badge (Calculated Coordinates for New Artwork) */
 .esl-badge-zone {
   position: absolute;
-  top: 3.5%;
-  right: 7.2%;
-  width: 20.5%;
-  height: 48%;
+  top: 3.2%;
+  right: 4.2%;
+  width: 26.5%;
+  height: 55%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -587,20 +587,20 @@
   z-index: 2;
 }
 
-/* Mode A: Normal Discount Product (60% OFF - Occupies 90% height & breadth) */
+/* Mode A: Normal Discount Product (60% OFF - Fits New Ribbon Artwork) */
 .esl-badge-mode-a {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 92%;
-  height: 90%;
+  width: 94%;
+  height: 92%;
   line-height: 0.92;
 }
 
 .esl-ba-pct {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.45rem, 4.8vw, 1.95rem);
+  font-size: clamp(1.65rem, 5.2vw, 2.25rem);
   font-weight: 900; /* ExtraBold / Black */
   color: #ffffff;
   letter-spacing: -0.04em;
