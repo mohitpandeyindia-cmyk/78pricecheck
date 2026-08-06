@@ -454,15 +454,15 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Zone 3 — Price Area (Shifted 30% Downwards to 41%, MRP & Sale Price Aligned at Same Vertical Center Height) */
+/* Zone 3 — Price Area (Shifted 15% Upward to 35%, MRP & Sale Price Aligned at Bottom Baseline) */
 .esl-price-zone {
   position: absolute;
-  top: 41%; /* Shifted 30% downwards */
+  top: 35%; /* Shifted 15% upward from 41% */
   left: 6.5%;
   width: 86%;
-  height: 38%;
+  height: 40%;
   display: flex;
-  align-items: center; /* MRP & Sale Price aligned at same vertical center height */
+  align-items: baseline; /* MRP & Sale Price aligned by bottom baseline */
   justify-content: flex-start;
   gap: 12px;
   box-sizing: border-box;
@@ -474,10 +474,11 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-end;
   line-height: 1.1;
   flex-shrink: 0;
-  align-self: center; /* Aligned at same vertical center height as sale price */
+  align-self: baseline; /* Aligned by bottom baseline */
+  padding-bottom: 2px;
 }
 
 .esl-mrp-label {
@@ -510,8 +511,8 @@
   align-items: baseline;
   margin-left: 2px;
   transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
-  transform-origin: left center;
-  align-self: center; /* Aligned at same vertical center height as MRP */
+  transform-origin: left bottom;
+  align-self: baseline; /* Aligned by bottom baseline */
 }
 
 .esl-rupee {
@@ -533,9 +534,10 @@
 }
 
 .esl-sale-dec {
-  font-size: 0.5em;
-  font-weight: 700;
-  opacity: 0.85;
+  font-size: 0.50em; /* 50% less size than sale price numeral */
+  font-weight: 800;
+  opacity: 0.9;
+  align-self: baseline;
   vertical-align: baseline;
 }
 

@@ -918,9 +918,11 @@ function renderV2ProductCard(p, barcode) {
   const saleVal = Math.round(rawSale);
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
 
-  // Check if decimal digits exist (e.g. 149.50 vs 149.00)
-  const hasDecimal = (rawSale % 1) !== 0;
-  const decimalStr = hasDecimal ? (rawSale % 1).toFixed(2).substring(1) : '';
+  // Format sale price with fixed 2 decimal places (.00) sitting at bottom baseline
+  const formattedSale = rawSale.toFixed(2);
+  const saleParts = formattedSale.split('.');
+  const wholePart = saleParts[0];
+  const decPart = '.' + saleParts[1];
 
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
@@ -930,11 +932,7 @@ function renderV2ProductCard(p, barcode) {
 
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    if (hasDecimal) {
-      priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${Math.floor(rawSale)}<span class="esl-sale-dec">${decimalStr}</span></span>`;
-    } else {
-      priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span>`;
-    }
+    priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span>`;
   }
 
   // Zone 4: Lower Green Band Left (YOU SAVE ₹XX)
