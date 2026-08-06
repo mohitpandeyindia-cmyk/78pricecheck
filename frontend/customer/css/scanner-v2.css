@@ -469,25 +469,26 @@
   z-index: 2;
 }
 
-/* Quieter MRP (Background Information Level, Medium 500 weight, Light/Darker Grey, Thin Red Strike) */
+/* Quieter MRP (Background Information Level, Medium 500 weight, Light/Darker Grey, Thin Red Strike, Digits Baseline Aligned) */
 .esl-mrp-block {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  line-height: 1.1;
   flex-shrink: 0;
-  align-self: baseline; /* Aligned with Rupee symbol placement baseline */
-  padding-bottom: 2px;
+  align-self: baseline; /* MRP digits baseline aligned with Sale Price baseline */
+  line-height: 1;
 }
 
 .esl-mrp-label {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.62rem;
+  font-size: 0.60rem;
   font-weight: 500; /* Medium */
   color: #94a3b8; /* Light Grey */
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 2px;
 }
 
 .esl-mrp-value {
@@ -495,30 +496,33 @@
   font-size: 0.90rem;
   font-weight: 500; /* Medium (No bold) */
   color: #64748b; /* Darker Grey */
+  line-height: 1;
   text-decoration: line-through;
   text-decoration-color: #ef4444; /* Thin red strike ONLY through number */
   text-decoration-thickness: 1px;
+  align-self: baseline;
 }
 
-/* Sale Price: Dominant Visual Focal Point (-5% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
+/* Sale Price: Solid Dark Black Focal Point (-10% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
 .esl-sale-block {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.42rem, 10.9vw, 4.56rem); /* Reduced overall size by 5% */
+  font-size: clamp(3.08rem, 9.8vw, 4.10rem); /* Reduced overall size by further 10% */
   font-weight: 900; /* Black weight */
   line-height: 0.90;
   letter-spacing: -0.045em;
   display: flex;
   align-items: baseline;
   margin-left: 2px;
+  color: #0f172a !important; /* Solid Dark Black */
   transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
   transform-origin: left bottom;
-  align-self: baseline; /* Aligned by bottom baseline matching Rupee symbol placement */
+  align-self: baseline; /* Aligned by bottom baseline matching MRP digits placement */
 }
 
 .esl-rupee {
   font-size: 0.48em;
   font-weight: 900;
-  color: #0f172a !important; /* Black Rupee symbol */
+  color: #0f172a !important; /* Dark Black Rupee symbol */
   -webkit-text-fill-color: #0f172a !important;
   margin-right: 4px; /* Natural space between symbol and sale price */
   align-self: baseline;
@@ -526,10 +530,9 @@
 
 .esl-sale-num {
   font-weight: 900; /* Black weight */
-  background: linear-gradient(180deg, #15803d 0%, #166534 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: #15803d;
+  color: #0f172a !important; /* Solid Dark Black */
+  -webkit-text-fill-color: #0f172a !important;
+  background: none !important;
   display: inline-flex;
   align-items: baseline;
 }
@@ -537,6 +540,8 @@
 .esl-sale-dec {
   font-size: 0.50em; /* 50% less size than sale price numeral */
   font-weight: 800;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
   opacity: 0.9;
   align-self: baseline;
   vertical-align: baseline;
