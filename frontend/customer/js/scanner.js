@@ -896,10 +896,16 @@ function renderV2ProductCard(p, barcode) {
     stateSingle.classList.add('v5-animate-enter');
   }
 
-  // Zone 1: Product Name (Max 2 lines, Retail Heavy All-Caps)
+  // Zone 1: Product Name (Max 2 lines, Retail Heavy All-Caps, +25% Size)
   const nameEl = document.getElementById('single-name');
   if (nameEl) {
-    nameEl.textContent = (p.name || '').toUpperCase();
+    const uppercaseName = (p.name || '').toUpperCase();
+    nameEl.textContent = uppercaseName;
+    if (uppercaseName.length > 24) {
+      nameEl.classList.add('esl-name--long');
+    } else {
+      nameEl.classList.remove('esl-name--long');
+    }
   }
   const barcodeEl = document.getElementById('single-barcode');
   if (barcodeEl) barcodeEl.textContent = p.barcode;
