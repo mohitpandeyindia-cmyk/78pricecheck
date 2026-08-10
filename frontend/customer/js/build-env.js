@@ -1,10 +1,10 @@
 // Automatically generated build metadata
 window.APP_BUILD = {
   version: "0.1.0",
-  build: "202608062155",
-  commit: "5800e7e",
+  build: "202608101951",
+  commit: "a0bed8b",
   branch: "main",
-  buildTime: "2026-08-06T21:55:47.922Z",
+  buildTime: "2026-08-10T19:51:50.066Z",
   environment: "production",
   serviceWorkerEnabled: true
 };

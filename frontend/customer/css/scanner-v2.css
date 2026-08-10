@@ -579,7 +579,7 @@
   margin-left: 3px;
 }
 
-/* Zone 5 — Top Right Yellow Ribbon Badge (+50% Number Width Stretch, OFF Matches Number Width) */
+/* Zone 5 — Top Right Yellow Ribbon Badge (Fixed Usable Area Container) */
 .esl-badge-zone {
   position: absolute;
   top: 2.2%;
@@ -589,7 +589,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: center;
   color: #0f172a;
   box-sizing: border-box;
@@ -597,86 +597,94 @@
   z-index: 2;
 }
 
-/* Mode A: Normal Discount Product (60% OFF - Stretched Number & Matching OFF Width) */
+/* Mode 1: Discount Percentage (e.g. 26% OFF - Upper-Centered Usable Area Layout) */
 .esl-badge-mode-a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 98%;
-  height: 98%;
-  line-height: 0.88;
-  gap: 16px;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  padding-top: 3%;
+  box-sizing: border-box;
+  gap: 2px;
 }
 
 .esl-ba-pct {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.3rem, 4.2vw, 1.8rem);
+  font-size: clamp(1.4rem, 4.8vw, 2.05rem);
   font-weight: 900; /* Black weight */
   color: #0f172a;
   letter-spacing: -0.04em;
+  line-height: 0.95;
   display: inline-flex;
   align-items: baseline;
+  justify-content: center;
+  width: 100%;
+  transform: scaleY(1.35);
+  transform-origin: top center;
 }
 
 .esl-ba-num {
   font-weight: 900;
-  transform: scaleX(1.5) scaleY(2.2); /* Number width increased by +50% (scaleX=1.5) */
-  transform-origin: center center;
-  display: inline-block;
+  color: #0f172a;
 }
 
 .esl-ba-sym {
-  font-size: 0.65em; /* Percentage symbol keeps same size */
+  font-size: 0.65em;
   font-weight: 800;
-  margin-left: 4px;
-  transform: scaleY(2.2);
-  transform-origin: center center;
-  display: inline-block;
+  color: #0f172a;
+  margin-left: 2px;
 }
 
 .esl-ba-off {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.2rem, 3.8vw, 1.65rem); /* Reduced width matching the number above */
+  font-size: clamp(0.9rem, 3.0vw, 1.25rem);
   font-weight: 900; /* Black weight */
   color: #0f172a;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  transform: scaleX(1.5) scaleY(2.2); /* Matches number stretch width */
-  transform-origin: center center;
-  display: inline-block;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  width: 100%;
   text-align: center;
+  margin-top: 6px;
 }
 
-/* Mode B: Wholesale Product (BUY 4 @ ₹820 - High Contrast Black Text on Yellow Ribbon) */
+/* Mode 2: Wholesale / Bulk Price (e.g. BUY 3 @ ₹249 - Upper-Centered 2-Line Layout) */
 .esl-badge-mode-b {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 92%;
-  height: 90%;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  padding-top: 6%;
+  box-sizing: border-box;
+  gap: 4px;
   color: #0f172a;
 }
 
 .esl-wb-row1 {
   display: flex;
   align-items: baseline;
-  gap: 3px;
+  justify-content: center;
+  gap: 4px;
   line-height: 1;
+  width: 100%;
 }
 
 .esl-wb-buy {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.6rem, 1.8vw, 0.72rem);
+  font-size: clamp(0.68rem, 2.1vw, 0.88rem);
   font-weight: 800;
   color: #0f172a;
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .esl-wb-qty {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+  font-size: clamp(1.15rem, 3.6vw, 1.55rem);
   font-weight: 900;
   color: #0f172a;
 }
@@ -684,21 +692,22 @@
 .esl-wb-row2 {
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  justify-content: center;
+  gap: 3px;
   line-height: 1;
-  margin-top: 2px;
+  width: 100%;
 }
 
 .esl-wb-at {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.6rem, 1.8vw, 0.72rem);
+  font-size: clamp(0.72rem, 2.3vw, 0.92rem);
   font-weight: 800;
   color: #0f172a;
 }
 
 .esl-wb-price {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+  font-size: clamp(1.3rem, 4.2vw, 1.75rem); /* Slightly larger/bolder for clear visual hierarchy */
   font-weight: 900;
   color: #0f172a;
 }
