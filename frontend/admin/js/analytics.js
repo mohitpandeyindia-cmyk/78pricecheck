@@ -1,8 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    window.location.href = '/admin';
-    return;
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_username');
+      window.location.href = '/admin';
+    });
   }
 
   let currentDaysLimit = 7;
@@ -20,37 +23,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const topProductsBody = document.getElementById('top-products-body');
   const unknownBarcodesBody = document.getElementById('unknown-barcodes-body');
 
-  btn7Days.addEventListener('click', () => {
-    if (currentDaysLimit !== 7) {
-      currentDaysLimit = 7;
-      btn7Days.classList.add('active');
-      btn30Days.classList.remove('active');
-      fetchAnalytics();
-    }
-  });
+  if (btn7Days) {
+    btn7Days.addEventListener('click', () => {
+      if (currentDaysLimit !== 7) {
+        currentDaysLimit = 7;
+        btn7Days.classList.add('active');
+        btn30Days.classList.remove('active');
+        fetchAnalytics();
+      }
+    });
+  }
 
-  btn30Days.addEventListener('click', () => {
-    if (currentDaysLimit !== 30) {
-      currentDaysLimit = 30;
-      btn30Days.classList.add('active');
-      btn7Days.classList.remove('active');
-      fetchAnalytics();
-    }
-  });
+  if (btn30Days) {
+    btn30Days.addEventListener('click', () => {
+      if (currentDaysLimit !== 30) {
+        currentDaysLimit = 30;
+        btn30Days.classList.add('active');
+        btn7Days.classList.remove('active');
+        fetchAnalytics();
+      }
+    });
+  }
 
   async function fetchAnalytics() {
     try {
-      const response = await fetch(`/api/admin/analytics?days=${currentDaysLimit}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.status === 401 || response.status === 403) {
-        localStorage.removeItem('token');
-        window.location.href = '/admin';
-        return;
-      }
+      const response = await authenticatedFetch(`/api/admin/analytics?days=${currentDaysLimit}`);
+      if (!response) return; // auth.js handles redirect to /admin if token missing or invalid
 
       if (!response.ok) {
         throw new Error('Failed to load analytics data');
