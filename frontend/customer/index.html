@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608101956";</script>
+  <script>window.HTML_BUILD = "202608102047";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -33,7 +33,15 @@
         <!-- Row 3: CTA -->
         <div id="welcome-row-3" class="welcome-row">
           <button id="start-scan-btn" class="welcome-scan-btn" aria-label="Scan Barcode">
-            <img src="assets/scan-button.png" class="scan-button-face-img" alt="" aria-hidden="true">
+            <div class="scan-button-wrapper">
+              <img id="btn-img-state-1" src="assets/scan-button.png" class="scan-button-face-img scan-img-state-1" alt="Scan Barcode">
+              <div id="btn-state-2-container" class="scan-button-state-2-container" style="display: none;">
+                <img src="assets/products-scanned.png" class="scan-button-face-img" alt="Products Scanned">
+                <div id="scan-counter-overlay" class="scan-counter-overlay">
+                  <span id="welcome-counter-val" class="welcome-counter-num">0</span>
+                </div>
+              </div>
+            </div>
           </button>
         </div>
         

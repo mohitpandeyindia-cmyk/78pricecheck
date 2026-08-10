@@ -259,12 +259,60 @@ const ThemeManager = {
   }
 };
 
+// Welcome Button Image State Alternator & Counter Connection
+let cachedOverallScanCount = 0;
+let welcomeButtonState = 0; // 0 = State 1 (Scan Barcode), 1 = State 2 (Products Scanned + Counter)
+
+async function fetchPublicOverallScanCount() {
+  try {
+    const res = await fetch('/api/analytics/overall');
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.overall === 'number') {
+        cachedOverallScanCount = data.overall;
+        updateWelcomeCounterDisplay();
+      }
+    }
+  } catch (err) {
+    console.warn('[Analytics] Public overall scan count fetch failed:', err);
+    updateWelcomeCounterDisplay();
+  }
+}
+
+function updateWelcomeCounterDisplay() {
+  const counterValEl = document.getElementById('welcome-counter-val');
+  if (counterValEl) {
+    counterValEl.textContent = cachedOverallScanCount.toLocaleString();
+  }
+}
+
+function initWelcomeButtonAlternator() {
+  const state1Img = document.getElementById('btn-img-state-1');
+  const state2Container = document.getElementById('btn-state-2-container');
+
+  if (!state1Img || !state2Container) return;
+
+  setInterval(() => {
+    welcomeButtonState = welcomeButtonState === 0 ? 1 : 0;
+
+    if (welcomeButtonState === 1) {
+      state1Img.style.display = 'none';
+      state2Container.style.display = 'flex';
+    } else {
+      state2Container.style.display = 'none';
+      state1Img.style.display = 'block';
+    }
+  }, 4000);
+}
+
 // Initialize Layout and Camera Managers on Page Load
 document.addEventListener('DOMContentLoaded', () => {
   LayoutManager.init();
   if (typeof initScannerBackground === 'function') initScannerBackground();
   if (typeof CameraManager !== 'undefined' && CameraManager.init) CameraManager.init();
   if (typeof fetchHotDeals === 'function') fetchHotDeals();
+  fetchPublicOverallScanCount();
+  initWelcomeButtonAlternator();
 });
 
 // Navigation Click Handlers

@@ -499,4 +499,20 @@ router.get('/admin/upload-errors/:id', authenticateToken, async (req: Authentica
   }
 });
 
+// GET /api/admin/analytics - Retrieve scan analytics dashboard metrics
+router.get('/admin/analytics', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { getAdminAnalytics } = require('../services/analyticsService');
+    const daysLimit = req.query.days === '30' ? 30 : 7;
+    const analytics = await getAdminAnalytics(daysLimit);
+    res.json(analytics);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve scan analytics',
+      error: error.message || error
+    });
+  }
+});
+
 export default router;

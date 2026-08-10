@@ -93,8 +93,19 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       FOREIGN KEY (uploaded_by) REFERENCES admins(username) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS scan_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      barcode TEXT NOT NULL,
+      product_found INTEGER NOT NULL,
+      product_id INTEGER,
+      scanned_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
     CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
+    CREATE INDEX IF NOT EXISTS idx_scan_events_scanned_at ON scan_events(scanned_at);
+    CREATE INDEX IF NOT EXISTS idx_scan_events_barcode ON scan_events(barcode);
+    CREATE INDEX IF NOT EXISTS idx_scan_events_product_id ON scan_events(product_id);
   `);
 
   // Initialize setup status setting if not present

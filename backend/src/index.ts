@@ -215,6 +215,10 @@ app.get('/admin/history', (req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, 'admin/history.html'));
 });
 
+app.get('/admin/analytics', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PATH, 'admin/analytics.html'));
+});
+
 app.get('/admin/diagnostics', (req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, 'admin/diagnostics.html'));
 });

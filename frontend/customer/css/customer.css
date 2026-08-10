@@ -257,6 +257,16 @@ html, body {
   border-radius: 36px;
 }
 
+.scan-button-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: button-breath 3s ease-in-out infinite;
+}
+
 .scan-button-face-img {
   max-width: 100%;
   max-height: 100%;
@@ -265,7 +275,6 @@ html, body {
   display: block;
   object-fit: contain;
   transition: filter 180ms ease-out, transform 180ms ease-out;
-  animation: button-breath 3s ease-in-out infinite;
 }
 
 @keyframes button-breath {
@@ -283,16 +292,53 @@ html, body {
   }
 }
 
-.welcome-scan-btn:hover .scan-button-face-img {
+.welcome-scan-btn:hover .scan-button-wrapper {
   animation-play-state: paused;
   transform: scale(1.03);
   filter: brightness(1.05) drop-shadow(0 6px 14px rgba(27, 85, 9, 0.25));
 }
 
-.welcome-scan-btn:active .scan-button-face-img {
+.welcome-scan-btn:active .scan-button-wrapper {
   animation: none;
   transform: scale(0.97) translateY(1px);
   filter: brightness(0.96) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.12));
+}
+
+/* Phase 2: State 2 Products Scanned Button & Counter Overlay */
+.scan-button-state-2-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-counter-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 44%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 2;
+  box-sizing: border-box;
+  padding-right: 5%;
+}
+
+.welcome-counter-num {
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-weight: 900;
+  font-size: clamp(1.2rem, 3.8vw, 1.85rem);
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.7), 0 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
 }
 
 /* Ripple effect container styles */
