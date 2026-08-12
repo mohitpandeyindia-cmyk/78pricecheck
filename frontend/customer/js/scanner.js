@@ -1020,7 +1020,7 @@ function renderV2ProductCard(p, barcode) {
         </div>
       `;
       setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-off-unit'), zoneOffPct, { minFontSize: 12, maxFontSize: 40 });
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-off-unit'), zoneOffPct, { minFontSize: 14, maxFontSize: 56 });
       }, 0);
     }
   }

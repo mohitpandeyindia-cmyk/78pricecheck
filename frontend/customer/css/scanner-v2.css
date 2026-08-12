@@ -469,16 +469,19 @@
   z-index: 2;
 }
 
-/* Quieter MRP (Background Information Level, Medium 500 weight, Light/Darker Grey, Thin Red Strike, Digits Baseline Aligned) */
+/* Quieter MRP (Dedicated Independent MRP_ZONE - Positioned at top: 42%, height: 24%, ending at 66%, completely clear of green band at 77.5%) */
 .esl-mrp-block {
+  position: absolute;
+  top: 42%;
+  left: 6.5%;
+  width: 18%;
+  height: 24%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  flex-shrink: 0;
-  align-self: flex-end; /* Self-aligned to bottom of price-zone container to prevent scale transform drop */
   line-height: 1;
-  margin-bottom: 4px;
+  z-index: 3;
 }
 
 .esl-mrp-label {
@@ -505,8 +508,13 @@
   align-items: baseline;
 }
 
-/* Sale Price: Solid Dark Black Focal Point (-10% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
+/* Sale Price: Solid Dark Black Focal Point (Independent SALE_PRICE_ZONE) */
 .esl-sale-block {
+  position: absolute;
+  top: 38%;
+  left: 26%;
+  width: 48%;
+  height: 36%;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(3.08rem, 9.8vw, 4.10rem); /* Reduced overall size by further 10% */
   font-weight: 900; /* Black weight */
@@ -514,11 +522,10 @@
   letter-spacing: -0.045em;
   display: flex;
   align-items: baseline;
-  margin-left: 2px;
   color: #0f172a !important; /* Solid Dark Black */
   transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
   transform-origin: left bottom;
-  align-self: baseline; /* Aligned by bottom baseline matching MRP digits placement */
+  z-index: 3;
 }
 
 .esl-rupee {
@@ -588,7 +595,7 @@
   top: 3.5%;
   right: 4.2%;
   width: 26.5%;
-  height: 31%;
+  height: 44%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -601,26 +608,26 @@
   align-items: flex-end;
   justify-content: center;
   white-space: nowrap;
-  line-height: 0.9;
+  line-height: 0.85;
 }
 
 .esl-off-num {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.6rem, 5.2vw, 2.4rem);
+  font-size: clamp(2.2rem, 7.2vw, 3.6rem); /* Dominant scale matching OFF text width */
   font-weight: 900;
   color: #0f172a;
-  letter-spacing: -0.03em;
-  line-height: 0.9;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
 }
 
 .esl-off-sym {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.55em;
+  font-size: 0.50em;
   font-weight: 800;
   color: #0f172a;
   align-self: flex-start;
   margin-left: 1px;
-  margin-top: 2px;
+  margin-top: 4px;
   line-height: 1;
 }
 
