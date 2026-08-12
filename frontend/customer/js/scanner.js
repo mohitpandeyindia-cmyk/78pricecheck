@@ -878,6 +878,29 @@ function formatV3PriceHTML(val, isRupeeBlack = true) {
   return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span>`;
 }
 
+// Reusable Dynamic-Fit Engine for Geometric Dynamic Zones
+const DynamicTextFitEngine = {
+  fitGroupToZone(element, containerZone, options = {}) {
+    if (!element || !containerZone) return;
+    const minFontSize = options.minFontSize || 8;
+    const maxFontSize = options.maxFontSize || 42;
+    const step = options.step || 0.5;
+
+    const containerWidth = containerZone.clientWidth;
+    const containerHeight = containerZone.clientHeight;
+
+    if (containerWidth <= 0 || containerHeight <= 0) return;
+
+    let fontSize = maxFontSize;
+    element.style.fontSize = `${fontSize}px`;
+
+    while (fontSize > minFontSize && (element.scrollWidth > containerWidth || element.scrollHeight > containerHeight)) {
+      fontSize -= step;
+      element.style.fontSize = `${fontSize}px`;
+    }
+  }
+};
+
 // Render V2 Premium Product Result Card (ESL Shelf Label Architecture)
 function renderV2ProductCard(p, barcode) {
   resetBarcodeCollapse();
@@ -935,7 +958,7 @@ function renderV2ProductCard(p, barcode) {
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
-    mrpEl.textContent = `₹${mrpVal}`;
+    mrpEl.innerHTML = `<span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span>`;
   }
 
   const priceEl = document.getElementById('single-sale-price');
@@ -955,48 +978,60 @@ function renderV2ProductCard(p, barcode) {
     }
   }
 
-  // Zone 4: Lower Green Band (YOU SAVE ₹XX Amount Placement)
-  const saveEl = document.getElementById('esl-save-text');
-  if (saveEl) {
-    if (savingsVal > 0) {
-      const saveStr = `₹${savingsVal}`;
-      const saveLongClass = saveStr.length > 7 ? 'esl-save-amount--xl' : saveStr.length > 5 ? 'esl-save-amount--lg' : '';
-      saveEl.innerHTML = `<span class="esl-save-amount ${saveLongClass}">${saveStr}</span>`;
-    } else {
-      saveEl.innerHTML = `<span class="esl-save-amount">₹0</span>`;
+  // Dynamic Geometric Zone Containers
+  const zoneOffPct = document.getElementById('esl-zone-off-pct');
+  const zoneWsQty = document.getElementById('esl-zone-ws-qty');
+  const zoneWsPrice = document.getElementById('esl-zone-ws-price');
+  const zoneSavings = document.getElementById('esl-zone-savings');
+
+  if (hasWholesale) {
+    if (zoneOffPct) zoneOffPct.innerHTML = '';
+
+    const wPrice = Math.round(wPriceNum);
+    const qtyStr = String(p.wholesaleQty);
+    const priceStr = `₹${wPrice}`;
+
+    if (zoneWsQty) {
+      zoneWsQty.innerHTML = `<div class="esl-ws-qty-unit" id="esl-qty-unit">${qtyStr}</div>`;
+      setTimeout(() => {
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-qty-unit'), zoneWsQty, { minFontSize: 10, maxFontSize: 36 });
+      }, 0);
+    }
+
+    if (zoneWsPrice) {
+      zoneWsPrice.innerHTML = `<div class="esl-ws-price-unit" id="esl-price-unit">${priceStr}</div>`;
+      setTimeout(() => {
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-price-unit'), zoneWsPrice, { minFontSize: 10, maxFontSize: 28 });
+      }, 0);
+    }
+  } else {
+    if (zoneWsQty) zoneWsQty.innerHTML = '';
+    if (zoneWsPrice) zoneWsPrice.innerHTML = '';
+
+    let discountPercent = 0;
+    if (mrpVal > saleVal && mrpVal > 0) {
+      discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
+    }
+
+    if (zoneOffPct) {
+      zoneOffPct.innerHTML = `
+        <div class="esl-off-pct-unit" id="esl-off-unit">
+          <span class="esl-off-num">${discountPercent}</span><span class="esl-off-sym">%</span>
+        </div>
+      `;
+      setTimeout(() => {
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-off-unit'), zoneOffPct, { minFontSize: 12, maxFontSize: 40 });
+      }, 0);
     }
   }
 
-  // Zone 5: Top Right Yellow Ribbon Badge (Mode A: OFF Template / Mode B: Wholesale Template)
-  const badgeEl = document.getElementById('esl-badge');
-  if (badgeEl) {
-    if (hasWholesale) {
-      // Wholesale Mode: Dynamic Quantity after BUY, Dynamic Price after @
-      const wPrice = Math.round(wPriceNum);
-      const qtyStr = String(p.wholesaleQty);
-      const qtyLongClass = qtyStr.length >= 3 ? 'esl-wb-qty--long' : '';
-      
-      const priceStr = `₹${wPrice}`;
-      const priceLongClass = priceStr.length > 7 ? 'esl-wb-price--xl' : priceStr.length > 5 ? 'esl-wb-price--lg' : '';
-
-      badgeEl.innerHTML = `
-        <div class="esl-wb-qty-val ${qtyLongClass}">${qtyStr}</div>
-        <div class="esl-wb-price-val ${priceLongClass}">${priceStr}</div>
-      `;
-    } else {
-      // OFF Mode: Dynamic Discount Percentage above OFF
-      let discountPercent = 0;
-      if (mrpVal > saleVal && mrpVal > 0) {
-        discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
-      }
-      const pctLongClass = discountPercent >= 100 ? 'esl-off-num--long' : '';
-      badgeEl.innerHTML = `
-        <div class="esl-off-pct-val">
-          <span class="esl-off-num ${pctLongClass}">${discountPercent}</span>
-          <span class="esl-off-sym">%</span>
-        </div>
-      `;
-    }
+  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE
+  if (zoneSavings) {
+    const saveStr = `₹${savingsVal}`;
+    zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit">${saveStr}</div>`;
+    setTimeout(() => {
+      DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-save-unit'), zoneSavings, { minFontSize: 10, maxFontSize: 24 });
+    }, 0);
   }
 
   addToHistory(p);

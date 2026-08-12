@@ -476,8 +476,9 @@
   align-items: flex-start;
   justify-content: flex-end;
   flex-shrink: 0;
-  align-self: baseline; /* MRP digits baseline aligned with Sale Price baseline */
+  align-self: flex-end; /* Self-aligned to bottom of price-zone container to prevent scale transform drop */
   line-height: 1;
+  margin-bottom: 4px;
 }
 
 .esl-mrp-label {
@@ -500,7 +501,8 @@
   text-decoration: line-through;
   text-decoration-color: #ef4444; /* Thin red strike ONLY through number */
   text-decoration-thickness: 1px;
-  align-self: baseline;
+  display: inline-flex;
+  align-items: baseline;
 }
 
 /* Sale Price: Solid Dark Black Focal Point (-10% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
@@ -555,8 +557,8 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Zone 4 — Lower Green Band Left (YOU SAVE ₹XX Amount Placement) */
-.esl-footer-zone {
+/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band) */
+.esl-zone-savings {
   position: absolute;
   top: 77.5%;
   left: 33.5%;
@@ -566,17 +568,10 @@
   align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
-  z-index: 2;
+  z-index: 3;
 }
 
-.esl-save-text {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.esl-save-amount {
+.esl-save-unit {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.95rem, 3.0vw, 1.45rem);
   font-weight: 900;
@@ -587,36 +582,63 @@
   line-height: 1;
 }
 
-.esl-save-amount.esl-save-amount--lg {
-  font-size: clamp(0.80rem, 2.4vw, 1.15rem);
-}
-
-.esl-save-amount.esl-save-amount--xl {
-  font-size: clamp(0.70rem, 2.0vw, 0.95rem);
-}
-
-/* Zone 5 — Top Right Yellow Ribbon Badge (Fixed Usable Area Container) */
-.esl-badge-zone {
+/* Geometric Dynamic Zone 1: OFF_PERCENT_ZONE (Top Right Yellow Badge Above OFF) */
+.esl-zone-off-pct {
   position: absolute;
-  top: 3.0%;
+  top: 3.5%;
   right: 4.2%;
   width: 26.5%;
-  height: 56.5%;
+  height: 31%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  overflow: visible;
-  z-index: 2;
+  z-index: 3;
 }
 
-/* Wholesale Mode Badge Overlay */
-.esl-wb-qty-val {
+.esl-off-pct-unit {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 0.9;
+}
+
+.esl-off-num {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.6rem, 5.2vw, 2.4rem);
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+}
+
+.esl-off-sym {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.55em;
+  font-weight: 800;
+  color: #0f172a;
+  align-self: flex-start;
+  margin-left: 1px;
+  margin-top: 2px;
+  line-height: 1;
+}
+
+/* Geometric Dynamic Zone 2: WHOLESALE_QUANTITY_ZONE (After BUY, Vertically Centered to BUY) */
+.esl-zone-ws-qty {
   position: absolute;
-  top: 4%;
-  left: 48%;
-  right: 2%;
-  height: 38%;
+  top: 4.5%;
+  right: 4.2%;
+  width: 14%;
+  height: 25%;
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.esl-ws-qty-unit {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.4rem, 4.6vw, 2.2rem);
   font-weight: 900;
@@ -625,69 +647,27 @@
   white-space: nowrap;
 }
 
-.esl-wb-qty-val.esl-wb-qty--long {
-  font-size: clamp(1.1rem, 3.6vw, 1.7rem);
-}
-
-.esl-wb-price-val {
+/* Geometric Dynamic Zone 3: WHOLESALE_PRICE_ZONE (After @, Single Line) */
+.esl-zone-ws-price {
   position: absolute;
-  top: 45%;
-  left: 24%;
-  right: 2%;
-  height: 34%;
+  top: 28.5%;
+  right: 4.2%;
+  width: 20%;
+  height: 25%;
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.esl-ws-price-unit {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.0rem, 3.3vw, 1.55rem);
   font-weight: 900;
   color: #0f172a;
   line-height: 1;
   white-space: nowrap;
-}
-
-.esl-wb-price-val.esl-wb-price--lg {
-  font-size: clamp(0.82rem, 2.6vw, 1.2rem);
-}
-
-.esl-wb-price-val.esl-wb-price--xl {
-  font-size: clamp(0.72rem, 2.2vw, 1.0rem);
-}
-
-/* OFF Mode Badge Overlay */
-.esl-off-pct-val {
-  position: absolute;
-  top: 4%;
-  left: 4%;
-  right: 4%;
-  height: 48%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  color: #0f172a;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.esl-off-num {
-  font-size: clamp(1.6rem, 5.2vw, 2.4rem);
-  font-weight: 900;
-  color: #0f172a;
-  letter-spacing: -0.03em;
-}
-
-.esl-off-num.esl-off-num--long {
-  font-size: clamp(1.25rem, 4.0vw, 1.85rem);
-}
-
-.esl-off-sym {
-  font-size: clamp(0.9rem, 2.8vw, 1.3rem);
-  font-weight: 800;
-  color: #0f172a;
-  align-self: flex-start;
-  margin-top: 2px;
-  margin-left: 2px;
 }
 }
 

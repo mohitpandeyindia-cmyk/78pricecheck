@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608122141";</script>
+  <script>window.HTML_BUILD = "202608122209";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -128,8 +128,14 @@
 
             <!-- State 3: Single / Bulk Product Found (Premium ESL Shelf Label Architecture) -->
             <div id="state-single" class="scanner-v2-state esl-shelf-label-card" style="display: none;">
-              <!-- Zone 5: Top Right Green Badge (Mode A / Mode B) -->
-              <div class="esl-badge-zone" id="esl-badge"></div>
+              <!-- Dynamic Geometric Zone 1: OFF_PERCENT_ZONE (OFF Mode % + Number) -->
+              <div class="esl-zone-off-pct" id="esl-zone-off-pct"></div>
+
+              <!-- Dynamic Geometric Zone 2: WHOLESALE_QUANTITY_ZONE (Wholesale Quantity) -->
+              <div class="esl-zone-ws-qty" id="esl-zone-ws-qty"></div>
+
+              <!-- Dynamic Geometric Zone 3: WHOLESALE_PRICE_ZONE (Wholesale Price) -->
+              <div class="esl-zone-ws-price" id="esl-zone-ws-price"></div>
 
               <!-- Zone 1: Product Name (Max 2 lines) -->
               <div class="esl-name-zone">
@@ -146,10 +152,8 @@
                 <div class="esl-sale-block" id="single-sale-price"></div>
               </div>
 
-              <!-- Zone 4: Lower Green Band Left (YOU SAVE ₹XX) -->
-              <div class="esl-footer-zone">
-                <div class="esl-save-text" id="esl-save-text"></div>
-              </div>
+              <!-- Dynamic Geometric Zone 4: SAVINGS_AMOUNT_ZONE (Green YOU SAVE Band) -->
+              <div class="esl-zone-savings" id="esl-zone-savings"></div>
             </div>
 
             <!-- State 4: Multiple MRP Found (V5 Selection Layout - 3 Equal Bands) -->
