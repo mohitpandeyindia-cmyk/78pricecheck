@@ -958,7 +958,7 @@ function renderV2ProductCard(p, barcode) {
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
-    mrpEl.innerHTML = `<span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span>`;
+    mrpEl.textContent = `₹${mrpVal}`;
   }
 
   const priceEl = document.getElementById('single-sale-price');
