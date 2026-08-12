@@ -918,6 +918,14 @@ function renderV2ProductCard(p, barcode) {
   const saleVal = Math.round(rawSale);
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
 
+  const wQtyNum = Number(p.wholesaleQty);
+  const wPriceNum = Number(p.wholesalePrice);
+  const hasWholesale = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
+                       p.wholesaleQty !== undefined && p.wholesaleQty !== null &&
+                       p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
+                       !isNaN(wQtyNum) && wQtyNum > 0 &&
+                       !isNaN(wPriceNum) && wPriceNum > 0;
+
   // Format sale price with fixed 2 decimal places (.00) sitting at bottom baseline
   const formattedSale = rawSale.toFixed(2);
   const saleParts = formattedSale.split('.');
@@ -935,42 +943,57 @@ function renderV2ProductCard(p, barcode) {
     priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span>`;
   }
 
-  // Zone 4: Lower Green Band Left (YOU SAVE ₹XX)
-  const saveEl = document.getElementById('esl-save-text');
-  if (saveEl) {
-    if (savingsVal > 0) {
-      saveEl.innerHTML = `YOU SAVE <span class="esl-save-num">₹${savingsVal}</span>`;
+  // Template background class switching
+  const cardEl = document.getElementById('state-single');
+  if (cardEl) {
+    if (hasWholesale) {
+      cardEl.classList.add('esl-mode-wholesale');
+      cardEl.classList.remove('esl-mode-off');
     } else {
-      saveEl.innerHTML = `BEST PRICE GUARANTEED`;
+      cardEl.classList.add('esl-mode-off');
+      cardEl.classList.remove('esl-mode-wholesale');
     }
   }
 
-  // Zone 5: Top Right Green Ribbon Badge (Mode A: Normal Discount / Mode B: Wholesale Offer)
+  // Zone 4: Lower Green Band (YOU SAVE ₹XX Amount Placement)
+  const saveEl = document.getElementById('esl-save-text');
+  if (saveEl) {
+    if (savingsVal > 0) {
+      const saveStr = `₹${savingsVal}`;
+      const saveLongClass = saveStr.length > 7 ? 'esl-save-amount--xl' : saveStr.length > 5 ? 'esl-save-amount--lg' : '';
+      saveEl.innerHTML = `<span class="esl-save-amount ${saveLongClass}">${saveStr}</span>`;
+    } else {
+      saveEl.innerHTML = `<span class="esl-save-amount">₹0</span>`;
+    }
+  }
+
+  // Zone 5: Top Right Yellow Ribbon Badge (Mode A: OFF Template / Mode B: Wholesale Template)
   const badgeEl = document.getElementById('esl-badge');
   if (badgeEl) {
-    const hasWholesale = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
-                         p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
-                         p.wholesaleQty !== undefined && p.wholesaleQty !== null;
-
     if (hasWholesale) {
-      // MODE B: Wholesale Product (BUY 4 @ ₹820)
-      const wPrice = Math.round(Number(p.wholesalePrice));
+      // Wholesale Mode: Dynamic Quantity after BUY, Dynamic Price after @
+      const wPrice = Math.round(wPriceNum);
+      const qtyStr = String(p.wholesaleQty);
+      const qtyLongClass = qtyStr.length >= 3 ? 'esl-wb-qty--long' : '';
+      
+      const priceStr = `₹${wPrice}`;
+      const priceLongClass = priceStr.length > 7 ? 'esl-wb-price--xl' : priceStr.length > 5 ? 'esl-wb-price--lg' : '';
+
       badgeEl.innerHTML = `
-        <div class="esl-badge-mode-b">
-          <div class="esl-wb-row1"><span class="esl-wb-buy">BUY</span> <span class="esl-wb-qty">${p.wholesaleQty}</span></div>
-          <div class="esl-wb-row2"><span class="esl-wb-at">@</span> <span class="esl-wb-price">₹${wPrice}</span></div>
-        </div>
+        <div class="esl-wb-qty-val ${qtyLongClass}">${qtyStr}</div>
+        <div class="esl-wb-price-val ${priceLongClass}">${priceStr}</div>
       `;
     } else {
-      // MODE A: Normal Discount Product (60% OFF)
+      // OFF Mode: Dynamic Discount Percentage above OFF
       let discountPercent = 0;
       if (mrpVal > saleVal && mrpVal > 0) {
         discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
       }
+      const pctLongClass = discountPercent >= 100 ? 'esl-off-num--long' : '';
       badgeEl.innerHTML = `
-        <div class="esl-badge-mode-a">
-          <span class="esl-ba-pct"><span class="esl-ba-num">${discountPercent}</span><span class="esl-ba-sym">%</span></span>
-          <span class="esl-ba-off">OFF</span>
+        <div class="esl-off-pct-val">
+          <span class="esl-off-num ${pctLongClass}">${discountPercent}</span>
+          <span class="esl-off-sym">%</span>
         </div>
       `;
     }
