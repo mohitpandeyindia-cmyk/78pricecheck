@@ -508,23 +508,21 @@
   align-items: baseline;
 }
 
-/* Sale Price: Solid Dark Black Focal Point (Independent SALE_PRICE_ZONE) */
+/* Sale Price: Solid Dark Black Focal Point (Dedicated Independent SALE_PRICE_ZONE Positioned at top: 43%, height: 32%, ending at 75%, strictly below dashed line at 38.5%) */
 .esl-sale-block {
   position: absolute;
-  top: 38%;
-  left: 26%;
-  width: 48%;
-  height: 36%;
+  top: 43%;
+  left: 25%;
+  width: 50%;
+  height: 32%;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.08rem, 9.8vw, 4.10rem); /* Reduced overall size by further 10% */
+  font-size: clamp(2.4rem, 7.6vw, 3.5rem);
   font-weight: 900; /* Black weight */
   line-height: 0.90;
   letter-spacing: -0.045em;
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   color: #0f172a !important; /* Solid Dark Black */
-  transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
-  transform-origin: left bottom;
   z-index: 3;
 }
 
