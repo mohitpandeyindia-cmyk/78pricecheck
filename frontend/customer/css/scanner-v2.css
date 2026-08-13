@@ -476,8 +476,9 @@
   align-items: flex-start;
   justify-content: flex-end;
   flex-shrink: 0;
-  align-self: baseline; /* MRP digits baseline aligned with Sale Price baseline */
+  align-self: flex-end; /* Aligns bottom of MRP block (the digits) to price zone bottom */
   line-height: 1;
+  margin-bottom: 2px;
 }
 
 .esl-mrp-label {
@@ -499,8 +500,24 @@
   line-height: 1;
   text-decoration: line-through;
   text-decoration-color: #ef4444; /* Thin red strike ONLY through number */
-  text-decoration-thickness: 1px;
-  align-self: baseline;
+  text-decoration-thickness: 1.5px;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.esl-mrp-unit {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.esl-mrp-sym {
+  font-weight: 500;
+  margin-right: 1px;
+}
+
+.esl-mrp-num {
+  font-weight: 500;
 }
 
 /* Sale Price: Solid Dark Black Focal Point (-10% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
@@ -555,15 +572,15 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band) */
+/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After YOU SAVE) */
 .esl-zone-savings {
   position: absolute;
-  top: 77.5%;
-  left: 33.5%;
-  width: 24%;
-  height: 16%;
+  top: 76.5%;
+  left: 31.5%; /* Positioned immediately after printed "YOU SAVE" text */
+  width: 26%;  /* Spans left: 31.5% to 57.5%, ending safely before barcode divider at 58.5% */
+  height: 17.5%;
   display: flex;
-  align-items: center;
+  align-items: center; /* Vertically centered with YOU SAVE text */
   justify-content: flex-start;
   box-sizing: border-box;
   z-index: 3;
@@ -578,6 +595,17 @@
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+.esl-save-sym {
+  font-weight: 900;
+  margin-right: 1px;
+}
+
+.esl-save-num {
+  font-weight: 900;
 }
 
 /* Geometric Dynamic Zone 1: OFF_PERCENT_ZONE (Top Right Yellow Badge Above OFF) */

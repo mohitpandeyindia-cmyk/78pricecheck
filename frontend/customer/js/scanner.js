@@ -958,7 +958,7 @@ function renderV2ProductCard(p, barcode) {
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
-    mrpEl.textContent = `₹${mrpVal}`;
+    mrpEl.innerHTML = `<span class="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span></span>`;
   }
 
   const priceEl = document.getElementById('single-sale-price');
@@ -1025,13 +1025,16 @@ function renderV2ProductCard(p, barcode) {
     }
   }
 
-  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE
+  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Positioned immediately after YOU SAVE, sharing vertical centerline)
   if (zoneSavings) {
-    const saveStr = `₹${savingsVal}`;
-    zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit">${saveStr}</div>`;
-    setTimeout(() => {
-      DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-save-unit'), zoneSavings, { minFontSize: 10, maxFontSize: 24 });
-    }, 0);
+    if (savingsVal > 0) {
+      zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">${savingsVal}</span></div>`;
+      setTimeout(() => {
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-save-unit'), zoneSavings, { minFontSize: 10, maxFontSize: 26 });
+      }, 0);
+    } else {
+      zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">0</span></div>`;
+    }
   }
 
   addToHistory(p);
