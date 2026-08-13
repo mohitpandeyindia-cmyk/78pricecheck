@@ -888,15 +888,19 @@ const DynamicTextFitEngine = {
     const maxFontSize = options.maxFontSize || 42;
     const step = options.step || 0.5;
 
-    const containerWidth = containerZone.clientWidth;
-    const containerHeight = containerZone.clientHeight;
+    const style = window.getComputedStyle(containerZone);
+    const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
+    const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
 
-    if (containerWidth <= 0 || containerHeight <= 0) return;
+    const availableWidth = Math.max(0, containerZone.clientWidth - padX);
+    const availableHeight = Math.max(0, containerZone.clientHeight - padY);
+
+    if (availableWidth <= 0 || availableHeight <= 0) return;
 
     let fontSize = maxFontSize;
     element.style.fontSize = `${fontSize}px`;
 
-    while (fontSize > minFontSize && (element.scrollWidth > containerWidth || element.scrollHeight > containerHeight)) {
+    while (fontSize > minFontSize && (element.scrollWidth > availableWidth || element.scrollHeight > availableHeight)) {
       fontSize -= step;
       element.style.fontSize = `${fontSize}px`;
     }
