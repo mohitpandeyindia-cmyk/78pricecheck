@@ -888,8 +888,8 @@ const DynamicTextFitEngine = {
     mrp:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 },
     // Sale Price: Vacant SALE VALUE rectangle after vertical blue divider artwork
     sale:          { insetTopPct: 0.06, insetRightPct: 0.05, insetBottomPct: 0.06, insetLeftPct: 0.06 },
-    // OFF %: Vacant yellow area strictly ABOVE pre-printed 'OFF' artwork (Bottom 28% excluded for 'OFF' text)
-    off:           { insetTopPct: 0.05, insetRightPct: 0.05, insetBottomPct: 0.28, insetLeftPct: 0.05 },
+    // OFF %: Vacant yellow area strictly ABOVE pre-printed 'OFF' artwork (Bottom 30% excluded for 'OFF' text)
+    off:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.30, insetLeftPct: 0.04 },
     // YOU SAVE: Vacant green box AFTER 'YOU SAVE' artwork (Left 22% excluded) & BEFORE Barcode (Right 5% excluded)
     savings:       { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.22 },
     // Wholesale Qty: Vacant area after 'BUY' artwork
