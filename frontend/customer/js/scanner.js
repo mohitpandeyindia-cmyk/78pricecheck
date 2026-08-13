@@ -878,22 +878,37 @@ function formatV3PriceHTML(val, isRupeeBlack = true) {
   return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span>`;
 }
 
-// Reusable Dynamic-Fit Engine for Geometric Dynamic Zones
+// Reusable 5-Stage Geometry & Dynamic-Fit Engine for Geometric Dynamic Zones
 const DynamicTextFitEngine = {
   _observerInitialized: false,
+
+  // Explicit Unit Geometry Specifications (Inner Typography Rectangles relative to Outer Visual Compartments)
+  SPECS: {
+    mrp:           { insetTopPct: 0.10, insetRightPct: 0.08, insetBottomPct: 0.10, insetLeftPct: 0.08 },
+    sale:          { insetTopPct: 0.08, insetRightPct: 0.06, insetBottomPct: 0.08, insetLeftPct: 0.06 },
+    off:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.28, insetLeftPct: 0.06 }, // Vacant yellow area above fixed 'OFF'
+    savings:       { insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.08, insetLeftPct: 0.08 }, // Vacant green area after 'YOU SAVE'
+    wholesaleQty:  { insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.15, insetLeftPct: 0.08 }, // Vacant area after 'BUY'
+    wholesalePrice:{ insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.08, insetLeftPct: 0.08 }  // Vacant area after '@'
+  },
 
   fitGroupToZone(element, containerZone, options = {}) {
     if (!element || !containerZone) return;
     const minFontSize = options.minFontSize || 8;
     const maxFontSize = options.maxFontSize || 42;
     const step = options.step || 0.5;
+    const spec = options.spec || { insetTopPct: 0.05, insetRightPct: 0.05, insetBottomPct: 0.05, insetLeftPct: 0.05 };
 
     const style = window.getComputedStyle(containerZone);
     const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
     const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
 
-    const availableWidth = Math.max(0, containerZone.clientWidth - padX);
-    const availableHeight = Math.max(0, containerZone.clientHeight - padY);
+    const outerW = Math.max(0, containerZone.clientWidth - padX);
+    const outerH = Math.max(0, containerZone.clientHeight - padY);
+
+    // Derive explicit Inner Typography Rectangle bounds
+    const availableWidth = Math.max(0, outerW * (1 - spec.insetLeftPct - spec.insetRightPct));
+    const availableHeight = Math.max(0, outerH * (1 - spec.insetTopPct - spec.insetBottomPct));
 
     if (availableWidth <= 0 || availableHeight <= 0) return;
 
@@ -917,37 +932,37 @@ const DynamicTextFitEngine = {
       const mrpUnit = document.getElementById('esl-mrp-unit');
       const mrpCol = document.getElementById('single-mrp-col');
       if (mrpUnit && mrpCol) {
-        this.fitGroupToZone(mrpUnit, mrpCol, { minFontSize: 8, maxFontSize: 22 });
+        this.fitGroupToZone(mrpUnit, mrpCol, { minFontSize: 8, maxFontSize: 24, spec: this.SPECS.mrp });
       }
 
       const saleUnit = document.getElementById('esl-sale-unit');
       const priceZone = document.getElementById('single-sale-price');
       if (saleUnit && priceZone) {
-        this.fitGroupToZone(saleUnit, priceZone, { minFontSize: 16, maxFontSize: 72 });
+        this.fitGroupToZone(saleUnit, priceZone, { minFontSize: 16, maxFontSize: 72, spec: this.SPECS.sale });
       }
 
       const offUnit = document.getElementById('esl-off-unit');
       const zoneOff = document.getElementById('esl-zone-off-pct');
       if (offUnit && zoneOff) {
-        this.fitGroupToZone(offUnit, zoneOff, { minFontSize: 14, maxFontSize: 56 });
+        this.fitGroupToZone(offUnit, zoneOff, { minFontSize: 14, maxFontSize: 56, spec: this.SPECS.off });
       }
 
       const qtyUnit = document.getElementById('esl-qty-unit');
       const zoneQty = document.getElementById('esl-zone-ws-qty');
       if (qtyUnit && zoneQty) {
-        this.fitGroupToZone(qtyUnit, zoneQty, { minFontSize: 10, maxFontSize: 36 });
+        this.fitGroupToZone(qtyUnit, zoneQty, { minFontSize: 10, maxFontSize: 36, spec: this.SPECS.wholesaleQty });
       }
 
       const priceUnit = document.getElementById('esl-price-unit');
       const zoneWsPrice = document.getElementById('esl-zone-ws-price');
       if (priceUnit && zoneWsPrice) {
-        this.fitGroupToZone(priceUnit, zoneWsPrice, { minFontSize: 10, maxFontSize: 28 });
+        this.fitGroupToZone(priceUnit, zoneWsPrice, { minFontSize: 10, maxFontSize: 28, spec: this.SPECS.wholesalePrice });
       }
 
       const saveUnit = document.getElementById('esl-save-unit');
       const zoneSave = document.getElementById('esl-zone-savings');
       if (saveUnit && zoneSave) {
-        this.fitGroupToZone(saveUnit, zoneSave, { minFontSize: 10, maxFontSize: 26 });
+        this.fitGroupToZone(saveUnit, zoneSave, { minFontSize: 10, maxFontSize: 26, spec: this.SPECS.savings });
       }
     });
   },
