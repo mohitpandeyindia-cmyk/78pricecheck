@@ -900,9 +900,12 @@ const DynamicTextFitEngine = {
     let fontSize = maxFontSize;
     element.style.fontSize = `${fontSize}px`;
 
-    while (fontSize > minFontSize && (element.scrollWidth > availableWidth || element.scrollHeight > availableHeight)) {
+    let rect = element.getBoundingClientRect();
+
+    while (fontSize > minFontSize && (rect.width > availableWidth || rect.height > availableHeight || element.scrollWidth > availableWidth || element.scrollHeight > availableHeight)) {
       fontSize -= step;
       element.style.fontSize = `${fontSize}px`;
+      rect = element.getBoundingClientRect();
     }
   },
 
