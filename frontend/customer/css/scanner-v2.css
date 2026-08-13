@@ -469,16 +469,19 @@
   z-index: 2;
 }
 
-/* Quieter MRP (Background Information Level, Medium 500 weight, Light/Darker Grey, Thin Red Strike, Digits Baseline Aligned) */
+/* Quieter MRP (Dedicated Independent MRP_ZONE - Positioned at top: 42%, height: 26%, ending at 68%, 8.5% clear of green band top at 76.5%) */
 .esl-mrp-block {
+  position: absolute;
+  top: 42%;
+  left: 6.5%;
+  width: 22%;
+  height: 26%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
-  flex-shrink: 0;
-  align-self: flex-end; /* Aligns bottom of MRP block (the digits) to price zone bottom */
   line-height: 1;
-  margin-bottom: 2px;
+  z-index: 3;
 }
 
 .esl-mrp-label {
@@ -572,15 +575,15 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After YOU SAVE) */
+/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After Baked-in YOU SAVE Artwork) */
 .esl-zone-savings {
   position: absolute;
-  top: 76.5%;
-  left: 31.5%; /* Positioned immediately after printed "YOU SAVE" text */
-  width: 26%;  /* Spans left: 31.5% to 57.5%, ending safely before barcode divider at 58.5% */
-  height: 17.5%;
+  top: 77.5%;
+  left: 29.5%; /* Positioned immediately after baked-in "YOU SAVE" artwork at 28.5% */
+  width: 28%;  /* Spans left: 29.5% to 57.5%, ending safely before barcode divider at 58.5% */
+  height: 16%; /* Spans top: 77.5% to 93.5%, vertical center at 85.5% matching YOU SAVE artwork */
   display: flex;
-  align-items: center; /* Vertically centered with YOU SAVE text */
+  align-items: center; /* Vertically centered with YOU SAVE artwork */
   justify-content: flex-start;
   box-sizing: border-box;
   z-index: 3;
@@ -588,7 +591,7 @@
 
 .esl-save-unit {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(0.95rem, 3.0vw, 1.45rem);
+  font-size: clamp(0.95rem, 2.8vw, 1.40rem);
   font-weight: 900;
   color: #0f172a;
   white-space: nowrap;

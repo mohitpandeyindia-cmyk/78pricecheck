@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608130707";</script>
+  <script>window.HTML_BUILD = "202608130712";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -143,14 +143,14 @@
                 <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
               </div>
 
-              <!-- Zone 3: Price Area (MRP & Sale Price) -->
-              <div class="esl-price-zone">
-                <div class="esl-mrp-block" id="single-mrp-col">
-                  <span class="esl-mrp-label">MRP</span>
-                  <span class="esl-mrp-value" id="single-mrp"></span>
-                </div>
-                <div class="esl-sale-block" id="single-sale-price"></div>
+              <!-- Dynamic Geometric Zone: MRP_ZONE (Positioned at top: 42%, height: 26%, ending at 68%, 8.5% clear of green band) -->
+              <div class="esl-mrp-block" id="single-mrp-col">
+                <span class="esl-mrp-label">MRP</span>
+                <span class="esl-mrp-value" id="single-mrp"></span>
               </div>
+
+              <!-- Zone 3: SALE_PRICE_ZONE (Independent Sale Price Focal Point) -->
+              <div class="esl-sale-block" id="single-sale-price"></div>
 
               <!-- Dynamic Geometric Zone 4: SAVINGS_AMOUNT_ZONE (Green YOU SAVE Band) -->
               <div class="esl-zone-savings" id="esl-zone-savings"></div>
