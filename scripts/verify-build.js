@@ -12,7 +12,9 @@ const requiredFiles = [
   '../frontend/customer/manifest.json',
   '../frontend/customer/sw.js',
   '../frontend/customer/assets/logo.png',
-  '../frontend/customer/assets/mascot.png'
+  '../frontend/customer/assets/mascot.png',
+  '../frontend/customer/assets/esl-off-template.png',
+  '../frontend/customer/assets/esl-wholesale-template.png'
 ];
 
 console.log('================================================');
