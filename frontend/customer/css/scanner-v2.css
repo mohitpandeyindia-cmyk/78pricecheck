@@ -455,12 +455,12 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Compartment A: MRP_COMPARTMENT (Measured PNG Geometry: X=40..240, Y=200..419) */
+/* Compartment A: MRP_COMPARTMENT (Measured New PNG Geometry: X=40..200, Y=200..419) */
 .esl-mrp-block {
   position: absolute;
   top: 34.25%;
   left: 3.91%;
-  width: 19.53%;
+  width: 15.72%;
   height: 37.50%;
   display: flex;
   flex-direction: column;
@@ -511,12 +511,12 @@
   font-weight: 500;
 }
 
-/* Compartment B: SALE_PRICE_COMPARTMENT (Measured PNG Geometry: X=242..949, Y=200..419) */
+/* Compartment B: SALE_PRICE_COMPARTMENT (Measured New PNG Geometry: X=202..949, Y=200..419) */
 .esl-sale-block {
   position: absolute;
   top: 34.25%;
-  left: 23.63%;
-  width: 69.05%;
+  left: 19.73%;
+  width: 73.05%;
   height: 37.50%;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(2.4rem, 7.6vw, 3.6rem); /* Dominant sale price scale */
