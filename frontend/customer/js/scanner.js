@@ -956,14 +956,23 @@ function renderV2ProductCard(p, barcode) {
   const decPart = '.' + saleParts[1];
 
   // Zone 3: Price Area (MRP & Sale Price)
+  const mrpColEl = document.getElementById('single-mrp-col');
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
-    mrpEl.innerHTML = `<span class="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span></span>`;
+    mrpEl.innerHTML = `<span class="esl-mrp-unit" id="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span></span>`;
+    if (mrpColEl) {
+      setTimeout(() => {
+        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-mrp-unit'), mrpColEl, { minFontSize: 8, maxFontSize: 22 });
+      }, 0);
+    }
   }
 
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    priceEl.innerHTML = `<span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span>`;
+    priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span></div>`;
+    setTimeout(() => {
+      DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-sale-unit'), priceEl, { minFontSize: 16, maxFontSize: 72 });
+    }, 0);
   }
 
   // Template background class switching
