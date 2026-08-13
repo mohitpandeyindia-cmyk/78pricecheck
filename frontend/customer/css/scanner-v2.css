@@ -454,32 +454,18 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Zone 3 — Price Area (Shifted 2% Upward to top: 47.5%, MRP Baseline Aligned with Rupee Symbol Baseline) */
-.esl-price-zone {
-  position: absolute;
-  top: 47.5%; /* Shifted 2% upward from 49.5% */
-  left: 6.5%;
-  width: 86%;
-  height: 35%;
-  display: flex;
-  align-items: baseline; /* MRP baseline aligned with Rupee symbol baseline */
-  justify-content: flex-start;
-  gap: 12px;
-  box-sizing: border-box;
-  z-index: 2;
-}
-
-/* Compartment A: MRP_COMPARTMENT (Left Section of Blue-Tinted Price Box) */
+/* Compartment A: MRP_COMPARTMENT (Measured PNG Geometry: X=40..240, Y=200..419) */
 .esl-mrp-block {
   position: absolute;
-  top: 42%;
-  left: 6.5%;
-  width: 19%;
-  height: 25%;
+  top: 34.25%;
+  left: 3.91%;
+  width: 19.53%;
+  height: 37.50%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-end;
+  box-sizing: border-box;
   line-height: 1;
   z-index: 3;
 }
@@ -523,13 +509,13 @@
   font-weight: 500;
 }
 
-/* Compartment B: SALE_PRICE_COMPARTMENT (Right Large Section of Blue-Tinted Price Box) */
+/* Compartment B: SALE_PRICE_COMPARTMENT (Measured PNG Geometry: X=242..949, Y=200..419) */
 .esl-sale-block {
   position: absolute;
-  top: 40%;
-  left: 26.5%;
-  width: 65%;
-  height: 28%;
+  top: 34.25%;
+  left: 23.63%;
+  width: 69.05%;
+  height: 37.50%;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(2.4rem, 7.6vw, 3.6rem); /* Dominant sale price scale */
   font-weight: 900; /* Black weight */
@@ -537,6 +523,7 @@
   letter-spacing: -0.045em;
   display: flex;
   align-items: flex-end;
+  box-sizing: border-box;
   color: #0f172a !important; /* Solid Dark Black */
   z-index: 3;
 }
@@ -577,13 +564,13 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Compartment C: OFF_PERCENTAGE_COMPARTMENT (Vacant Upper Area inside Yellow Badge) */
+/* Compartment C: OFF_PERCENTAGE_COMPARTMENT (Measured PNG Geometry: X=708..982, Y=21..175) */
 .esl-zone-off-pct {
   position: absolute;
-  top: 3.5%;
-  right: 4.5%;
-  width: 26.5%;
-  height: 31%;
+  top: 3.60%;
+  right: 4.10%;
+  width: 26.76%;
+  height: 26.40%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -619,13 +606,13 @@
   line-height: 1;
 }
 
-/* Compartment E1: WHOLESALE_QUANTITY_COMPARTMENT (Small Vacant Area immediately RIGHT of BUY) */
+/* Compartment E1: WHOLESALE_QUANTITY_COMPARTMENT (Measured PNG Geometry: X=835..980, Y=25..140) */
 .esl-zone-ws-qty {
   position: absolute;
-  top: 4.5%;
-  right: 4.5%;
-  width: 14%;
-  height: 20%;
+  top: 4.28%;
+  right: 4.30%;
+  width: 14.16%;
+  height: 19.69%;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -642,13 +629,13 @@
   white-space: nowrap;
 }
 
-/* Compartment E2: WHOLESALE_PRICE_COMPARTMENT (Larger Vacant Area immediately RIGHT of @) */
+/* Compartment E2: WHOLESALE_PRICE_COMPARTMENT (Measured PNG Geometry: X=765..980, Y=145..245) */
 .esl-zone-ws-price {
   position: absolute;
-  top: 24.5%;
-  right: 4.5%;
-  width: 20%;
-  height: 20%;
+  top: 24.83%;
+  right: 4.30%;
+  width: 21.00%;
+  height: 17.12%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -665,15 +652,15 @@
   white-space: nowrap;
 }
 
-/* Compartment D: YOU_SAVE_COMPARTMENT (Green Band Vacant Area Immediately After Baked-in YOU SAVE Artwork) */
+/* Compartment D: YOU_SAVE_COMPARTMENT (Measured PNG Geometry: X=280..598, Y=424..583) */
 .esl-zone-savings {
   position: absolute;
-  top: 76.0%;
-  left: 28.0%;   /* Positioned immediately after baked-in "YOU SAVE" artwork at 27.25% */
-  width: 30.0%;  /* Spans left: 28.0% to 58.0%, ending safely before barcode section at 58.5% */
-  height: 20.0%; /* Spans top: 76% to 96%, vertical center at 86% matching YOU SAVE artwork center at 86.2% */
+  top: 72.60%;
+  left: 27.34%;
+  width: 31.06%;
+  height: 27.23%;
   display: flex;
-  align-items: center; /* Vertically centered with YOU SAVE artwork */
+  align-items: center;
   justify-content: flex-start;
   box-sizing: border-box;
   z-index: 3;
@@ -699,29 +686,6 @@
 
 .esl-save-num {
   font-weight: 900;
-}
-
-.esl-save-sym {
-  font-weight: 900;
-  margin-right: 1px;
-}
-
-.esl-save-num {
-  font-weight: 900;
-}
-
-/* Geometric Dynamic Zone 1: OFF_PERCENT_ZONE (Top Right Yellow Badge Above OFF) */
-.esl-zone-off-pct {
-  position: absolute;
-  top: 3.5%;
-  right: 4.2%;
-  width: 26.5%;
-  height: 44%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  z-index: 3;
 }
 
 .esl-off-pct-unit {
