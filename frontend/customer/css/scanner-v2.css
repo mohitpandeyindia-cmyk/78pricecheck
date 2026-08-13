@@ -455,20 +455,22 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Translucent Development Diagnostic Mode (Show Outer Compartment -> Inner Content Box -> Text Unit) */
-.esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); background: rgba(59, 130, 246, 0.10); }
-.esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); background: rgba(239, 68, 68, 0.10); }
-.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); background: rgba(234, 179, 8, 0.10); }
-.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); background: rgba(249, 115, 22, 0.10); }
-.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); background: rgba(168, 85, 247, 0.10); }
-.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(34, 197, 94, 0.9); background: rgba(34, 197, 94, 0.10); }
+/* Translucent Development Diagnostic Mode (Layer 1: Outer Compartment | Layer 2: Inner Safe Box | Layer 3: Text Unit Box) */
+.esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(59, 130, 246, 0.10); }
+.esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(239, 68, 68, 0.10); }
+.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(234, 179, 8, 0.10); }
+.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(249, 115, 22, 0.10); }
+.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(168, 85, 247, 0.10); }
+.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(34, 197, 94, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(34, 197, 94, 0.10); }
 
 .esl-debug-compartments .esl-sale-unit,
 .esl-debug-compartments .esl-mrp-unit,
 .esl-debug-compartments .esl-save-unit,
-.esl-debug-compartments .esl-off-pct-unit {
+.esl-debug-compartments .esl-off-pct-unit,
+.esl-debug-compartments .esl-ws-qty-unit,
+.esl-debug-compartments .esl-ws-price-unit {
   outline: 1.5px dashed #0f172a !important;
-  background: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.35) !important;
 }
 
 /* Compartment A: MRP_COMPARTMENT (Measured New PNG Geometry: X=40..200, Y=200..419) */
@@ -522,6 +524,8 @@
 .esl-mrp-sym {
   font-weight: 500;
   margin-right: 1px;
+  align-self: center;
+  line-height: 1;
 }
 
 .esl-mrp-num {
@@ -562,7 +566,7 @@
   color: #0f172a !important; /* Dark Black Rupee symbol */
   -webkit-text-fill-color: #0f172a !important;
   margin-right: 4px; /* Natural space between symbol and sale price */
-  align-self: baseline;
+  align-self: center;
   line-height: 1;
 }
 
