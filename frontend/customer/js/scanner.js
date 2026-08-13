@@ -1032,12 +1032,6 @@ function renderV2ProductCard(p, barcode) {
   const saleVal = Math.round(rawSale);
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
 
-  // Format sale price with fixed 2 decimal places (.00) sitting at bottom baseline
-  const formattedSale = rawSale.toFixed(2);
-  const saleParts = formattedSale.split('.');
-  const wholePart = saleParts[0];
-  const decPart = '.' + saleParts[1];
-
   // Zone 3: Price Area (MRP & Sale Price)
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
@@ -1046,7 +1040,7 @@ function renderV2ProductCard(p, barcode) {
 
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
-    priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span></div>`;
+    priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span></div>`;
   }
 
   // Dynamic Geometric Zone Containers
