@@ -469,13 +469,13 @@
   z-index: 2;
 }
 
-/* Quieter MRP (Dedicated Independent MRP_ZONE - Positioned at top: 42%, height: 26%, ending at 68%, 8.5% clear of green band top at 76.5%) */
+/* Quieter MRP (Dedicated Independent MRP_ZONE - Positioned at top: 42%, height: 25%, ending at 67%, 5.6% clear of green band top at 72.6%) */
 .esl-mrp-block {
   position: absolute;
   top: 42%;
   left: 6.5%;
   width: 22%;
-  height: 26%;
+  height: 25%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -575,13 +575,13 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After Baked-in YOU SAVE Artwork) */
+/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After Baked-in YOU SAVE Artwork at 27.25%) */
 .esl-zone-savings {
   position: absolute;
-  top: 77.5%;
-  left: 29.5%; /* Positioned immediately after baked-in "YOU SAVE" artwork at 28.5% */
-  width: 28%;  /* Spans left: 29.5% to 57.5%, ending safely before barcode divider at 58.5% */
-  height: 16%; /* Spans top: 77.5% to 93.5%, vertical center at 85.5% matching YOU SAVE artwork */
+  top: 76%;
+  left: 28%;   /* Positioned immediately after baked-in "YOU SAVE" artwork at 27.25% */
+  width: 30%;  /* Spans left: 28% to 58%, ending safely before barcode section at 58.5% */
+  height: 20%; /* Spans top: 76% to 96%, vertical center at 86% matching YOU SAVE artwork center at 86.2% */
   display: flex;
   align-items: center; /* Vertically centered with YOU SAVE artwork */
   justify-content: flex-start;
