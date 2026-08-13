@@ -880,6 +880,8 @@ function formatV3PriceHTML(val, isRupeeBlack = true) {
 
 // Reusable Dynamic-Fit Engine for Geometric Dynamic Zones
 const DynamicTextFitEngine = {
+  _observerInitialized: false,
+
   fitGroupToZone(element, containerZone, options = {}) {
     if (!element || !containerZone) return;
     const minFontSize = options.minFontSize || 8;
@@ -897,6 +899,62 @@ const DynamicTextFitEngine = {
     while (fontSize > minFontSize && (element.scrollWidth > containerWidth || element.scrollHeight > containerHeight)) {
       fontSize -= step;
       element.style.fontSize = `${fontSize}px`;
+    }
+  },
+
+  fitCardUnits() {
+    requestAnimationFrame(() => {
+      const stateSingle = document.getElementById('state-single');
+      if (!stateSingle || stateSingle.clientWidth <= 0) return;
+
+      const mrpUnit = document.getElementById('esl-mrp-unit');
+      const mrpCol = document.getElementById('single-mrp-col');
+      if (mrpUnit && mrpCol) {
+        this.fitGroupToZone(mrpUnit, mrpCol, { minFontSize: 8, maxFontSize: 22 });
+      }
+
+      const saleUnit = document.getElementById('esl-sale-unit');
+      const priceZone = document.getElementById('single-sale-price');
+      if (saleUnit && priceZone) {
+        this.fitGroupToZone(saleUnit, priceZone, { minFontSize: 16, maxFontSize: 72 });
+      }
+
+      const offUnit = document.getElementById('esl-off-unit');
+      const zoneOff = document.getElementById('esl-zone-off-pct');
+      if (offUnit && zoneOff) {
+        this.fitGroupToZone(offUnit, zoneOff, { minFontSize: 14, maxFontSize: 56 });
+      }
+
+      const qtyUnit = document.getElementById('esl-qty-unit');
+      const zoneQty = document.getElementById('esl-zone-ws-qty');
+      if (qtyUnit && zoneQty) {
+        this.fitGroupToZone(qtyUnit, zoneQty, { minFontSize: 10, maxFontSize: 36 });
+      }
+
+      const priceUnit = document.getElementById('esl-price-unit');
+      const zoneWsPrice = document.getElementById('esl-zone-ws-price');
+      if (priceUnit && zoneWsPrice) {
+        this.fitGroupToZone(priceUnit, zoneWsPrice, { minFontSize: 10, maxFontSize: 28 });
+      }
+
+      const saveUnit = document.getElementById('esl-save-unit');
+      const zoneSave = document.getElementById('esl-zone-savings');
+      if (saveUnit && zoneSave) {
+        this.fitGroupToZone(saveUnit, zoneSave, { minFontSize: 10, maxFontSize: 26 });
+      }
+    });
+  },
+
+  initResizeObserver() {
+    if (typeof ResizeObserver !== 'undefined' && !this._observerInitialized) {
+      const stateSingle = document.getElementById('state-single');
+      if (stateSingle) {
+        const ro = new ResizeObserver(() => {
+          this.fitCardUnits();
+        });
+        ro.observe(stateSingle);
+        this._observerInitialized = true;
+      }
     }
   }
 };
@@ -956,23 +1014,14 @@ function renderV2ProductCard(p, barcode) {
   const decPart = '.' + saleParts[1];
 
   // Zone 3: Price Area (MRP & Sale Price)
-  const mrpColEl = document.getElementById('single-mrp-col');
   const mrpEl = document.getElementById('single-mrp');
   if (mrpEl) {
     mrpEl.innerHTML = `<span class="esl-mrp-unit" id="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span></span>`;
-    if (mrpColEl) {
-      setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-mrp-unit'), mrpColEl, { minFontSize: 8, maxFontSize: 22 });
-      }, 0);
-    }
   }
 
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
     priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span></div>`;
-    setTimeout(() => {
-      DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-sale-unit'), priceEl, { minFontSize: 16, maxFontSize: 72 });
-    }, 0);
   }
 
   // Template background class switching
@@ -1002,16 +1051,10 @@ function renderV2ProductCard(p, barcode) {
 
     if (zoneWsQty) {
       zoneWsQty.innerHTML = `<div class="esl-ws-qty-unit" id="esl-qty-unit">${qtyStr}</div>`;
-      setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-qty-unit'), zoneWsQty, { minFontSize: 10, maxFontSize: 36 });
-      }, 0);
     }
 
     if (zoneWsPrice) {
       zoneWsPrice.innerHTML = `<div class="esl-ws-price-unit" id="esl-price-unit">${priceStr}</div>`;
-      setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-price-unit'), zoneWsPrice, { minFontSize: 10, maxFontSize: 28 });
-      }, 0);
     }
   } else {
     if (zoneWsQty) zoneWsQty.innerHTML = '';
@@ -1028,23 +1071,21 @@ function renderV2ProductCard(p, barcode) {
           <span class="esl-off-num">${discountPercent}</span><span class="esl-off-sym">%</span>
         </div>
       `;
-      setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-off-unit'), zoneOffPct, { minFontSize: 14, maxFontSize: 56 });
-      }, 0);
     }
   }
 
-  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Positioned immediately after YOU SAVE, sharing vertical centerline)
+  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE
   if (zoneSavings) {
     if (savingsVal > 0) {
       zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">${savingsVal}</span></div>`;
-      setTimeout(() => {
-        DynamicTextFitEngine.fitGroupToZone(document.getElementById('esl-save-unit'), zoneSavings, { minFontSize: 10, maxFontSize: 26 });
-      }, 0);
     } else {
       zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">0</span></div>`;
     }
   }
+
+  // Initialize ResizeObserver on first render & trigger text fitting on settled layout
+  DynamicTextFitEngine.initResizeObserver();
+  DynamicTextFitEngine.fitCardUnits();
 
   addToHistory(p);
   triggerFeedbackPopup(p.name);
