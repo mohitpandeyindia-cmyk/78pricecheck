@@ -455,6 +455,14 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
+/* Translucent Development Diagnostic Mode (Show Compartment Boundaries) */
+.esl-debug-compartments .esl-mrp-block { outline: 2px dashed rgba(59, 130, 246, 0.7); background: rgba(59, 130, 246, 0.12); }
+.esl-debug-compartments .esl-sale-block { outline: 2px dashed rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.12); }
+.esl-debug-compartments .esl-zone-off-pct { outline: 2px dashed rgba(234, 179, 8, 0.7); background: rgba(234, 179, 8, 0.12); }
+.esl-debug-compartments .esl-zone-ws-qty { outline: 2px dashed rgba(249, 115, 22, 0.7); background: rgba(249, 115, 22, 0.12); }
+.esl-debug-compartments .esl-zone-ws-price { outline: 2px dashed rgba(168, 85, 247, 0.7); background: rgba(168, 85, 247, 0.12); }
+.esl-debug-compartments .esl-zone-savings { outline: 2px dashed rgba(34, 197, 94, 0.7); background: rgba(34, 197, 94, 0.12); }
+
 /* Compartment A: MRP_COMPARTMENT (Measured New PNG Geometry: X=40..200, Y=200..419) */
 .esl-mrp-block {
   position: absolute;

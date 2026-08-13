@@ -963,6 +963,32 @@ const DynamicTextFitEngine = {
 function renderV2ProductCard(p, barcode) {
   resetBarcodeCollapse();
 
+  // 1. TEMPLATE MODE SELECTION FIRST (Establishes coordinate system before measurement)
+  const wQtyNum = Number(p.wholesaleQty);
+  const wPriceNum = Number(p.wholesalePrice);
+  const hasWholesale = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
+                       p.wholesaleQty !== undefined && p.wholesaleQty !== null &&
+                       p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
+                       !isNaN(wQtyNum) && wQtyNum > 0 &&
+                       !isNaN(wPriceNum) && wPriceNum > 0;
+
+  const cardEl = document.getElementById('state-single');
+  if (cardEl) {
+    if (hasWholesale) {
+      cardEl.classList.add('esl-mode-wholesale');
+      cardEl.classList.remove('esl-mode-off');
+    } else {
+      cardEl.classList.add('esl-mode-off');
+      cardEl.classList.remove('esl-mode-wholesale');
+    }
+
+    // Enable translucent debug overlay if ?debug=1 URL parameter is set
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('debug') === '1') {
+      cardEl.classList.add('esl-debug-compartments');
+    }
+  }
+
   StateManager.transitionTo('DISPLAY_RESULT', { type: 'single' });
   const announcer = document.getElementById('a11y-announcer');
   if (announcer) {
@@ -999,14 +1025,6 @@ function renderV2ProductCard(p, barcode) {
   const saleVal = Math.round(rawSale);
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
 
-  const wQtyNum = Number(p.wholesaleQty);
-  const wPriceNum = Number(p.wholesalePrice);
-  const hasWholesale = FeatureFlags.isEnabled('FEATURE_BULK_OFFERS') &&
-                       p.wholesaleQty !== undefined && p.wholesaleQty !== null &&
-                       p.wholesalePrice !== undefined && p.wholesalePrice !== null &&
-                       !isNaN(wQtyNum) && wQtyNum > 0 &&
-                       !isNaN(wPriceNum) && wPriceNum > 0;
-
   // Format sale price with fixed 2 decimal places (.00) sitting at bottom baseline
   const formattedSale = rawSale.toFixed(2);
   const saleParts = formattedSale.split('.');
@@ -1022,18 +1040,6 @@ function renderV2ProductCard(p, barcode) {
   const priceEl = document.getElementById('single-sale-price');
   if (priceEl) {
     priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${wholePart}<span class="esl-sale-dec">${decPart}</span></span></div>`;
-  }
-
-  // Template background class switching
-  const cardEl = document.getElementById('state-single');
-  if (cardEl) {
-    if (hasWholesale) {
-      cardEl.classList.add('esl-mode-wholesale');
-      cardEl.classList.remove('esl-mode-off');
-    } else {
-      cardEl.classList.add('esl-mode-off');
-      cardEl.classList.remove('esl-mode-wholesale');
-    }
   }
 
   // Dynamic Geometric Zone Containers
