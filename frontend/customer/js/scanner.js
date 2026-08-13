@@ -878,18 +878,24 @@ function formatV3PriceHTML(val, isRupeeBlack = true) {
   return `<span class="${rupeeClass}">₹</span><span class="price-whole">${whole}</span>`;
 }
 
-// Reusable 5-Stage Geometry & Dynamic-Fit Engine for Geometric Dynamic Zones
+// Reusable Forensic Dynamic-Fit Engine for Geometric Dynamic Zones
 const DynamicTextFitEngine = {
   _observerInitialized: false,
 
-  // Explicit Unit Geometry Specifications (Inner Typography Rectangles relative to Outer Visual Compartments)
+  // Forensic Fixed Artwork Exclusions & Vacant Typography Rectangles (Relative to Outer Compartments)
   SPECS: {
-    mrp:           { insetTopPct: 0.10, insetRightPct: 0.08, insetBottomPct: 0.10, insetLeftPct: 0.08 },
-    sale:          { insetTopPct: 0.08, insetRightPct: 0.06, insetBottomPct: 0.08, insetLeftPct: 0.06 },
-    off:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.28, insetLeftPct: 0.06 }, // Vacant yellow area above fixed 'OFF'
-    savings:       { insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.08, insetLeftPct: 0.08 }, // Vacant green area after 'YOU SAVE'
-    wholesaleQty:  { insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.15, insetLeftPct: 0.08 }, // Vacant area after 'BUY'
-    wholesalePrice:{ insetTopPct: 0.08, insetRightPct: 0.08, insetBottomPct: 0.08, insetLeftPct: 0.08 }  // Vacant area after '@'
+    // MRP: Vacant area inside MRP compartment
+    mrp:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 },
+    // Sale Price: Vacant SALE VALUE rectangle after vertical blue divider artwork
+    sale:          { insetTopPct: 0.06, insetRightPct: 0.05, insetBottomPct: 0.06, insetLeftPct: 0.06 },
+    // OFF %: Vacant yellow area strictly ABOVE pre-printed 'OFF' artwork (Bottom 28% excluded for 'OFF' text)
+    off:           { insetTopPct: 0.05, insetRightPct: 0.05, insetBottomPct: 0.28, insetLeftPct: 0.05 },
+    // YOU SAVE: Vacant green box AFTER 'YOU SAVE' artwork (Left 22% excluded) & BEFORE Barcode (Right 5% excluded)
+    savings:       { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.22 },
+    // Wholesale Qty: Vacant area after 'BUY' artwork
+    wholesaleQty:  { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.15, insetLeftPct: 0.06 },
+    // Wholesale Price: Vacant area after '@' artwork
+    wholesalePrice:{ insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 }
   },
 
   fitGroupToZone(element, containerZone, options = {}) {
@@ -906,7 +912,7 @@ const DynamicTextFitEngine = {
     const outerW = Math.max(0, containerZone.clientWidth - padX);
     const outerH = Math.max(0, containerZone.clientHeight - padY);
 
-    // Derive explicit Inner Typography Rectangle bounds
+    // Derive explicit Vacant Typography Rectangle bounds (excluding fixed artwork)
     const availableWidth = Math.max(0, outerW * (1 - spec.insetLeftPct - spec.insetRightPct));
     const availableHeight = Math.max(0, outerH * (1 - spec.insetTopPct - spec.insetBottomPct));
 
@@ -917,6 +923,7 @@ const DynamicTextFitEngine = {
 
     let rect = element.getBoundingClientRect();
 
+    // Enforce GLYPHS ⊂ VACANT TYPOGRAPHY RECTANGLE & FIXED ARTWORK ∩ DYNAMIC GLYPHS = ∅
     while (fontSize > minFontSize && (rect.width > availableWidth || rect.height > availableHeight || element.scrollWidth > availableWidth || element.scrollHeight > availableHeight)) {
       fontSize -= step;
       element.style.fontSize = `${fontSize}px`;

@@ -455,13 +455,13 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Translucent Development Diagnostic Mode (Layer 1: Outer Compartment | Layer 2: Inner Safe Box | Layer 3: Text Unit Box) */
-.esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(59, 130, 246, 0.10); }
-.esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(239, 68, 68, 0.10); }
-.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(234, 179, 8, 0.10); }
-.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(249, 115, 22, 0.10); }
-.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(168, 85, 247, 0.10); }
-.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(34, 197, 94, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8); background: rgba(34, 197, 94, 0.10); }
+/* Translucent Development Diagnostic Mode (Rect 1: OUTER COMPARTMENT | Rect 2: FIXED ARTWORK EXCLUSION | Rect 3: VACANT TYPOGRAPHY RECT) */
+.esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(59, 130, 246, 0.10); }
+.esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.10); }
+.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(234, 179, 8, 0.10); }
+.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(249, 115, 22, 0.10); }
+.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(168, 85, 247, 0.10); }
+.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(34, 197, 94, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(34, 197, 94, 0.10); }
 
 .esl-debug-compartments .esl-sale-unit,
 .esl-debug-compartments .esl-mrp-unit,
@@ -469,8 +469,8 @@
 .esl-debug-compartments .esl-off-pct-unit,
 .esl-debug-compartments .esl-ws-qty-unit,
 .esl-debug-compartments .esl-ws-price-unit {
-  outline: 1.5px dashed #0f172a !important;
-  background: rgba(255, 255, 255, 0.35) !important;
+  outline: 2px solid #22c55e !important;
+  background: rgba(255, 255, 255, 0.40) !important;
 }
 
 /* Compartment A: MRP_COMPARTMENT (Measured New PNG Geometry: X=40..200, Y=200..419) */
