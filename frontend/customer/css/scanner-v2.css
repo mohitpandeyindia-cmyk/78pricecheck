@@ -474,7 +474,7 @@
 .esl-mrp-label {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.60rem;
-  font-weight: 500; /* Medium */
+  font-weight: 600;
   color: #94a3b8; /* Light Grey */
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -485,7 +485,7 @@
 .esl-mrp-value {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 0.90rem;
-  font-weight: 500; /* Medium (No bold) */
+  font-weight: 500;
   color: #64748b; /* Darker Grey */
   line-height: 1;
   text-decoration: line-through;
@@ -499,6 +499,7 @@
   display: inline-flex;
   align-items: baseline;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .esl-mrp-sym {
@@ -520,7 +521,7 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(2.4rem, 7.6vw, 3.6rem); /* Dominant sale price scale */
   font-weight: 900; /* Black weight */
-  line-height: 0.90;
+  line-height: 1;
   letter-spacing: -0.045em;
   display: flex;
   align-items: flex-end;
@@ -533,7 +534,7 @@
   display: inline-flex;
   align-items: baseline;
   white-space: nowrap;
-  line-height: 0.90;
+  line-height: 1;
 }
 
 .esl-rupee {
@@ -543,6 +544,7 @@
   -webkit-text-fill-color: #0f172a !important;
   margin-right: 4px; /* Natural space between symbol and sale price */
   align-self: baseline;
+  line-height: 1;
 }
 
 .esl-sale-num {
@@ -552,6 +554,7 @@
   background: none !important;
   display: inline-flex;
   align-items: baseline;
+  line-height: 1;
 }
 
 .esl-sale-dec {
@@ -562,6 +565,7 @@
   opacity: 0.9;
   align-self: baseline;
   vertical-align: baseline;
+  line-height: 1;
 }
 
 .esl-shelf-label-card.esl-mode-wholesale {
@@ -588,10 +592,10 @@
 
 .esl-off-pct-unit {
   display: inline-flex;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: center;
   white-space: nowrap;
-  line-height: 0.85;
+  line-height: 1;
 }
 
 .esl-off-num {
@@ -600,7 +604,7 @@
   font-weight: 900;
   color: #0f172a;
   letter-spacing: -0.04em;
-  line-height: 0.85;
+  line-height: 1;
 }
 
 .esl-off-sym {
@@ -610,7 +614,7 @@
   color: #0f172a;
   align-self: flex-start;
   margin-left: 1px;
-  margin-top: 4px;
+  margin-top: 2px;
   line-height: 1;
 }
 
@@ -688,86 +692,15 @@
 }
 
 .esl-save-sym {
+  font-size: 0.85em;
   font-weight: 900;
-  margin-right: 1px;
+  margin-right: 2px;
+  align-self: baseline;
 }
 
 .esl-save-num {
   font-weight: 900;
-}
-
-.esl-off-pct-unit {
-  display: inline-flex;
-  align-items: flex-end;
-  justify-content: center;
-  white-space: nowrap;
-  line-height: 0.85;
-}
-
-.esl-off-num {
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(2.2rem, 7.2vw, 3.6rem); /* Dominant scale matching OFF text width */
-  font-weight: 900;
-  color: #0f172a;
-  letter-spacing: -0.04em;
-  line-height: 0.85;
-}
-
-.esl-off-sym {
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.50em;
-  font-weight: 800;
-  color: #0f172a;
-  align-self: flex-start;
-  margin-left: 1px;
-  margin-top: 4px;
-  line-height: 1;
-}
-
-/* Geometric Dynamic Zone 2: WHOLESALE_QUANTITY_ZONE (After BUY, Vertically Centered to BUY) */
-.esl-zone-ws-qty {
-  position: absolute;
-  top: 4.5%;
-  right: 4.2%;
-  width: 14%;
-  height: 25%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  box-sizing: border-box;
-  z-index: 3;
-}
-
-.esl-ws-qty-unit {
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.4rem, 4.6vw, 2.2rem);
-  font-weight: 900;
-  color: #0f172a;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-/* Geometric Dynamic Zone 3: WHOLESALE_PRICE_ZONE (After @, Single Line) */
-.esl-zone-ws-price {
-  position: absolute;
-  top: 28.5%;
-  right: 4.2%;
-  width: 20%;
-  height: 25%;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  box-sizing: border-box;
-  z-index: 3;
-}
-
-.esl-ws-price-unit {
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(1.0rem, 3.3vw, 1.55rem);
-  font-weight: 900;
-  color: #0f172a;
-  line-height: 1;
-  white-space: nowrap;
+  align-self: baseline;
 }
 }
 
