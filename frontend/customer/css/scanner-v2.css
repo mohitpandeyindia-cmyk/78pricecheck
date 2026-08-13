@@ -469,12 +469,12 @@
   z-index: 2;
 }
 
-/* Quieter MRP (Dedicated Independent MRP_ZONE - Positioned at top: 42%, height: 25%, ending at 67%, 5.6% clear of green band top at 72.6%) */
+/* Compartment A: MRP_COMPARTMENT (Left Section of Blue-Tinted Price Box) */
 .esl-mrp-block {
   position: absolute;
   top: 42%;
   left: 6.5%;
-  width: 22%;
+  width: 19%;
   height: 25%;
   display: flex;
   flex-direction: column;
@@ -523,20 +523,22 @@
   font-weight: 500;
 }
 
-/* Sale Price: Solid Dark Black Focal Point (-10% Reduced Overall Size, +50% Height Stretch, +25% Breadth Stretch) */
+/* Compartment B: SALE_PRICE_COMPARTMENT (Right Large Section of Blue-Tinted Price Box) */
 .esl-sale-block {
+  position: absolute;
+  top: 40%;
+  left: 26.5%;
+  width: 65%;
+  height: 28%;
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(3.08rem, 9.8vw, 4.10rem); /* Reduced overall size by further 10% */
+  font-size: clamp(2.4rem, 7.6vw, 3.6rem); /* Dominant sale price scale */
   font-weight: 900; /* Black weight */
   line-height: 0.90;
   letter-spacing: -0.045em;
   display: flex;
-  align-items: baseline;
-  margin-left: 2px;
+  align-items: flex-end;
   color: #0f172a !important; /* Solid Dark Black */
-  transform: scale(1.25, 1.5); /* Stretch breadth +25% (scaleX=1.25) & height +50% (scaleY=1.5) */
-  transform-origin: left bottom;
-  align-self: baseline; /* Aligned by bottom baseline matching MRP digits placement */
+  z-index: 3;
 }
 
 .esl-rupee {
@@ -575,13 +577,101 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE (Lower Green Band Immediately After Baked-in YOU SAVE Artwork at 27.25%) */
+/* Compartment C: OFF_PERCENTAGE_COMPARTMENT (Vacant Upper Area inside Yellow Badge) */
+.esl-zone-off-pct {
+  position: absolute;
+  top: 3.5%;
+  right: 4.5%;
+  width: 26.5%;
+  height: 31%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.esl-off-pct-unit {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 0.85;
+}
+
+.esl-off-num {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(2.2rem, 7.2vw, 3.6rem); /* Dominant scale matching OFF text width */
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+}
+
+.esl-off-sym {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.50em; /* % symbol is 50% smaller than percentage number */
+  font-weight: 800;
+  color: #0f172a;
+  align-self: flex-start;
+  margin-left: 1px;
+  margin-top: 4px;
+  line-height: 1;
+}
+
+/* Compartment E1: WHOLESALE_QUANTITY_COMPARTMENT (Small Vacant Area immediately RIGHT of BUY) */
+.esl-zone-ws-qty {
+  position: absolute;
+  top: 4.5%;
+  right: 4.5%;
+  width: 14%;
+  height: 20%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.esl-ws-qty-unit {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.4rem, 4.8vw, 2.4rem);
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Compartment E2: WHOLESALE_PRICE_COMPARTMENT (Larger Vacant Area immediately RIGHT of @) */
+.esl-zone-ws-price {
+  position: absolute;
+  top: 24.5%;
+  right: 4.5%;
+  width: 20%;
+  height: 20%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  z-index: 3;
+}
+
+.esl-ws-price-unit {
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(1.1rem, 3.6vw, 1.8rem);
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Compartment D: YOU_SAVE_COMPARTMENT (Green Band Vacant Area Immediately After Baked-in YOU SAVE Artwork) */
 .esl-zone-savings {
   position: absolute;
-  top: 76%;
-  left: 28%;   /* Positioned immediately after baked-in "YOU SAVE" artwork at 27.25% */
-  width: 30%;  /* Spans left: 28% to 58%, ending safely before barcode section at 58.5% */
-  height: 20%; /* Spans top: 76% to 96%, vertical center at 86% matching YOU SAVE artwork center at 86.2% */
+  top: 76.0%;
+  left: 28.0%;   /* Positioned immediately after baked-in "YOU SAVE" artwork at 27.25% */
+  width: 30.0%;  /* Spans left: 28.0% to 58.0%, ending safely before barcode section at 58.5% */
+  height: 20.0%; /* Spans top: 76% to 96%, vertical center at 86% matching YOU SAVE artwork center at 86.2% */
   display: flex;
   align-items: center; /* Vertically centered with YOU SAVE artwork */
   justify-content: flex-start;
@@ -600,6 +690,15 @@
   line-height: 1;
   display: inline-flex;
   align-items: baseline;
+}
+
+.esl-save-sym {
+  font-weight: 900;
+  margin-right: 1px;
+}
+
+.esl-save-num {
+  font-weight: 900;
 }
 
 .esl-save-sym {

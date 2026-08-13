@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608130717";</script>
+  <script>window.HTML_BUILD = "202608131637";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -128,13 +128,13 @@
 
             <!-- State 3: Single / Bulk Product Found (Premium ESL Shelf Label Architecture) -->
             <div id="state-single" class="scanner-v2-state esl-shelf-label-card" style="display: none;">
-              <!-- Dynamic Geometric Zone 1: OFF_PERCENT_ZONE (OFF Mode % + Number) -->
+              <!-- Dynamic Compartment C: OFF_PERCENT_ZONE (OFF Mode % + Number) -->
               <div class="esl-zone-off-pct" id="esl-zone-off-pct"></div>
 
-              <!-- Dynamic Geometric Zone 2: WHOLESALE_QUANTITY_ZONE (Wholesale Quantity) -->
+              <!-- Dynamic Compartment E1: WHOLESALE_QUANTITY_ZONE (Wholesale Quantity) -->
               <div class="esl-zone-ws-qty" id="esl-zone-ws-qty"></div>
 
-              <!-- Dynamic Geometric Zone 3: WHOLESALE_PRICE_ZONE (Wholesale Price) -->
+              <!-- Dynamic Compartment E2: WHOLESALE_PRICE_ZONE (Wholesale Price) -->
               <div class="esl-zone-ws-price" id="esl-zone-ws-price"></div>
 
               <!-- Zone 1: Product Name (Max 2 lines) -->
@@ -143,16 +143,16 @@
                 <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
               </div>
 
-              <!-- Dynamic Geometric Zone: MRP_ZONE (Positioned at top: 42%, height: 26%, ending at 68%, 8.5% clear of green band) -->
+              <!-- Dynamic Compartment A: MRP_COMPARTMENT -->
               <div class="esl-mrp-block" id="single-mrp-col">
                 <span class="esl-mrp-label">MRP</span>
                 <span class="esl-mrp-value" id="single-mrp"></span>
               </div>
 
-              <!-- Zone 3: SALE_PRICE_ZONE (Independent Sale Price Focal Point) -->
+              <!-- Dynamic Compartment B: SALE_PRICE_COMPARTMENT -->
               <div class="esl-sale-block" id="single-sale-price"></div>
 
-              <!-- Dynamic Geometric Zone 4: SAVINGS_AMOUNT_ZONE (Green YOU SAVE Band) -->
+              <!-- Dynamic Compartment D: YOU_SAVE_COMPARTMENT (Green Band) -->
               <div class="esl-zone-savings" id="esl-zone-savings"></div>
             </div>
 
