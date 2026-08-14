@@ -455,22 +455,27 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Translucent Development Diagnostic Mode (Rect 1: OUTER COMPARTMENT | Rect 2: FIXED ARTWORK EXCLUSION | Rect 3: VACANT TYPOGRAPHY RECT) */
+/* Translucent Development Diagnostic Mode (RED = larger YOU SAVE region | GREEN = GREEN SAVINGS VALUE BOX | BLUE = glyph unit bounds) */
 .esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(59, 130, 246, 0.10); }
 .esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.10); }
 .esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(234, 179, 8, 0.10); }
 .esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(249, 115, 22, 0.10); }
 .esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(168, 85, 247, 0.10); }
-.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(34, 197, 94, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(34, 197, 94, 0.10); }
+.esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; box-shadow: none !important; }
+.esl-debug-compartments .esl-zone-savings-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
 
 .esl-debug-compartments .esl-sale-unit,
 .esl-debug-compartments .esl-mrp-unit,
-.esl-debug-compartments .esl-save-unit,
 .esl-debug-compartments .esl-off-pct-unit,
 .esl-debug-compartments .esl-ws-qty-unit,
 .esl-debug-compartments .esl-ws-price-unit {
   outline: 2px solid #22c55e !important;
   background: rgba(255, 255, 255, 0.40) !important;
+}
+
+.esl-debug-compartments .esl-save-unit {
+  outline: 2px solid #3b82f6 !important; /* BLUE = actual .esl-save-unit rendered glyph bounds */
+  background: rgba(59, 130, 246, 0.35) !important;
 }
 
 /* ==========================================================================
@@ -684,7 +689,7 @@
   white-space: nowrap;
 }
 
-/* Compartment D: YOU_SAVE_COMPARTMENT (Measured PNG Geometry: X=280..598, Y=424..583) */
+/* Compartment D: YOU_SAVE_OUTER_REGION (Measured PNG Geometry: X=280..598, Y=424..583) */
 .esl-zone-savings {
   position: absolute;
   top: 72.60%;
@@ -698,24 +703,39 @@
   z-index: 3;
 }
 
+/* Compartment D2: GREEN_SAVINGS_VALUE_BOX (Measured PNG Artwork: X=351..563, Y=430..520 | Center: X=457, Y=475) */
+.esl-zone-savings-value-box {
+  position: absolute;
+  top: 73.63%;
+  left: 34.28%;
+  width: 20.70%;
+  height: 15.41%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
+}
+
 .esl-save-unit {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.95rem, 2.8vw, 1.40rem);
   font-weight: 900;
   color: #0f172a;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 1;
   display: inline-flex;
   align-items: baseline;
+  justify-content: center;
 }
 
 .esl-save-sym {
   font-size: 0.85em;
   font-weight: 900;
   margin-right: 2px;
-  align-self: baseline;
+  align-self: center;
+  line-height: 1;
 }
 
 .esl-save-num {

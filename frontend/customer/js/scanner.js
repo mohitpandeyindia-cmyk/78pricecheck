@@ -890,8 +890,8 @@ const DynamicTextFitEngine = {
     sale:          { insetTopPct: 0.06, insetRightPct: 0.05, insetBottomPct: 0.06, insetLeftPct: 0.06 },
     // OFF %: Vacant yellow area strictly ABOVE pre-printed 'OFF' artwork (Bottom 30% excluded for 'OFF' text)
     off:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.30, insetLeftPct: 0.04 },
-    // YOU SAVE: Vacant green box AFTER 'YOU SAVE' artwork (Left 22% excluded) & BEFORE Barcode (Right 5% excluded)
-    savings:       { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.22 },
+    // YOU SAVE: Target actual GREEN SAVINGS VALUE BOX (X=351..563, Y=430..520 | Center X=457, Y=475)
+    savings:       { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
     // Wholesale Qty: Vacant area after 'BUY' artwork
     wholesaleQty:  { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.15, insetLeftPct: 0.06 },
     // Wholesale Price: Vacant area after '@' artwork
@@ -967,9 +967,9 @@ const DynamicTextFitEngine = {
       }
 
       const saveUnit = document.getElementById('esl-save-unit');
-      const zoneSave = document.getElementById('esl-zone-savings');
-      if (saveUnit && zoneSave) {
-        this.fitGroupToZone(saveUnit, zoneSave, { minFontSize: 10, maxFontSize: 26, spec: this.SPECS.savings });
+      const zoneSaveBox = document.getElementById('esl-zone-savings-value-box');
+      if (saveUnit && zoneSaveBox) {
+        this.fitGroupToZone(saveUnit, zoneSaveBox, { minFontSize: 10, maxFontSize: 28, spec: this.SPECS.savings });
       }
     });
   },
@@ -1103,12 +1103,13 @@ function renderV2ProductCard(p, barcode) {
     }
   }
 
-  // Geometric Dynamic Zone 4: SAVINGS_AMOUNT_ZONE
-  if (zoneSavings) {
+  // Geometric Dynamic Zone 4: GREEN_SAVINGS_VALUE_BOX (X=351..563, Y=430..520 | Center X=457, Y=475)
+  const zoneSaveBox = document.getElementById('esl-zone-savings-value-box');
+  if (zoneSaveBox) {
     if (savingsVal > 0) {
-      zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">${savingsVal}</span></div>`;
+      zoneSaveBox.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">${savingsVal}</span></div>`;
     } else {
-      zoneSavings.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">0</span></div>`;
+      zoneSaveBox.innerHTML = `<div class="esl-save-unit" id="esl-save-unit"><span class="esl-save-sym">₹</span><span class="esl-save-num">0</span></div>`;
     }
   }
 

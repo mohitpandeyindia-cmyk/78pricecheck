@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608141511";</script>
+  <script>window.HTML_BUILD = "202608141535";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -151,8 +151,11 @@
               <!-- Dynamic Compartment B: SALE_PRICE_COMPARTMENT -->
               <div class="esl-sale-block" id="single-sale-price"></div>
 
-              <!-- Dynamic Compartment D: YOU_SAVE_COMPARTMENT (Green Band) -->
+              <!-- Dynamic Compartment D: YOU_SAVE_COMPARTMENT (Outer Green Band Region) -->
               <div class="esl-zone-savings" id="esl-zone-savings"></div>
+
+              <!-- Dynamic Compartment D2: GREEN_SAVINGS_VALUE_BOX (Actual Green Value Box: X=351..563, Y=430..520) -->
+              <div class="esl-zone-savings-value-box" id="esl-zone-savings-value-box"></div>
             </div>
 
             <!-- State 4: Multiple MRP Found (V5 Selection Layout - 3 Equal Bands) -->
