@@ -789,7 +789,8 @@
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(0.95rem, 2.8vw, 1.40rem);
   font-weight: 900;
-  color: #0f172a;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   white-space: nowrap;
   line-height: 1;
   display: inline-flex;
@@ -800,6 +801,8 @@
 .esl-save-sym {
   font-size: 0.85em;
   font-weight: 900;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   margin-right: 2px;
   align-self: center;
   line-height: 1;
@@ -807,8 +810,10 @@
 
 .esl-save-num {
   font-weight: 900;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   align-self: baseline;
-}
+  line-height: 1;
 }
 
 .esl-wb-row2 {
