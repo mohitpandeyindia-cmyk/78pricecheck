@@ -473,7 +473,11 @@
   background: rgba(255, 255, 255, 0.40) !important;
 }
 
-/* Compartment A: MRP_COMPARTMENT (Measured New PNG Geometry: X=40..200, Y=200..419) */
+/* ==========================================================================
+   FROZEN ARCHITECTURAL POSITIONING & PLACEMENTS (PERMANENTLY LOCKED)
+   ========================================================================== */
+
+/* Compartment A: MRP_COMPARTMENT (FROZEN PLACEMENT: top: 34.25%, left: 3.91%, width: 15.72%, height: 37.50%) */
 .esl-mrp-block {
   position: absolute;
   top: 34.25%;
@@ -525,7 +529,7 @@
   font-weight: 500;
 }
 
-/* Compartment B: SALE_PRICE_COMPARTMENT (Measured New PNG Geometry: X=202..949, Y=200..419) */
+/* Compartment B: SALE_PRICE_COMPARTMENT (FROZEN PLACEMENT: top: 34.25%, left: 17.73%, width: 73.05%, height: 37.50%) */
 .esl-sale-block {
   position: absolute;
   top: 34.25%;
