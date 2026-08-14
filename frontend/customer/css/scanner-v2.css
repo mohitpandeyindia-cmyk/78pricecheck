@@ -455,26 +455,34 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Translucent Development Diagnostic Mode (RED = larger YOU SAVE region | GREEN = GREEN SAVINGS VALUE BOX | BLUE = glyph unit bounds) */
+/* Translucent Development Diagnostic Mode (RED = outer region | GREEN = VACANT VALUE BOX | BLUE = glyph unit bounds) */
 .esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(59, 130, 246, 0.10); }
 .esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.10); }
-.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(234, 179, 8, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(234, 179, 8, 0.10); }
-.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(249, 115, 22, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(249, 115, 22, 0.10); }
-.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(168, 85, 247, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(168, 85, 247, 0.10); }
+
+/* OFF & Wholesale Mode Outer Regions (RED) & Vacant Boxes (GREEN) */
+.esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; }
+.esl-debug-compartments .esl-zone-off-pct-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
+
+.esl-debug-compartments .esl-zone-ws-qty { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; }
+.esl-debug-compartments .esl-zone-ws-qty-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
+
+.esl-debug-compartments .esl-zone-ws-price { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; }
+.esl-debug-compartments .esl-zone-ws-price-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
+
 .esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; box-shadow: none !important; }
 .esl-debug-compartments .esl-zone-savings-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
 
 .esl-debug-compartments .esl-sale-unit,
-.esl-debug-compartments .esl-mrp-unit,
-.esl-debug-compartments .esl-off-pct-unit,
-.esl-debug-compartments .esl-ws-qty-unit,
-.esl-debug-compartments .esl-ws-price-unit {
+.esl-debug-compartments .esl-mrp-unit {
   outline: 2px solid #22c55e !important;
   background: rgba(255, 255, 255, 0.40) !important;
 }
 
+.esl-debug-compartments .esl-off-pct-unit,
+.esl-debug-compartments .esl-ws-qty-unit,
+.esl-debug-compartments .esl-ws-price-unit,
 .esl-debug-compartments .esl-save-unit {
-  outline: 2px solid #3b82f6 !important; /* BLUE = actual .esl-save-unit rendered glyph bounds */
+  outline: 2px solid #3b82f6 !important; /* BLUE = actual rendered glyph bounds */
   background: rgba(59, 130, 246, 0.35) !important;
 }
 
@@ -601,7 +609,7 @@
   background-image: url('../assets/esl-off-template.png') !important;
 }
 
-/* Compartment C: OFF_PERCENTAGE_COMPARTMENT (Reconciled Yellow Ribbon PNG Geometry: X=706..980, Y=17..350) */
+/* Compartment C: OFF_PERCENTAGE_OUTER_RIBBON (Measured PNG Geometry: X=706..980, Y=20..350) */
 .esl-zone-off-pct {
   position: absolute;
   top: 2.91%;
@@ -613,6 +621,21 @@
   justify-content: center;
   box-sizing: border-box;
   z-index: 3;
+}
+
+/* Compartment C2: OFF_PERCENTAGE_VALUE_BOX (Measured PNG Artwork: X=736..948, Y=35..192 | Center: X=842, Y=113.5) */
+.esl-zone-off-pct-value-box {
+  position: absolute;
+  top: 5.99%;
+  left: 71.88%;
+  width: 20.70%;
+  height: 26.88%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
 }
 
 .esl-off-pct-unit {
@@ -643,7 +666,7 @@
   line-height: 1;
 }
 
-/* Compartment E1: WHOLESALE_QUANTITY_COMPARTMENT (Measured PNG Geometry: X=835..980, Y=25..140) */
+/* Compartment E1: WHOLESALE_QUANTITY_OUTER_REGION (Measured PNG Geometry: X=706..980, Y=20..350) */
 .esl-zone-ws-qty {
   position: absolute;
   top: 4.28%;
@@ -657,6 +680,21 @@
   z-index: 3;
 }
 
+/* Compartment E1-2: WHOLESALE_QTY_VALUE_BOX (Measured PNG Artwork: X=875..975, Y=35..180 | Center: X=925, Y=107.5) */
+.esl-zone-ws-qty-value-box {
+  position: absolute;
+  top: 5.99%;
+  left: 85.45%;
+  width: 9.77%;
+  height: 24.83%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
+}
+
 .esl-ws-qty-unit {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: clamp(1.4rem, 4.8vw, 2.4rem);
@@ -666,7 +704,7 @@
   white-space: nowrap;
 }
 
-/* Compartment E2: WHOLESALE_PRICE_COMPARTMENT (Measured PNG Geometry: X=765..980, Y=145..245) */
+/* Compartment E2: WHOLESALE_PRICE_OUTER_REGION (Measured PNG Geometry: X=765..980, Y=145..245) */
 .esl-zone-ws-price {
   position: absolute;
   top: 24.83%;
@@ -678,6 +716,21 @@
   justify-content: center;
   box-sizing: border-box;
   z-index: 3;
+}
+
+/* Compartment E2-2: WHOLESALE_PRICE_VALUE_BOX (Measured PNG Artwork: X=765..975, Y=180..280 | Center: X=870, Y=230) */
+.esl-zone-ws-price-value-box {
+  position: absolute;
+  top: 30.82%;
+  left: 74.71%;
+  width: 20.51%;
+  height: 17.12%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
 }
 
 .esl-ws-price-unit {

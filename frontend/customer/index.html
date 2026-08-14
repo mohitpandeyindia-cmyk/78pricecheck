@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608141535";</script>
+  <script>window.HTML_BUILD = "202608141643";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -128,14 +128,17 @@
 
             <!-- State 3: Single / Bulk Product Found (Premium ESL Shelf Label Architecture) -->
             <div id="state-single" class="scanner-v2-state esl-shelf-label-card" style="display: none;">
-              <!-- Dynamic Compartment C: OFF_PERCENT_ZONE (OFF Mode % + Number) -->
+              <!-- Dynamic Compartment C: OFF_PERCENT_ZONE (Outer Yellow Ribbon Region) -->
               <div class="esl-zone-off-pct" id="esl-zone-off-pct"></div>
+              <div class="esl-zone-off-pct-value-box" id="esl-zone-off-pct-value-box"></div>
 
-              <!-- Dynamic Compartment E1: WHOLESALE_QUANTITY_ZONE (Wholesale Quantity) -->
+              <!-- Dynamic Compartment E1: WHOLESALE_QUANTITY_ZONE (Wholesale Quantity Region) -->
               <div class="esl-zone-ws-qty" id="esl-zone-ws-qty"></div>
+              <div class="esl-zone-ws-qty-value-box" id="esl-zone-ws-qty-value-box"></div>
 
-              <!-- Dynamic Compartment E2: WHOLESALE_PRICE_ZONE (Wholesale Price) -->
+              <!-- Dynamic Compartment E2: WHOLESALE_PRICE_ZONE (Wholesale Price Region) -->
               <div class="esl-zone-ws-price" id="esl-zone-ws-price"></div>
+              <div class="esl-zone-ws-price-value-box" id="esl-zone-ws-price-value-box"></div>
 
               <!-- Zone 1: Product Name (Max 2 lines) -->
               <div class="esl-name-zone">

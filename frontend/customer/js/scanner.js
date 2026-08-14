@@ -888,14 +888,14 @@ const DynamicTextFitEngine = {
     mrp:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 },
     // Sale Price: Vacant SALE VALUE rectangle after vertical blue divider artwork
     sale:          { insetTopPct: 0.06, insetRightPct: 0.05, insetBottomPct: 0.06, insetLeftPct: 0.06 },
-    // OFF %: Vacant yellow area strictly ABOVE pre-printed 'OFF' artwork (Bottom 30% excluded for 'OFF' text)
-    off:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.30, insetLeftPct: 0.04 },
+    // OFF %: Target actual VACANT DISCOUNT-VALUE BOX (X=736..948, Y=35..192 | Center X=842, Y=113.5)
+    off:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
     // YOU SAVE: Target actual GREEN SAVINGS VALUE BOX (X=351..563, Y=430..520 | Center X=457, Y=475)
     savings:       { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
-    // Wholesale Qty: Vacant area after 'BUY' artwork
-    wholesaleQty:  { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.15, insetLeftPct: 0.06 },
-    // Wholesale Price: Vacant area after '@' artwork
-    wholesalePrice:{ insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 }
+    // Wholesale Qty: Target actual VACANT QUANTITY BOX (X=875..975, Y=35..180 | Center X=925, Y=107.5)
+    wholesaleQty:  { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
+    // Wholesale Price: Target actual VACANT WHOLESALE PRICE BOX (X=765..975, Y=180..280 | Center X=870, Y=230)
+    wholesalePrice:{ insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 }
   },
 
   fitGroupToZone(element, containerZone, options = {}) {
@@ -949,21 +949,21 @@ const DynamicTextFitEngine = {
       }
 
       const offUnit = document.getElementById('esl-off-unit');
-      const zoneOff = document.getElementById('esl-zone-off-pct');
-      if (offUnit && zoneOff) {
-        this.fitGroupToZone(offUnit, zoneOff, { minFontSize: 14, maxFontSize: 56, spec: this.SPECS.off });
+      const zoneOffBox = document.getElementById('esl-zone-off-pct-value-box');
+      if (offUnit && zoneOffBox) {
+        this.fitGroupToZone(offUnit, zoneOffBox, { minFontSize: 14, maxFontSize: 56, spec: this.SPECS.off });
       }
 
       const qtyUnit = document.getElementById('esl-qty-unit');
-      const zoneQty = document.getElementById('esl-zone-ws-qty');
-      if (qtyUnit && zoneQty) {
-        this.fitGroupToZone(qtyUnit, zoneQty, { minFontSize: 10, maxFontSize: 36, spec: this.SPECS.wholesaleQty });
+      const zoneQtyBox = document.getElementById('esl-zone-ws-qty-value-box');
+      if (qtyUnit && zoneQtyBox) {
+        this.fitGroupToZone(qtyUnit, zoneQtyBox, { minFontSize: 10, maxFontSize: 36, spec: this.SPECS.wholesaleQty });
       }
 
       const priceUnit = document.getElementById('esl-price-unit');
-      const zoneWsPrice = document.getElementById('esl-zone-ws-price');
-      if (priceUnit && zoneWsPrice) {
-        this.fitGroupToZone(priceUnit, zoneWsPrice, { minFontSize: 10, maxFontSize: 28, spec: this.SPECS.wholesalePrice });
+      const zoneWsPriceBox = document.getElementById('esl-zone-ws-price-value-box');
+      if (priceUnit && zoneWsPriceBox) {
+        this.fitGroupToZone(priceUnit, zoneWsPriceBox, { minFontSize: 10, maxFontSize: 28, spec: this.SPECS.wholesalePrice });
       }
 
       const saveUnit = document.getElementById('esl-save-unit');
@@ -1071,31 +1071,38 @@ function renderV2ProductCard(p, barcode) {
   const zoneWsPrice = document.getElementById('esl-zone-ws-price');
   const zoneSavings = document.getElementById('esl-zone-savings');
 
+  const zoneOffBox = document.getElementById('esl-zone-off-pct-value-box');
+  const zoneQtyBox = document.getElementById('esl-zone-ws-qty-value-box');
+  const zoneWsPriceBox = document.getElementById('esl-zone-ws-price-value-box');
+
   if (hasWholesale) {
     if (zoneOffPct) zoneOffPct.innerHTML = '';
+    if (zoneOffBox) zoneOffBox.innerHTML = '';
 
     const wPrice = Math.round(wPriceNum);
     const qtyStr = String(p.wholesaleQty);
     const priceStr = `₹${wPrice}`;
 
-    if (zoneWsQty) {
-      zoneWsQty.innerHTML = `<div class="esl-ws-qty-unit" id="esl-qty-unit">${qtyStr}</div>`;
+    if (zoneQtyBox) {
+      zoneQtyBox.innerHTML = `<div class="esl-ws-qty-unit" id="esl-qty-unit">${qtyStr}</div>`;
     }
 
-    if (zoneWsPrice) {
-      zoneWsPrice.innerHTML = `<div class="esl-ws-price-unit" id="esl-price-unit">${priceStr}</div>`;
+    if (zoneWsPriceBox) {
+      zoneWsPriceBox.innerHTML = `<div class="esl-ws-price-unit" id="esl-price-unit">${priceStr}</div>`;
     }
   } else {
     if (zoneWsQty) zoneWsQty.innerHTML = '';
+    if (zoneQtyBox) zoneQtyBox.innerHTML = '';
     if (zoneWsPrice) zoneWsPrice.innerHTML = '';
+    if (zoneWsPriceBox) zoneWsPriceBox.innerHTML = '';
 
     let discountPercent = 0;
     if (mrpVal > saleVal && mrpVal > 0) {
       discountPercent = Math.round(((mrpVal - saleVal) / mrpVal) * 100);
     }
 
-    if (zoneOffPct) {
-      zoneOffPct.innerHTML = `
+    if (zoneOffBox) {
+      zoneOffBox.innerHTML = `
         <div class="esl-off-pct-unit" id="esl-off-unit">
           <span class="esl-off-num">${discountPercent}</span><span class="esl-off-sym">%</span>
         </div>
