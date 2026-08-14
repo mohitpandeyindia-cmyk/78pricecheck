@@ -694,13 +694,13 @@
   z-index: 3;
 }
 
-/* Compartment E1-2: WHOLESALE_QTY_VALUE_BOX (Measured PNG Artwork: X=875..975, Y=35..180 | Center: X=925, Y=107.5) */
+/* Compartment E1-2: WHOLESALE_QTY_VALUE_BOX (Refreshed PNG Artwork DIRECTLY BELOW BUY: X=736..948, Y=90..195 | Center: X=842, Y=142.5) */
 .esl-zone-ws-qty-value-box {
   position: absolute;
-  top: 5.99%;
-  left: 85.45%;
-  width: 9.77%;
-  height: 24.83%;
+  top: 15.41%;
+  left: 71.88%;
+  width: 20.70%;
+  height: 17.98%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -732,13 +732,13 @@
   z-index: 3;
 }
 
-/* Compartment E2-2: WHOLESALE_PRICE_VALUE_BOX (Measured PNG Artwork: X=765..975, Y=180..280 | Center: X=870, Y=230) */
+/* Compartment E2-2: WHOLESALE_PRICE_VALUE_BOX (Refreshed PNG Artwork DIRECTLY AFTER @: X=765..955, Y=200..280 | Center: X=860, Y=240) */
 .esl-zone-ws-price-value-box {
   position: absolute;
-  top: 30.82%;
+  top: 34.25%;
   left: 74.71%;
-  width: 20.51%;
-  height: 17.12%;
+  width: 18.55%;
+  height: 13.70%;
   display: flex;
   align-items: center;
   justify-content: center;
