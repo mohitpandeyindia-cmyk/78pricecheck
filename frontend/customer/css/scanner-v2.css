@@ -486,6 +486,20 @@
   background: rgba(59, 130, 246, 0.35) !important;
 }
 
+/* Fixed PNG Artwork Reference Overlays (RED DASHED) */
+.esl-art-off-overlay, .esl-art-buy-overlay, .esl-art-at-overlay { display: none; position: absolute; pointer-events: none; box-sizing: border-box; z-index: 5; }
+.esl-art-buy-overlay { top: 5.65%; left: 68.95%; width: 13.96%; height: 9.25%; }
+.esl-art-at-overlay  { top: 38.70%; left: 70.90%; width: 3.32%; height: 6.16%; }
+.esl-art-off-overlay { top: 36.82%; left: 72.36%; width: 19.63%; height: 11.64%; }
+
+.esl-debug-compartments .esl-art-buy-overlay,
+.esl-debug-compartments .esl-art-at-overlay,
+.esl-debug-compartments .esl-art-off-overlay {
+  display: block !important;
+  border: 2px dashed #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
 /* ==========================================================================
    FROZEN ARCHITECTURAL POSITIONING & PLACEMENTS (PERMANENTLY LOCKED)
    ========================================================================== */
