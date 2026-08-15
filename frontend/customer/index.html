@@ -11,7 +11,7 @@
   <!-- html5-qrcode library for barcode camera decoding -->
   <script src="js/libs/html5-qrcode.min.js"></script>
   <script src="js/scanner.js"></script>
-  <script>window.HTML_BUILD = "202608141845";</script>
+  <script>window.HTML_BUILD = "202608151315";</script>
 </head>
 <body>
   <div class="app-shell">
@@ -149,13 +149,21 @@
                 <span class="result-barcode-hidden" id="single-barcode" style="display: none;"></span>
               </div>
 
-              <!-- Dynamic Compartment A: MRP_COMPARTMENT -->
+              <!-- Dynamic Compartment A: MRP_COMPARTMENT (Outer & Vacant Value Box) -->
               <div class="esl-mrp-block" id="single-mrp-col">
-                <span class="esl-mrp-value" id="single-mrp"></span>
+                <div class="esl-art-mrp-overlay" id="esl-art-mrp-overlay"></div>
+                <div class="esl-mrp-value-box" id="esl-mrp-value-box">
+                  <div class="esl-mrp-unit" id="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num" id="single-mrp">0</span></div>
+                </div>
               </div>
 
-              <!-- Dynamic Compartment B: SALE_PRICE_COMPARTMENT -->
-              <div class="esl-sale-block" id="single-sale-price"></div>
+              <!-- Dynamic Compartment B: SALE_PRICE_COMPARTMENT (Outer & Vacant Value Box) -->
+              <div class="esl-sale-block" id="single-sale-col">
+                <div class="esl-art-sale-overlay" id="esl-art-sale-overlay"></div>
+                <div class="esl-sale-value-box" id="esl-sale-value-box">
+                  <div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num" id="single-sale-price">0</span></div>
+                </div>
+              </div>
 
               <!-- Dynamic Compartment D: YOU_SAVE_COMPARTMENT (Outer Green Band Region) -->
               <div class="esl-zone-savings" id="esl-zone-savings"></div>

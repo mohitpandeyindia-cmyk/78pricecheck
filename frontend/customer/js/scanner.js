@@ -884,10 +884,10 @@ const DynamicTextFitEngine = {
 
   // Forensic Fixed Artwork Exclusions & Vacant Typography Rectangles (Relative to Outer Compartments)
   SPECS: {
-    // MRP: Vacant area inside MRP compartment
-    mrp:           { insetTopPct: 0.06, insetRightPct: 0.06, insetBottomPct: 0.06, insetLeftPct: 0.06 },
+    // MRP: Vacant area inside blue MRP compartment
+    mrp:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
     // Sale Price: Vacant SALE VALUE rectangle after vertical blue divider artwork
-    sale:          { insetTopPct: 0.06, insetRightPct: 0.05, insetBottomPct: 0.06, insetLeftPct: 0.06 },
+    sale:          { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
     // OFF %: Target actual VACANT DISCOUNT-VALUE BOX (X=736..948, Y=35..192 | Center X=842, Y=113.5)
     off:           { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 },
     // YOU SAVE: Target actual GREEN SAVINGS VALUE BOX (X=351..563, Y=430..520 | Center X=457, Y=475)
@@ -901,9 +901,9 @@ const DynamicTextFitEngine = {
   fitGroupToZone(element, containerZone, options = {}) {
     if (!element || !containerZone) return;
     const minFontSize = options.minFontSize || 8;
-    const maxFontSize = options.maxFontSize || 42;
+    const maxFontSize = options.maxFontSize || 120;
     const step = options.step || 0.5;
-    const spec = options.spec || { insetTopPct: 0.05, insetRightPct: 0.05, insetBottomPct: 0.05, insetLeftPct: 0.05 };
+    const spec = options.spec || { insetTopPct: 0.04, insetRightPct: 0.04, insetBottomPct: 0.04, insetLeftPct: 0.04 };
 
     const style = window.getComputedStyle(containerZone);
     const padX = (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0);
@@ -924,7 +924,7 @@ const DynamicTextFitEngine = {
     let rect = element.getBoundingClientRect();
 
     // Enforce GLYPHS ⊂ VACANT TYPOGRAPHY RECTANGLE & FIXED ARTWORK ∩ DYNAMIC GLYPHS = ∅
-    while (fontSize > minFontSize && (rect.width > availableWidth || rect.height > availableHeight || element.scrollWidth > availableWidth || element.scrollHeight > availableHeight)) {
+    while (fontSize > minFontSize && (rect.width > availableWidth || rect.height > availableHeight)) {
       fontSize -= step;
       element.style.fontSize = `${fontSize}px`;
       rect = element.getBoundingClientRect();
@@ -937,15 +937,15 @@ const DynamicTextFitEngine = {
       if (!stateSingle || stateSingle.clientWidth <= 0) return;
 
       const mrpUnit = document.getElementById('esl-mrp-unit');
-      const mrpCol = document.getElementById('single-mrp-col');
-      if (mrpUnit && mrpCol) {
-        this.fitGroupToZone(mrpUnit, mrpCol, { minFontSize: 8, maxFontSize: 24, spec: this.SPECS.mrp });
+      const mrpBox = document.getElementById('esl-mrp-value-box');
+      if (mrpUnit && mrpBox) {
+        this.fitGroupToZone(mrpUnit, mrpBox, { minFontSize: 8, maxFontSize: 48, spec: this.SPECS.mrp });
       }
 
       const saleUnit = document.getElementById('esl-sale-unit');
-      const priceZone = document.getElementById('single-sale-price');
-      if (saleUnit && priceZone) {
-        this.fitGroupToZone(saleUnit, priceZone, { minFontSize: 16, maxFontSize: 72, spec: this.SPECS.sale });
+      const saleBox = document.getElementById('esl-sale-value-box');
+      if (saleUnit && saleBox) {
+        this.fitGroupToZone(saleUnit, saleBox, { minFontSize: 12, maxFontSize: 140, spec: this.SPECS.sale });
       }
 
       const offUnit = document.getElementById('esl-off-unit');
@@ -1055,14 +1055,14 @@ function renderV2ProductCard(p, barcode) {
   const savingsVal = mrpVal > saleVal ? (mrpVal - saleVal) : 0;
 
   // Zone 3: Price Area (MRP & Sale Price)
-  const mrpEl = document.getElementById('single-mrp');
-  if (mrpEl) {
-    mrpEl.innerHTML = `<span class="esl-mrp-unit" id="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num">${mrpVal}</span></span>`;
+  const mrpBox = document.getElementById('esl-mrp-value-box');
+  if (mrpBox) {
+    mrpBox.innerHTML = `<div class="esl-mrp-unit" id="esl-mrp-unit"><span class="esl-mrp-sym">₹</span><span class="esl-mrp-num" id="single-mrp">${mrpVal}</span></div>`;
   }
 
-  const priceEl = document.getElementById('single-sale-price');
-  if (priceEl) {
-    priceEl.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num">${saleVal}</span></div>`;
+  const saleBox = document.getElementById('esl-sale-value-box');
+  if (saleBox) {
+    saleBox.innerHTML = `<div class="esl-sale-unit" id="esl-sale-unit"><span class="esl-rupee">₹</span><span class="esl-sale-num" id="single-sale-price">${saleVal}</span></div>`;
   }
 
   // Dynamic Geometric Zone Containers

@@ -455,9 +455,17 @@
   font-size: clamp(1.02rem, 3.0vw, 1.30rem);
 }
 
-/* Translucent Development Diagnostic Mode (RED = outer region | GREEN = VACANT VALUE BOX | BLUE = glyph unit bounds) */
-.esl-debug-compartments .esl-mrp-block { border: 1.5px solid rgba(59, 130, 246, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(59, 130, 246, 0.10); }
-.esl-debug-compartments .esl-sale-block { border: 1.5px solid rgba(239, 68, 68, 0.9); box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.7); background: rgba(239, 68, 68, 0.10); }
+/* Translucent Development Diagnostic Mode (?debug=1) */
+/* BLUE = Outer Compartments | RED = Fixed Artwork Exclusions | GREEN = Vacant Value Boxes | PURPLE/BLUE = Rendered Glyph Units */
+.esl-debug-compartments .esl-mrp-block { border: 2px solid #3b82f6 !important; background: rgba(59, 130, 246, 0.10) !important; }
+.esl-debug-compartments .esl-art-mrp-overlay { display: block !important; border: 1.5px dashed #ef4444 !important; background: rgba(239, 68, 68, 0.15) !important; }
+.esl-debug-compartments .esl-mrp-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
+.esl-debug-compartments .esl-mrp-unit { outline: 2px solid #8b5cf6 !important; background: rgba(139, 92, 246, 0.30) !important; }
+
+.esl-debug-compartments .esl-sale-block { border: 2px solid #3b82f6 !important; background: rgba(59, 130, 246, 0.10) !important; }
+.esl-debug-compartments .esl-art-sale-overlay { display: block !important; border: 1.5px dashed #ef4444 !important; background: rgba(239, 68, 68, 0.15) !important; }
+.esl-debug-compartments .esl-sale-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
+.esl-debug-compartments .esl-sale-unit { outline: 2px solid #8b5cf6 !important; background: rgba(139, 92, 246, 0.30) !important; }
 
 /* OFF & Wholesale Mode Outer Regions (RED) & Vacant Boxes (GREEN) */
 .esl-debug-compartments .esl-zone-off-pct { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; }
@@ -472,12 +480,6 @@
 .esl-debug-compartments .esl-zone-savings { border: 1.5px solid rgba(239, 68, 68, 0.9) !important; background: rgba(239, 68, 68, 0.10) !important; box-shadow: none !important; }
 .esl-debug-compartments .esl-zone-savings-value-box { border: 2px solid #22c55e !important; background: rgba(34, 197, 94, 0.20) !important; }
 
-.esl-debug-compartments .esl-sale-unit,
-.esl-debug-compartments .esl-mrp-unit {
-  outline: 2px solid #22c55e !important;
-  background: rgba(255, 255, 255, 0.40) !important;
-}
-
 .esl-debug-compartments .esl-off-pct-unit,
 .esl-debug-compartments .esl-ws-qty-unit,
 .esl-debug-compartments .esl-ws-price-unit,
@@ -486,11 +488,19 @@
   background: rgba(59, 130, 246, 0.35) !important;
 }
 
-/* Fixed PNG Artwork Reference Overlays (RED DASHED) */
-.esl-art-off-overlay, .esl-art-buy-overlay, .esl-art-at-overlay { display: none; position: absolute; pointer-events: none; box-sizing: border-box; z-index: 5; }
-.esl-art-buy-overlay { top: 5.65%; left: 68.95%; width: 13.96%; height: 9.25%; }
-.esl-art-at-overlay  { top: 38.70%; left: 70.90%; width: 3.32%; height: 6.16%; }
-.esl-art-off-overlay { top: 36.82%; left: 72.36%; width: 19.63%; height: 11.64%; }
+/* Fixed PNG Artwork Reference Overlays */
+.esl-art-mrp-overlay, .esl-art-sale-overlay, .esl-art-off-overlay, .esl-art-buy-overlay, .esl-art-at-overlay {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  z-index: 5;
+}
+.esl-art-mrp-overlay  { top: 0; left: 0; width: 100%; height: 15.70%; }
+.esl-art-sale-overlay { top: 0; left: 0; width: 8.45%; height: 100%; }
+.esl-art-buy-overlay  { top: 5.65%; left: 68.95%; width: 13.96%; height: 9.25%; }
+.esl-art-at-overlay   { top: 38.70%; left: 70.90%; width: 3.32%; height: 6.16%; }
+.esl-art-off-overlay  { top: 36.82%; left: 72.36%; width: 19.63%; height: 11.64%; }
 
 .esl-debug-compartments .esl-art-buy-overlay,
 .esl-debug-compartments .esl-art-at-overlay,
@@ -501,102 +511,125 @@
 }
 
 /* ==========================================================================
-   FROZEN ARCHITECTURAL POSITIONING & PLACEMENTS (PERMANENTLY LOCKED)
+   AUTHORITATIVE BLUE COMPARTMENT GEOMETRY (PERCENTAGE RATIOS FOR 1024x583 TEMPLATE)
    ========================================================================== */
 
-/* Compartment A: MRP_COMPARTMENT (FROZEN PLACEMENT: top: 34.25%, left: 3.91%, width: 15.72%, height: 37.50%) */
+/* Compartment A: MRP_OUTER_REGION (Black-bordered MRP Box: X=52..199 [14.36%], Y=225..392 [28.65%]) */
 .esl-mrp-block {
   position: absolute;
-  top: 34.25%;
-  left: 3.91%;
-  width: 15.72%;
-  height: 37.50%;
+  top: 38.60%;
+  left: 5.08%;
+  width: 14.36%;
+  height: 28.65%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4px 6px;
   box-sizing: border-box;
   line-height: 1;
   z-index: 3;
+}
+
+/* Compartment A2: MRP_VACANT_VALUE_BOX (Inside Black MRP Box: X=54..197, Y=227..390 | Center: X=125.5, Y=308.5) */
+.esl-mrp-value-box {
+  position: absolute;
+  top: 1.20%;
+  left: 1.36%;
+  width: 97.28%;
+  height: 97.60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
 }
 
 .esl-mrp-label {
   display: none !important;
 }
 
-.esl-mrp-value {
+.esl-mrp-unit {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 0.90rem;
   font-weight: 500;
-  color: #64748b; /* Darker Grey */
+  color: #64748b;
   line-height: 1;
   text-decoration: line-through;
-  text-decoration-color: #ef4444; /* Thin red strike ONLY through number */
+  text-decoration-color: #ef4444;
   text-decoration-thickness: 1.5px;
   display: inline-flex;
   align-items: baseline;
-}
-
-.esl-mrp-unit {
-  display: inline-flex;
-  align-items: baseline;
+  justify-content: center;
   white-space: nowrap;
-  line-height: 1;
 }
 
 .esl-mrp-sym {
+  font-size: 0.85em;
   font-weight: 500;
   margin-right: 1px;
-  align-self: center;
+  align-self: baseline;
   line-height: 1;
 }
 
 .esl-mrp-num {
   font-weight: 500;
+  line-height: 1;
 }
 
-/* Compartment B: SALE_PRICE_COMPARTMENT (FROZEN PLACEMENT: top: 34.25%, left: 17.73%, width: 73.05%, height: 37.50%) */
+/* Compartment B: SALE_PRICE_OUTER_REGION (Black-bordered SALE Box: X=211..704 [48.14%], Y=225..392 [28.65%]) */
 .esl-sale-block {
   position: absolute;
-  top: 34.25%;
-  left: 17.73%;
-  width: 73.05%;
-  height: 37.50%;
-  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: clamp(2.4rem, 7.6vw, 3.6rem); /* Dominant sale price scale */
-  font-weight: 900; /* Black weight */
-  line-height: 1;
-  letter-spacing: -0.045em;
+  top: 38.60%;
+  left: 20.61%;
+  width: 48.14%;
+  height: 28.65%;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding: 4px 10px;
   box-sizing: border-box;
-  color: #0f172a !important; /* Solid Dark Black */
   z-index: 3;
 }
 
+/* Compartment B2: SALE_PRICE_VACANT_VALUE_BOX (Inside Black SALE Box: X=213..702, Y=227..390 | Center: X=457.5, Y=308.5) */
+.esl-sale-value-box {
+  position: absolute;
+  top: 1.20%;
+  left: 0.40%;
+  width: 99.20%;
+  height: 97.60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 2px 4px;
+  z-index: 4;
+}
+
 .esl-sale-unit {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 900;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  line-height: 1;
   display: inline-flex;
   align-items: baseline;
+  justify-content: center;
   white-space: nowrap;
-  line-height: 1;
 }
 
 .esl-rupee {
-  font-size: 0.48em;
+  font-size: 0.65em;
   font-weight: 900;
-  color: #0f172a !important; /* Dark Black Rupee symbol */
+  color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
-  margin-right: 4px; /* Natural space between symbol and sale price */
-  align-self: center;
+  margin-right: 2px;
+  align-self: baseline;
   line-height: 1;
 }
 
 .esl-sale-num {
-  font-weight: 900; /* Black weight */
-  color: #0f172a !important; /* Solid Dark Black */
+  font-weight: 900;
+  color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
   background: none !important;
   display: inline-flex;
