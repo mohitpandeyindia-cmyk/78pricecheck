@@ -14,7 +14,8 @@ const requiredFiles = [
   '../frontend/customer/assets/logo.png',
   '../frontend/customer/assets/mascot.png',
   '../frontend/customer/assets/esl-off-template.png',
-  '../frontend/customer/assets/esl-wholesale-template.png'
+  '../frontend/customer/assets/esl-wholesale-template.png',
+  '../frontend/customer/assets/fonts/DigitalNumbers-Regular.woff'
 ];
 
 console.log('================================================');

@@ -1,7 +1,36 @@
 import { getDb } from '../db';
 import bcrypt from 'bcryptjs';
 
-const BASE_URL = 'http://localhost:8080/api';
+import http from 'http';
+
+const PORT = process.env.PORT || 8080;
+const BASE_URL = `http://127.0.0.1:${PORT}/api`;
+
+function httpFetch(urlStr: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr);
+    const req = http.request({
+      hostname: u.hostname,
+      port: u.port || 8080,
+      path: u.pathname + u.search,
+      method: 'GET',
+      headers: {
+        'x-forwarded-proto': 'https'
+      }
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        resolve({
+          status: res.statusCode,
+          json: async () => JSON.parse(data)
+        });
+      });
+    });
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 async function runTests() {
   console.log('================================================');
@@ -36,10 +65,10 @@ async function runTests() {
 
   function assert(condition: boolean, message: string) {
     if (condition) {
-      console.log(`  ✅ PASS: ${message}`);
+      console.log(`  \u2705 PASS: ${message}`);
       passed++;
     } else {
-      console.error(`  ❌ FAIL: ${message}`);
+      console.error(`  \u274c FAIL: ${message}`);
       failed++;
     }
   }
@@ -49,7 +78,7 @@ async function runTests() {
 
   try {
     // Scenario A: Exact barcode match
-    const resA = await fetch(`${BASE_URL}/products/lookup/TEST_1002`);
+    const resA = await httpFetch(`${BASE_URL}/products/lookup/TEST_1002`);
     assert(resA.status === 200, 'Exact lookup returns 200 OK status');
     const dataA = await resA.json() as any;
     assert(dataA.multipleMatches === false, 'Exact lookup has multipleMatches: false');
@@ -61,7 +90,7 @@ async function runTests() {
 
     // Scenario B: Trailing-zero match
     // Querying TEST_10010 should match exactly
-    const resB = await fetch(`${BASE_URL}/products/lookup/TEST_10010`);
+    const resB = await httpFetch(`${BASE_URL}/products/lookup/TEST_10010`);
     assert(resB.status === 200, 'Zero padded lookup returns 200 OK');
     const dataB = await resB.json() as any;
     assert(dataB.multipleMatches === false, 'Zero padded lookup has multipleMatches: false');
@@ -72,7 +101,7 @@ async function runTests() {
 
     // Scenario C: Both exact and trailing-zero matches returned together
     // Querying TEST_1001 matches exact TEST_1001 and trailing-zero TEST_10010
-    const resC = await fetch(`${BASE_URL}/products/lookup/TEST_1001`);
+    const resC = await httpFetch(`${BASE_URL}/products/lookup/TEST_1001`);
     assert(resC.status === 200, 'Query matches both barcodes');
     const dataC = await resC.json() as any;
     assert(dataC.multipleMatches === true, 'Combined lookup has multipleMatches: true');
@@ -100,7 +129,7 @@ async function runTests() {
     assert(dataC.products[1].wholesaleQty === 5, 'Second item wholesaleQty is 5');
 
     // Scenario F: No matching products (Article VII: Price Integrity)
-    const resF = await fetch(`${BASE_URL}/products/lookup/TEST_9999_NON_EXISTENT`);
+    const resF = await httpFetch(`${BASE_URL}/products/lookup/TEST_9999_NON_EXISTENT`);
     assert(resF.status === 404, 'Non-existent barcode lookup returns 404 Status');
     const dataF = await resF.json() as any;
     assert(dataF.success === false, 'Non-existent response success flag is false');
