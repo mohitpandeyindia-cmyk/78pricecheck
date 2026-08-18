@@ -196,7 +196,7 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'UP',
     version: packageVersion,
-    build: (buildInfo as any).buildId || 'N/A',
+    build: (buildInfo as any).build || (buildInfo as any).buildId || 'N/A',
     commit: (buildInfo as any).commit || 'N/A',
     branch: (buildInfo as any).branch || 'N/A',
     environment: (buildInfo as any).environment || process.env.NODE_ENV || 'development',

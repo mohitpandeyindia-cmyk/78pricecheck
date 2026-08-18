@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return { top, bottom };
   }
 
-  async function runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, serverBuild) {
+  async function runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, jsBuild, serverBuild) {
     // 1. HTML Build
     const gateHtml = document.getElementById('gate-html');
     if (gateHtml) {
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. JS Build
     const gateJs = document.getElementById('gate-js');
     if (gateJs) {
-      if (serverBuild && serverBuild !== 'N/A' && htmlBuild === serverBuild) {
+      if (jsBuild && jsBuild !== 'N/A' && jsBuild === serverBuild) {
         gateJs.textContent = 'PASS';
         gateJs.style.color = 'var(--success-color)';
       } else {
@@ -234,6 +234,21 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       console.warn('Failed to fetch HTML Build ID:', e);
     }
+
+    // 4.6 Fetch JS Build ID from customer application js/build-env.js dynamically
+    let jsBuild = 'N/A';
+    try {
+      const jsEnvRes = await fetch('/js/build-env.js');
+      if (jsEnvRes.status === 200) {
+        const jsEnvText = await jsEnvRes.text();
+        const jsBuildMatch = jsEnvText.match(/build:\s*"([^"]*)"/);
+        if (jsBuildMatch) {
+          jsBuild = jsBuildMatch[1];
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch JS Build ID:', e);
+    }
     
     if (statusCacheHtml) statusCacheHtml.textContent = htmlBuild;
     if (statusCacheSw) statusCacheSw.textContent = swBuild;
@@ -320,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 6. Run Acceptance Gate Checklists
-    await runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, serverBuild);
+    await runAcceptanceGateChecks(swBuild, apiHealthy, htmlBuild, jsBuild, serverBuild);
   }
 
   // Phase 2A Admin Scanner Diagnostics Session Controls
