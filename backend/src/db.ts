@@ -23,8 +23,10 @@ export async function getDb(): Promise<Database> {
     driver: sqlite3.Database,
   });
 
-  // Enable foreign keys
+  // Enable foreign keys, WAL journal mode, and busy timeout for high concurrency
   await dbInstance.run('PRAGMA foreign_keys = ON');
+  await dbInstance.run('PRAGMA journal_mode = WAL');
+  await dbInstance.run('PRAGMA busy_timeout = 5000');
 
   return dbInstance;
 }
@@ -101,11 +103,98 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       scanned_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS diagnostic_sessions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT UNIQUE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'ACTIVE',
+      created_by TEXT NOT NULL DEFAULT 'admin',
+      started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      ended_at DATETIME,
+      total_scans INTEGER DEFAULT 0,
+      successful_scans INTEGER DEFAULT 0,
+      failed_events INTEGER DEFAULT 0,
+      ios_count INTEGER DEFAULT 0,
+      android_count INTEGER DEFAULT 0,
+      other_count INTEGER DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS diagnostic_device_telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      device_id_hash TEXT,
+      os TEXT,
+      browser TEXT,
+      user_agent TEXT,
+      platform TEXT,
+      device_pixel_ratio REAL,
+      viewport_width INTEGER,
+      viewport_height INTEGER,
+      classification TEXT,
+      facing_mode TEXT,
+      camera_label TEXT,
+      video_width INTEGER,
+      video_height INTEGER,
+      aspect_ratio REAL,
+      actual_fps REAL,
+      zoom_supported INTEGER,
+      zoom_min REAL,
+      zoom_max REAL,
+      zoom_step REAL,
+      focus_mode_supported INTEGER,
+      available_focus_modes TEXT,
+      focus_distance_supported INTEGER,
+      torch_supported INTEGER,
+      exposure_supported INTEGER,
+      recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS diagnostic_scan_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      barcode TEXT NOT NULL,
+      format TEXT,
+      device_os TEXT,
+      browser TEXT,
+      video_width INTEGER,
+      video_height INTEGER,
+      time_since_start_ms INTEGER,
+      time_since_prev_scan_ms INTEGER,
+      decode_attempts_since_prev INTEGER,
+      bbox_width INTEGER,
+      bbox_height INTEGER,
+      bbox_center_x INTEGER,
+      bbox_center_y INTEGER,
+      bbox_pct_w REAL,
+      bbox_pct_h REAL,
+      FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS diagnostic_events_and_aggregates (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      session_id TEXT NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      event_type TEXT NOT NULL,
+      classification TEXT,
+      error_message TEXT,
+      decode_attempts INTEGER,
+      successful_decodes INTEGER,
+      failed_attempts INTEGER,
+      avg_fps REAL,
+      duration_sec INTEGER,
+      FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
     CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
     CREATE INDEX IF NOT EXISTS idx_scan_events_scanned_at ON scan_events(scanned_at);
     CREATE INDEX IF NOT EXISTS idx_scan_events_barcode ON scan_events(barcode);
     CREATE INDEX IF NOT EXISTS idx_scan_events_product_id ON scan_events(product_id);
+    CREATE INDEX IF NOT EXISTS idx_diag_sessions_status ON diagnostic_sessions(status);
+    CREATE INDEX IF NOT EXISTS idx_diag_scan_events_session ON diagnostic_scan_events(session_id);
+    CREATE INDEX IF NOT EXISTS idx_diag_device_telemetry_session ON diagnostic_device_telemetry(session_id);
+    CREATE INDEX IF NOT EXISTS idx_diag_events_aggregates_session ON diagnostic_events_and_aggregates(session_id);
   `);
 
   // Initialize setup status setting if not present

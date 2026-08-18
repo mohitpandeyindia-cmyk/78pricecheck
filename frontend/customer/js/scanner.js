@@ -45,6 +45,473 @@ function getStates() {
   };
 }
 
+// Phase 1 Forensic Diagnostic Telemetry Engine (?scannerDebug=1)
+const DiagnosticTelemetry = {
+  isScannerDebug: false,
+  failedDecodeCount: 0,
+  successfulDecodeCount: 0,
+  firstDecodeLatencyMs: null,
+  lastDecodeTimestamp: null,
+  interDecodeIntervalMs: null,
+  lastDecodedFormat: 'N/A',
+  lastBarcodeOccupancy: null,
+  occupancyNote: 'Barcode occupancy cannot currently be measured reliably from the existing decoder.',
+
+  init() {
+    try {
+      this.isScannerDebug = new URLSearchParams(window.location.search).get('scannerDebug') === '1';
+    } catch (e) {
+      this.isScannerDebug = false;
+    }
+    if (this.isScannerDebug) {
+      console.log('[DiagnosticTelemetry] Hidden Diagnostic Mode Active (?scannerDebug=1)');
+      this.updatePanel();
+    }
+  },
+
+  recordFrameError() {
+    this.failedDecodeCount++;
+    if (this.isScannerDebug) {
+      this.updatePanel();
+    }
+  },
+
+  recordSuccessfulDecode(decodedText, decodedResult) {
+    this.successfulDecodeCount++;
+    const now = performance.now();
+    if (this.lastDecodeTimestamp !== null) {
+      this.interDecodeIntervalMs = Math.round(now - this.lastDecodeTimestamp);
+    }
+    this.lastDecodeTimestamp = now;
+
+    if (cameraStartTime > 0 && this.firstDecodeLatencyMs === null) {
+      this.firstDecodeLatencyMs = Math.round(now - cameraStartTime);
+    }
+
+    if (decodedResult) {
+      if (decodedResult.resultFormat && decodedResult.resultFormat.formatName) {
+        this.lastDecodedFormat = decodedResult.resultFormat.formatName;
+      } else if (decodedResult.format && decodedResult.format.formatName) {
+        this.lastDecodedFormat = decodedResult.format.formatName;
+      } else if (typeof decodedResult.resultFormat === 'string') {
+        this.lastDecodedFormat = decodedResult.resultFormat;
+      } else if (typeof decodedResult.format === 'string') {
+        this.lastDecodedFormat = decodedResult.format;
+      }
+    }
+
+    // Measure barcode bounding box / occupancy from resultPoints if provided by decoder
+    const video = document.querySelector('#reader video');
+    const points = decodedResult && (decodedResult.resultPoints || (decodedResult.result && decodedResult.result.resultPoints));
+    if (points && Array.isArray(points) && points.length >= 2 && video && video.videoWidth > 0) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      points.forEach(pt => {
+        const px = typeof pt.x === 'number' ? pt.x : (typeof pt[0] === 'number' ? pt[0] : null);
+        const py = typeof pt.y === 'number' ? pt.y : (typeof pt[1] === 'number' ? pt[1] : null);
+        if (px !== null && py !== null) {
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+      });
+      if (minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
+        const boxW = Math.round(maxX - minX);
+        const boxH = Math.round(maxY - minY);
+        const cX = Math.round((minX + maxX) / 2);
+        const cY = Math.round((minY + maxY) / 2);
+        const pctW = ((boxW / video.videoWidth) * 100).toFixed(1);
+        const pctH = ((boxH / video.videoHeight) * 100).toFixed(1);
+        this.lastBarcodeOccupancy = {
+          width: boxW,
+          height: boxH,
+          centerX: cX,
+          centerY: cY,
+          pctW: pctW,
+          pctH: pctH
+        };
+      }
+    }
+
+    if (this.isScannerDebug) {
+      this.updatePanel();
+    }
+  },
+
+  updatePanel() {
+    if (!this.isScannerDebug) return;
+
+    let panel = document.getElementById('scanner-debug-panel');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'scanner-debug-panel';
+      panel.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        max-height: 48vh;
+        overflow-y: auto;
+        background: rgba(15, 23, 42, 0.94);
+        color: #38bdf8;
+        border: 1.5px solid #0284c7;
+        border-radius: 8px;
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.4;
+        z-index: 999999;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+        pointer-events: auto;
+      `;
+      document.body.appendChild(panel);
+    }
+
+    const video = document.querySelector('#reader video');
+    const track = CameraManager.activeTrack || (video && video.srcObject ? video.srcObject.getVideoTracks()[0] : null);
+
+    let settings = {};
+    let capabilities = {};
+    if (track) {
+      if (typeof track.getSettings === 'function') {
+        try { settings = track.getSettings() || {}; } catch(e) {}
+      }
+      if (typeof track.getCapabilities === 'function') {
+        try { capabilities = track.getCapabilities() || {}; } catch(e) {}
+      }
+    }
+
+    const totalDecodes = this.failedDecodeCount + this.successfulDecodeCount;
+    const runningSec = cameraStartTime > 0 ? ((performance.now() - cameraStartTime) / 1000).toFixed(1) : '0.0';
+    const decodesPerSec = runningSec > 0 ? (totalDecodes / runningSec).toFixed(1) : '0';
+
+    const isIOS = CameraManager.isIOS;
+    const reqRes = isIOS ? '1280x720 (ideal)' : 'Default / Unconstrained';
+    const reqFacing = 'environment';
+    const reqFps = CameraManager.config ? CameraManager.config.fps : 15;
+    const reqCrop = isIOS ? 'Disabled (Full Frame)' : 'Enabled (80% W x ~45% H)';
+
+    const actRes = video && video.videoWidth > 0 ? `${video.videoWidth}x${video.videoHeight} (rendered: ${video.clientWidth}x${video.clientHeight})` : (settings.width ? `${settings.width}x${settings.height}` : 'N/A / Uninitialized');
+    const actFacing = settings.facingMode || (track ? track.label : 'N/A');
+    const actFps = currentFps > 0 ? currentFps : (settings.frameRate ? Math.round(settings.frameRate) : 'N/A');
+
+    const capZoom = capabilities.zoom ? `min:${capabilities.zoom.min}, max:${capabilities.zoom.max}, step:${capabilities.zoom.step}` : 'N/A / Unsupported';
+    const capFocusMode = capabilities.focusMode ? JSON.stringify(capabilities.focusMode) : 'N/A / Unsupported';
+    const capFocusDist = capabilities.focusDistance ? `min:${capabilities.focusDistance.min}, max:${capabilities.focusDistance.max}` : 'N/A / Unsupported';
+    const capTorch = capabilities.torch ? 'Supported' : 'N/A / Unsupported';
+    const capExpMode = capabilities.exposureMode ? JSON.stringify(capabilities.exposureMode) : 'N/A / Unsupported';
+    const capExpComp = capabilities.exposureCompensation ? `min:${capabilities.exposureCompensation.min}, max:${capabilities.exposureCompensation.max}` : 'N/A / Unsupported';
+    const capWb = capabilities.whiteBalanceMode ? JSON.stringify(capabilities.whiteBalanceMode) : 'N/A / Unsupported';
+
+    let occHtml = '';
+    if (this.lastBarcodeOccupancy) {
+      const o = this.lastBarcodeOccupancy;
+      occHtml = `Box: ${o.width}x${o.height}px | Center: (${o.centerX}, ${o.centerY}) | Occupancy: ${o.pctW}% W, ${o.pctH}% H`;
+    } else {
+      occHtml = this.occupancyNote;
+    }
+
+    panel.innerHTML = `
+      <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom:1px solid #0369a1; padding-bottom:4px; margin-bottom:6px; color:#f0f9ff;">
+        <span>🔍 BARCODE SCANNER DIAGNOSTICS (?scannerDebug=1)</span>
+        <button onclick="document.getElementById('scanner-debug-panel').style.display='none'" style="background:none; border:none; color:#f43f5e; font-weight:bold; cursor:pointer; padding:0 4px;">✕</button>
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <strong style="color:#fde047;">DEVICE & BROWSER:</strong><br>
+        UserAgent: ${navigator.userAgent}<br>
+        Platform: ${navigator.platform} | iOS: ${isIOS} | Screen: ${window.innerWidth}x${window.innerHeight} (DPR: ${window.devicePixelRatio})
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <strong style="color:#fde047;">REQUESTED SETTINGS:</strong><br>
+        FacingMode: ${reqFacing} | Resolution: ${reqRes} | Target FPS: ${reqFps} | Crop (qrbox): ${reqCrop}
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <strong style="color:#fde047;">ACTUAL CAMERA SETTINGS:</strong><br>
+        Camera Label: ${track ? track.label : 'N/A'}<br>
+        Resolution: ${actRes} | FacingMode: ${actFacing} | Actual FPS: ${actFps}
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <strong style="color:#fde047;">CAMERA CAPABILITIES:</strong><br>
+        Zoom: ${capZoom}<br>
+        FocusMode: ${capFocusMode} | FocusDistance: ${capFocusDist}<br>
+        Torch: ${capTorch} | ExposureMode: ${capExpMode} | ExpComp: ${capExpComp} | WB: ${capWb}
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <strong style="color:#fde047;">DECODER TELEMETRY:</strong><br>
+        Running Time: ${runningSec}s | Decode Attempts/sec: ${decodesPerSec} FPS<br>
+        Successful Decodes: ${this.successfulDecodeCount} | Failed Frame Decodes: ${this.failedDecodeCount}<br>
+        First Decode Latency: ${this.firstDecodeLatencyMs !== null ? this.firstDecodeLatencyMs + 'ms' : 'Waiting...'}<br>
+        Inter-Decode Interval: ${this.interDecodeIntervalMs !== null ? this.interDecodeIntervalMs + 'ms' : 'N/A'}<br>
+        Last Decoded Format: ${this.lastDecodedFormat}
+      </div>
+
+      <div>
+        <strong style="color:#fde047;">BARCODE OCCUPANCY ESTIMATION:</strong><br>
+        ${occHtml}
+      </div>
+    `;
+  }
+};
+
+// Phase 2A Silent Admin-Controlled Diagnostic Telemetry Pipeline
+const SilentDiagnosticService = {
+  activeSessionId: null,
+  checkInterval: null,
+  aggregateInterval: null,
+  failedFramesCount: 0,
+  lastScanTimestamp: null,
+
+  async init() {
+    await this.checkActiveSession();
+    if (!this.checkInterval) {
+      this.checkInterval = setInterval(() => this.checkActiveSession(), 15000);
+    }
+  },
+
+  async checkActiveSession() {
+    try {
+      const res = await fetch('/api/diagnostics/active-session');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.active && data.sessionId) {
+          if (this.activeSessionId !== data.sessionId) {
+            this.activeSessionId = data.sessionId;
+            console.log('[SilentDiagnostic] Active admin session detected:', this.activeSessionId);
+            this.sendDeviceTelemetry();
+            this.startAggregateTimer();
+          }
+        } else {
+          if (this.activeSessionId) {
+            console.log('[SilentDiagnostic] Admin session ended');
+            this.activeSessionId = null;
+            this.stopAggregateTimer();
+          }
+        }
+      }
+    } catch (e) {
+      // Fail silently
+    }
+  },
+
+  getDeviceClassification() {
+    const ua = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    const isAndroid = /Android/.test(ua);
+    return isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Other');
+  },
+
+  async sendDeviceTelemetry() {
+    if (!this.activeSessionId) return;
+
+    const video = document.querySelector('#reader video');
+    const track = CameraManager.activeTrack || (video && video.srcObject ? video.srcObject.getVideoTracks()[0] : null);
+
+    let settings = {};
+    let capabilities = {};
+    if (track) {
+      if (typeof track.getSettings === 'function') {
+        try { settings = track.getSettings() || {}; } catch(e) {}
+      }
+      if (typeof track.getCapabilities === 'function') {
+        try { capabilities = track.getCapabilities() || {}; } catch(e) {}
+      }
+    }
+
+    const ua = navigator.userAgent;
+    const isIOS = CameraManager.isIOS;
+    const classification = this.getDeviceClassification();
+
+    const payload = {
+      sessionId: this.activeSessionId,
+      type: 'device',
+      data: {
+        os: isIOS ? 'iOS' : (classification === 'Android' ? 'Android' : navigator.platform),
+        browser: /CriOS|Chrome/.test(ua) ? 'Chrome' : (/Safari/.test(ua) ? 'Safari' : 'Other'),
+        userAgent: ua,
+        platform: navigator.platform,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+        classification: classification,
+        facingMode: settings.facingMode || 'environment',
+        cameraLabel: track ? track.label : null,
+        videoWidth: video ? video.videoWidth : (settings.width || null),
+        videoHeight: video ? video.videoHeight : (settings.height || null),
+        aspectRatio: video && video.videoHeight > 0 ? (video.videoWidth / video.videoHeight) : (settings.aspectRatio || null),
+        actualFps: currentFps > 0 ? currentFps : (settings.frameRate || null),
+
+        zoomSupported: capabilities.zoom ? 1 : (capabilities.zoom === false ? 0 : null),
+        zoomMin: capabilities.zoom ? capabilities.zoom.min : null,
+        zoomMax: capabilities.zoom ? capabilities.zoom.max : null,
+        zoomStep: capabilities.zoom ? capabilities.zoom.step : null,
+        focusModeSupported: capabilities.focusMode ? 1 : (capabilities.focusMode === false ? 0 : null),
+        availableFocusModes: capabilities.focusMode ? JSON.stringify(capabilities.focusMode) : null,
+        focusDistanceSupported: capabilities.focusDistance ? 1 : (capabilities.focusDistance === false ? 0 : null),
+        torchSupported: capabilities.torch ? 1 : (capabilities.torch === false ? 0 : null),
+        exposureSupported: capabilities.exposureMode ? 1 : (capabilities.exposureMode === false ? 0 : null)
+      }
+    };
+
+    try {
+      await fetch('/api/diagnostics/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  },
+
+  async recordScanEvent(barcode, decodedResult) {
+    if (!this.activeSessionId) return;
+
+    const now = performance.now();
+    const video = document.querySelector('#reader video');
+    const timeSinceStartMs = cameraStartTime > 0 ? Math.round(now - cameraStartTime) : null;
+    const timeSincePrevMs = this.lastScanTimestamp !== null ? Math.round(now - this.lastScanTimestamp) : null;
+    this.lastScanTimestamp = now;
+
+    let format = 'N/A';
+    if (decodedResult) {
+      if (decodedResult.resultFormat && decodedResult.resultFormat.formatName) {
+        format = decodedResult.resultFormat.formatName;
+      } else if (decodedResult.format && decodedResult.format.formatName) {
+        format = decodedResult.format.formatName;
+      } else if (typeof decodedResult.resultFormat === 'string') {
+        format = decodedResult.resultFormat;
+      } else if (typeof decodedResult.format === 'string') {
+        format = decodedResult.format;
+      }
+    }
+
+    let bboxW = null, bboxH = null, cX = null, cY = null, pctW = null, pctH = null;
+    const points = decodedResult && (decodedResult.resultPoints || (decodedResult.result && decodedResult.result.resultPoints));
+    if (points && Array.isArray(points) && points.length >= 2 && video && video.videoWidth > 0) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      points.forEach(pt => {
+        const px = typeof pt.x === 'number' ? pt.x : (typeof pt[0] === 'number' ? pt[0] : null);
+        const py = typeof pt.y === 'number' ? pt.y : (typeof pt[1] === 'number' ? pt[1] : null);
+        if (px !== null && py !== null) {
+          if (px < minX) minX = px;
+          if (px > maxX) maxX = px;
+          if (py < minY) minY = py;
+          if (py > maxY) maxY = py;
+        }
+      });
+      if (minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
+        bboxW = Math.round(maxX - minX);
+        bboxH = Math.round(maxY - minY);
+        cX = Math.round((minX + maxX) / 2);
+        cY = Math.round((minY + maxY) / 2);
+        pctW = Number(((bboxW / video.videoWidth) * 100).toFixed(1));
+        pctH = Number(((bboxH / video.videoHeight) * 100).toFixed(1));
+      }
+    }
+
+    const payload = {
+      sessionId: this.activeSessionId,
+      type: 'scan_event',
+      data: {
+        barcode: barcode,
+        format: format,
+        deviceOs: CameraManager.isIOS ? 'iOS' : this.getDeviceClassification(),
+        browser: /CriOS|Chrome/.test(navigator.userAgent) ? 'Chrome' : (/Safari/.test(navigator.userAgent) ? 'Safari' : 'Other'),
+        videoWidth: video ? video.videoWidth : null,
+        videoHeight: video ? video.videoHeight : null,
+        timeSinceStartMs: timeSinceStartMs,
+        timeSincePrevScanMs: timeSincePrevMs,
+        decodeAttemptsSincePrev: this.failedFramesCount,
+        bboxWidth: bboxW,
+        bboxHeight: bboxH,
+        bboxCenterX: cX,
+        bboxCenterY: cY,
+        bboxPctW: pctW,
+        bboxPctH: pctH
+      }
+    };
+
+    this.failedFramesCount = 0;
+
+    try {
+      await fetch('/api/diagnostics/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  },
+
+  recordFrameError() {
+    this.failedFramesCount++;
+  },
+
+  async recordMeaningfulEvent(eventType, errorMessage = null) {
+    if (!this.activeSessionId) return;
+
+    const payload = {
+      sessionId: this.activeSessionId,
+      type: 'event',
+      data: {
+        eventType: eventType,
+        classification: this.getDeviceClassification(),
+        errorMessage: errorMessage,
+        decodeAttempts: this.failedFramesCount
+      }
+    };
+
+    try {
+      await fetch('/api/diagnostics/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  },
+
+  startAggregateTimer() {
+    if (this.aggregateInterval) clearInterval(this.aggregateInterval);
+    this.aggregateInterval = setInterval(() => this.sendIntervalAggregate(), 30000);
+  },
+
+  stopAggregateTimer() {
+    if (this.aggregateInterval) {
+      clearInterval(this.aggregateInterval);
+      this.aggregateInterval = null;
+    }
+  },
+
+  async sendIntervalAggregate() {
+    if (!this.activeSessionId) return;
+
+    const failed = this.failedFramesCount;
+    this.failedFramesCount = 0;
+
+    const payload = {
+      sessionId: this.activeSessionId,
+      type: 'interval_aggregate',
+      data: {
+        eventType: 'interval_aggregate',
+        classification: this.getDeviceClassification(),
+        failedAttempts: failed,
+        avgFps: currentFps > 0 ? currentFps : 15,
+        durationSec: 30
+      }
+    };
+
+    try {
+      await fetch('/api/diagnostics/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  }
+};
+
 const CameraManager = {
   state: 'IDLE',
   html5Qrcode: null,
@@ -53,6 +520,9 @@ const CameraManager = {
   activeTrack: null,
 
   init() {
+    DiagnosticTelemetry.init();
+    SilentDiagnosticService.init();
+
     this.isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
@@ -341,6 +811,8 @@ const CameraManager = {
                 }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
               }
             }
+
+            DiagnosticTelemetry.updatePanel();
           }
         };
 
@@ -1471,7 +1943,9 @@ function appendDebugInfo(container, errText) {
 }
 
 // Handler functions
-function onBarcodeDecoded(decodedText) {
+function onBarcodeDecoded(decodedText, decodedResult) {
+  DiagnosticTelemetry.recordSuccessfulDecode(decodedText, decodedResult);
+  SilentDiagnosticService.recordScanEvent(decodedText, decodedResult);
   const now = Date.now();
 
   // Track last seen timestamp to calculate disappearance intervals for anti-double scans
@@ -1556,6 +2030,8 @@ function onBarcodeDecoded(decodedText) {
 function onBarcodeScanError(errorMessage) {
   // Increment frames for real-time FPS overlay calculation
   registerFrameForFps();
+  DiagnosticTelemetry.recordFrameError();
+  SilentDiagnosticService.recordFrameError();
 }
 
 // Stop camera scan stream

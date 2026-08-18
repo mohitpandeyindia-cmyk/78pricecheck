@@ -66,6 +66,105 @@
           </div>
         </div>
 
+        <!-- Phase 2A Admin Scanner Diagnostics Session Control Card -->
+        <div class="card" id="scanner-diagnostics-session-card" style="border: 2px solid var(--primary-color);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 class="card-title" style="margin-bottom: 0; font-weight: 700; font-size: 1.35rem; color: var(--primary-color);">
+              SCANNER DIAGNOSTICS SESSION
+            </h2>
+            <span id="sess-status-badge" style="font-weight: 700; font-size: 0.85rem; padding: 4px 12px; border-radius: 20px; background-color: #ef4444; color: #ffffff;">
+              OFF
+            </span>
+          </div>
+
+          <p class="card-desc" style="margin-bottom: 20px;">
+            Start an active diagnostic session to silently collect real-world customer telemetry during store operation without altering scanner behavior or showing debug UI to customers.
+          </p>
+
+          <div class="status-panel" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; border-bottom: none; margin-top: 0; padding-top: 0; margin-bottom: 20px;">
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Status:</span>
+              <strong id="sess-status" style="font-size: 1.1rem; color: #ef4444; font-weight: 700;">OFF</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; grid-column: span 2;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Session ID:</span>
+              <strong id="sess-id" style="font-size: 1.05rem; font-family: monospace; color: var(--text-color); font-weight: 700;">-</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Started:</span>
+              <strong id="sess-started" style="font-size: 0.95rem; color: var(--text-color); font-weight: 600;">-</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; grid-column: span 2;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Duration:</span>
+              <strong id="sess-duration" style="font-size: 1.05rem; font-family: monospace; color: var(--text-color); font-weight: 700;">00:00:00</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Total Scans:</span>
+              <strong id="sess-total-scans" style="font-size: 1.25rem; color: var(--text-color); font-weight: 800;">0</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Successful:</span>
+              <strong id="sess-successful" style="font-size: 1.25rem; color: #22c55e; font-weight: 800;">0</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Failed / Recovery:</span>
+              <strong id="sess-failed" style="font-size: 1.25rem; color: #f59e0b; font-weight: 800;">0</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">iOS Scans:</span>
+              <strong id="sess-ios" style="font-size: 1.25rem; color: #3b82f6; font-weight: 800;">0</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Android Scans:</span>
+              <strong id="sess-android" style="font-size: 1.25rem; color: #10b981; font-weight: 800;">0</strong>
+            </div>
+
+            <div class="status-item" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+              <span class="status-label" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Other Devices:</span>
+              <strong id="sess-other" style="font-size: 1.25rem; color: #8b5cf6; font-weight: 800;">0</strong>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <button id="start-session-btn" class="btn btn-primary" style="flex: 1; height: 44px; font-weight: 700; font-size: 0.95rem; border-radius: 6px; background-color: #22c55e; border: none; color: #ffffff; cursor: pointer;">
+              ▶ START DEBUG SESSION
+            </button>
+            <button id="end-session-btn" class="btn btn-danger" style="flex: 1; height: 44px; font-weight: 700; font-size: 0.95rem; border-radius: 6px; background-color: #ef4444; border: none; color: #ffffff; cursor: pointer;" disabled>
+              ⏹ END DEBUG SESSION
+            </button>
+            <button id="analyze-session-btn" class="btn btn-outline" style="flex: 1; height: 44px; font-weight: 700; font-size: 0.95rem; border-radius: 6px; background-color: #3b82f6; border: none; color: #ffffff; cursor: pointer;">
+              📊 ANALYZE SESSION
+            </button>
+          </div>
+        </div>
+
+        <!-- Session Analysis Dashboard Card -->
+        <div class="card" id="session-analysis-dashboard-card" style="display: none; border: 2px solid #3b82f6;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 15px;">
+            <div>
+              <h2 class="card-title" style="margin-bottom: 5px; font-weight: 700; font-size: 1.4rem; color: #3b82f6;">
+                SESSION DIAGNOSTIC ANALYSIS DASHBOARD
+              </h2>
+              <span id="analysis-session-subtitle" style="font-size: 0.85rem; color: var(--text-muted); font-family: monospace;">-</span>
+            </div>
+            <button id="export-json-btn" class="btn btn-secondary" style="height: 38px; font-weight: 600; font-size: 0.85rem; border-radius: 6px;">
+              📥 EXPORT RAW DATA (JSON)
+            </button>
+          </div>
+
+          <div id="analysis-dashboard-content">
+            <!-- Dynamically populated analysis tables & summaries -->
+          </div>
+        </div>
+
         <!-- Scanner Diagnostics Card -->
         <div class="card">
           <h2 class="card-title" style="margin-bottom: 20px; font-weight: 600; font-size: 1.25rem;">Scanner Diagnostics</h2>

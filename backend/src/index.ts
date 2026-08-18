@@ -8,6 +8,7 @@ import versionRouter from './routes/version';
 import adminRouter from './routes/admin';
 import authRouter from './routes/auth';
 import productsRouter from './routes/products';
+import diagnosticsRouter from './routes/diagnostics';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -156,6 +157,7 @@ app.use('/api', versionRouter);
 app.use('/api', adminRouter);
 app.use('/api', authRouter);
 app.use('/api', productsRouter);
+app.use('/api', diagnosticsRouter);
 
 // Serve static frontend files if they exist
 const FRONTEND_PATH = path.resolve(__dirname, '../../frontend');
@@ -171,9 +173,6 @@ const customerStaticOptions = {
     }
   }
 };
-
-// Mount routes for Customer Application
-app.use('/', express.static(path.join(FRONTEND_PATH, 'customer'), customerStaticOptions));
 
 // Health Check Endpoint
 app.get('/health', (req, res) => {
@@ -197,10 +196,17 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'UP',
     version: packageVersion,
+    build: (buildInfo as any).buildId || 'N/A',
+    commit: (buildInfo as any).commit || 'N/A',
+    branch: (buildInfo as any).branch || 'N/A',
+    environment: (buildInfo as any).environment || process.env.NODE_ENV || 'development',
     uptime: Math.floor(uptime),
-    ...buildInfo
+    timestamp: new Date().toISOString()
   });
 });
+
+// Mount routes for Customer Application
+app.use('/', express.static(path.join(FRONTEND_PATH, 'customer'), customerStaticOptions));
 
 // Serve admin static pages explicitly
 app.get('/admin', (req, res) => {
