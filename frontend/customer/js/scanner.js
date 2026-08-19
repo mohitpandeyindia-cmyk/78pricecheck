@@ -642,12 +642,12 @@ const CameraManager = {
       };
 
       if (this.isIOS) {
-        console.log('[CameraManager] iOS device detected. Requesting HD ideal constraints and bypassing qrbox crop...');
-        // Request HD ideal constraints on iOS within videoConstraints configuration object
+        console.log('[CameraManager] iOS device detected. Diagnostic Experiment: Requesting ~480x640 stream resolution (640x480 ideal) and bypassing qrbox crop...');
+        // Diagnostic Experiment: Reduce camera frame resolution on iOS Safari from 720x1280 to ~480x640
         scanConfig.videoConstraints = {
           facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 640 },
+          height: { ideal: 480 }
         };
         // Disable qrbox on iOS so the decoder scans the full frame
         await this.html5Qrcode.start({ facingMode: "environment" }, scanConfig, onBarcodeDecoded, onBarcodeScanError);
@@ -1946,6 +1946,12 @@ function appendDebugInfo(container, errText) {
 function onBarcodeDecoded(decodedText, decodedResult) {
   DiagnosticTelemetry.recordSuccessfulDecode(decodedText, decodedResult);
   SilentDiagnosticService.recordScanEvent(decodedText, decodedResult);
+
+  const videoEl = document.querySelector('#reader video');
+  const actRes = videoEl ? `${videoEl.videoWidth}×${videoEl.videoHeight}` : 'Unknown';
+  const timeToDecodeMs = cameraStartTime > 0 ? Math.round(performance.now() - cameraStartTime) : 'N/A';
+  console.log(`[DiagnosticExperiment] Barcode Decoded: ${decodedText} | Resolution: ${actRes} | Time from Start: ${timeToDecodeMs}ms | Attempts: ${SilentDiagnosticService.failedFramesCount} | UserAgent: ${navigator.userAgent}`);
+
   const now = Date.now();
 
   // Track last seen timestamp to calculate disappearance intervals for anti-double scans
