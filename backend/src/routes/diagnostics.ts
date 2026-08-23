@@ -71,6 +71,10 @@ router.get('/admin/diagnostics/session/active', authenticateToken, async (req: R
     const nowTime = Date.now();
     const durationSec = Math.max(0, Math.floor((nowTime - startedTime) / 1000));
 
+    const analysis = await DiagnosticsService.analyzeSession(session.session_id);
+    const uniqueDevices = analysis?.summary?.uniqueDevices || 0;
+    const newDevices = analysis?.summary?.newDevices || 0;
+
     res.json({
       status: 'ACTIVE',
       session: {
@@ -83,6 +87,8 @@ router.get('/admin/diagnostics/session/active', authenticateToken, async (req: R
         iosCount: session.ios_count,
         androidCount: session.android_count,
         otherCount: session.other_count,
+        uniqueDevices: uniqueDevices,
+        newDevices: newDevices,
         createdBy: session.created_by
       }
     });

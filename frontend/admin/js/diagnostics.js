@@ -350,6 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const sessIos = document.getElementById('sess-ios');
   const sessAndroid = document.getElementById('sess-android');
   const sessOther = document.getElementById('sess-other');
+  const sessUniqueDevices = document.getElementById('sess-unique-devices');
+  const sessNewDevices = document.getElementById('sess-new-devices');
   const startSessionBtn = document.getElementById('start-session-btn');
   const endSessionBtn = document.getElementById('end-session-btn');
 
@@ -387,6 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (sessIos) sessIos.textContent = s.iosCount || 0;
           if (sessAndroid) sessAndroid.textContent = s.androidCount || 0;
           if (sessOther) sessOther.textContent = s.otherCount || 0;
+          if (sessUniqueDevices) sessUniqueDevices.textContent = s.uniqueDevices || 0;
+          if (sessNewDevices) sessNewDevices.textContent = s.newDevices || 0;
 
           if (startSessionBtn) startSessionBtn.disabled = true;
           if (endSessionBtn) endSessionBtn.disabled = false;
@@ -419,6 +423,8 @@ document.addEventListener('DOMContentLoaded', () => {
           if (sessIos) sessIos.textContent = '0';
           if (sessAndroid) sessAndroid.textContent = '0';
           if (sessOther) sessOther.textContent = '0';
+          if (sessUniqueDevices) sessUniqueDevices.textContent = '0';
+          if (sessNewDevices) sessNewDevices.textContent = '0';
 
           if (startSessionBtn) startSessionBtn.disabled = false;
           if (endSessionBtn) endSessionBtn.disabled = true;
@@ -511,7 +517,51 @@ document.addEventListener('DOMContentLoaded', () => {
         const correlations = data.keyCorrelations || [];
 
         let html = `
-          <!-- Summary Metric Badges -->
+          <!-- Primary Device & Performance Metric Badges -->
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">NEW DEVICES</span>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #ec4899; margin-top: 4px;">
+                ${sum.newDevices || 0}
+              </div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">RETURNING DEVICES</span>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #8b5cf6; margin-top: 4px;">
+                ${sum.returningDevices || 0}
+              </div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">UNIQUE DEVICES THIS SESSION</span>
+              <div style="font-size: 1.6rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
+                ${sum.uniqueDevices || 0}
+              </div>
+            </div>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
+              <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">TOTAL DEVICES EVER SEEN</span>
+              <div style="font-size: 1.6rem; font-weight: 800; color: var(--primary-color); margin-top: 4px;">
+                ${sum.totalDevicesEverSeen || 0}
+              </div>
+            </div>
+          </div>
+
+          <!-- NEW DEVICE OS BREAKDOWN -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
+            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #1e40af; font-weight: 600;">NEW iOS DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #1d4ed8; font-weight: 800;">${sum.newIosDevices || 0}</strong>
+            </div>
+            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #065f46; font-weight: 600;">NEW Android DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #047857; font-weight: 800;">${sum.newAndroidDevices || 0}</strong>
+            </div>
+            <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #5b21b6; font-weight: 600;">NEW Other DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #6d28d9; font-weight: 800;">${sum.newOtherDevices || 0}</strong>
+            </div>
+          </div>
+
+          <!-- Performance & Scan Summary Badges -->
           <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px;">
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px;">
               <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">iOS Success Rate</span>

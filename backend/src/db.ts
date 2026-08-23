@@ -28,6 +28,9 @@ export async function getDb(): Promise<Database> {
   await dbInstance.run('PRAGMA journal_mode = WAL');
   await dbInstance.run('PRAGMA busy_timeout = 5000');
 
+  // Ensure database tables exist
+  await initializeDatabase(false);
+
   return dbInstance;
 }
 
@@ -118,9 +121,24 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       other_count INTEGER DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS device_registry (
+      device_id TEXT PRIMARY KEY,
+      first_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_seen_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      first_seen_session_id TEXT NOT NULL,
+      device_os TEXT,
+      browser TEXT,
+      user_agent TEXT,
+      platform TEXT,
+      device_pixel_ratio REAL,
+      viewport_width INTEGER,
+      viewport_height INTEGER
+    );
+
     CREATE TABLE IF NOT EXISTS diagnostic_device_telemetry (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id TEXT NOT NULL,
+      device_id TEXT,
       device_id_hash TEXT,
       os TEXT,
       browser TEXT,
@@ -154,6 +172,7 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       session_id TEXT NOT NULL,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       barcode TEXT NOT NULL,
+      device_id TEXT,
       format TEXT,
       device_os TEXT,
       browser TEXT,
@@ -195,7 +214,15 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_diag_scan_events_session ON diagnostic_scan_events(session_id);
     CREATE INDEX IF NOT EXISTS idx_diag_device_telemetry_session ON diagnostic_device_telemetry(session_id);
     CREATE INDEX IF NOT EXISTS idx_diag_events_aggregates_session ON diagnostic_events_and_aggregates(session_id);
+    CREATE INDEX IF NOT EXISTS idx_device_registry_first_seen_session ON device_registry(first_seen_session_id);
   `);
+
+  try {
+    await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN device_id TEXT;`);
+  } catch (e) {}
+  try {
+    await db.exec(`ALTER TABLE diagnostic_scan_events ADD COLUMN device_id TEXT;`);
+  } catch (e) {}
 
   // Initialize setup status setting if not present
   const setupSetting = await db.get(

@@ -343,6 +343,24 @@ const SilentDiagnosticService = {
     }
   },
 
+  getOrCreateDeviceId() {
+    const STORAGE_KEY = '78pricecheck_device_id';
+    try {
+      let deviceId = localStorage.getItem(STORAGE_KEY);
+      if (!deviceId) {
+        if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+          deviceId = crypto.randomUUID();
+        } else {
+          deviceId = 'dev_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+        }
+        localStorage.setItem(STORAGE_KEY, deviceId);
+      }
+      return deviceId;
+    } catch (e) {
+      return 'unknown';
+    }
+  },
+
   getDeviceClassification() {
     const ua = navigator.userAgent;
     const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -372,6 +390,7 @@ const SilentDiagnosticService = {
     const classification = this.getDeviceClassification();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
+    const devId = this.getOrCreateDeviceId();
 
     let qW = null, qH = null, qPctW = null, qPctH = null;
     const reader = document.getElementById('reader');
@@ -391,6 +410,7 @@ const SilentDiagnosticService = {
       type: 'device',
       data: {
         scannerExperiment: 'ios_vga_qrbox',
+        deviceId: devId,
         os: isIOS ? 'iOS' : (classification === 'Android' ? 'Android' : navigator.platform),
         browser: /CriOS|Chrome/.test(ua) ? 'Chrome' : (/Safari/.test(ua) ? 'Safari' : 'Other'),
         userAgent: ua,
@@ -456,12 +476,14 @@ const SilentDiagnosticService = {
     }
 
     const bbox = extractBboxFromDecodedResult(decodedResult, video);
+    const devId = this.getOrCreateDeviceId();
 
     const payload = {
       sessionId: this.activeSessionId,
       type: 'scan_event',
       data: {
         scannerExperiment: 'ios_vga_qrbox',
+        deviceId: devId,
         barcode: barcode,
         format: format,
         deviceOs: CameraManager.isIOS ? 'iOS' : this.getDeviceClassification(),

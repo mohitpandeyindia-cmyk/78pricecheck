@@ -84,6 +84,49 @@ export class DiagnosticsService {
   }
 
   /**
+   * Idempotently registers or updates an anonymous persistent device in the device_registry
+   */
+  static async registerOrUpdateDevice(
+    deviceId: string | null,
+    sessionId: string,
+    metadata: {
+      deviceOs?: string | null;
+      browser?: string | null;
+      userAgent?: string | null;
+      platform?: string | null;
+      devicePixelRatio?: number | null;
+      viewportWidth?: number | null;
+      viewportHeight?: number | null;
+    }
+  ): Promise<void> {
+    if (!deviceId || deviceId === 'unknown' || !sessionId) return;
+    const db = await getDb();
+
+    try {
+      await db.run(
+        `INSERT INTO device_registry (
+           device_id, first_seen_at, last_seen_at, first_seen_session_id,
+           device_os, browser, user_agent, platform, device_pixel_ratio,
+           viewport_width, viewport_height
+         ) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(device_id) DO UPDATE SET
+           last_seen_at = CURRENT_TIMESTAMP`,
+        deviceId,
+        sessionId,
+        metadata.deviceOs || null,
+        metadata.browser || null,
+        metadata.userAgent || null,
+        metadata.platform || null,
+        metadata.devicePixelRatio || null,
+        metadata.viewportWidth || null,
+        metadata.viewportHeight || null
+      );
+    } catch (e) {
+      // Fail silently to avoid breaking telemetry pipeline
+    }
+  }
+
+  /**
    * Records dynamic telemetry payload sent silently from customer scanner
    */
   static async recordTelemetry(payload: { sessionId: string; type: string; data: any }): Promise<void> {
@@ -112,19 +155,34 @@ export class DiagnosticsService {
       return val;
     };
 
+    const deviceId = cleanStr(data.deviceId || data.device_id || data.deviceIdHash, 128);
+
     if (type === 'device') {
       const rawClassification = cleanStr(data.classification, 32) || 'Other';
       const classification = (rawClassification === 'iOS' || rawClassification === 'Android') ? rawClassification : 'Other';
       
+      // Idempotent persistent device registry update
+      await this.registerOrUpdateDevice(deviceId, payload.sessionId, {
+        deviceOs: classification,
+        browser: cleanStr(data.browser, 64),
+        userAgent: cleanStr(data.userAgent, 500),
+        platform: cleanStr(data.platform, 64),
+        devicePixelRatio: cleanNum(data.devicePixelRatio, 0.1, 10),
+        viewportWidth: cleanNum(data.viewportWidth, 100, 10000),
+        viewportHeight: cleanNum(data.viewportHeight, 100, 10000)
+      });
+
       // Save device telemetry row
       await db.run(
         `INSERT INTO diagnostic_device_telemetry 
-         (session_id, os, browser, user_agent, platform, device_pixel_ratio, viewport_width, viewport_height, 
+         (session_id, device_id, device_id_hash, os, browser, user_agent, platform, device_pixel_ratio, viewport_width, viewport_height, 
           classification, facing_mode, camera_label, video_width, video_height, aspect_ratio, actual_fps, 
           zoom_supported, zoom_min, zoom_max, zoom_step, focus_mode_supported, available_focus_modes, 
           focus_distance_supported, torch_supported, exposure_supported)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         payload.sessionId,
+        deviceId,
+        deviceId,
         cleanStr(data.os, 64),
         cleanStr(data.browser, 64),
         cleanStr(data.userAgent, 500),
@@ -161,14 +219,24 @@ export class DiagnosticsService {
 
     } else if (type === 'scan_event') {
       const barcode = cleanStr(data.barcode, 128) || 'UNKNOWN';
+
+      // Idempotent safeguard: register device if deviceId provided
+      if (deviceId) {
+        await this.registerOrUpdateDevice(deviceId, payload.sessionId, {
+          deviceOs: cleanStr(data.deviceOs, 32),
+          browser: cleanStr(data.browser, 64)
+        });
+      }
+
       await db.run(
         `INSERT INTO diagnostic_scan_events
-         (session_id, barcode, format, device_os, browser, video_width, video_height, 
+         (session_id, barcode, device_id, format, device_os, browser, video_width, video_height, 
           time_since_start_ms, time_since_prev_scan_ms, decode_attempts_since_prev, 
           bbox_width, bbox_height, bbox_center_x, bbox_center_y, bbox_pct_w, bbox_pct_h)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         payload.sessionId,
         barcode,
+        deviceId,
         cleanStr(data.format, 64),
         cleanStr(data.deviceOs, 32),
         cleanStr(data.browser, 64),
@@ -420,6 +488,47 @@ export class DiagnosticsService {
       }
     ];
 
+    // 9. Persistent Device Registry Analytics
+    const uniqueSessionDevicesRow = await db.get(
+      `SELECT COUNT(DISTINCT device_id) as count 
+       FROM (
+         SELECT device_id FROM diagnostic_device_telemetry WHERE session_id = ? AND device_id IS NOT NULL AND device_id != 'unknown'
+         UNION
+         SELECT device_id FROM diagnostic_scan_events WHERE session_id = ? AND device_id IS NOT NULL AND device_id != 'unknown'
+       )`,
+      sid, sid
+    );
+    const uniqueDevices = uniqueSessionDevicesRow?.count || 0;
+
+    const newSessionDevicesRow = await db.get(
+      `SELECT COUNT(*) as count FROM device_registry WHERE first_seen_session_id = ? AND device_id IS NOT NULL AND device_id != 'unknown'`,
+      sid
+    );
+    const newDevices = newSessionDevicesRow?.count || 0;
+    const returningDevices = Math.max(0, uniqueDevices - newDevices);
+
+    const totalEverSeenRow = await db.get(
+      `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown'`
+    );
+    const totalDevicesEverSeen = totalEverSeenRow?.count || 0;
+
+    const newIosRow = await db.get(
+      `SELECT COUNT(*) as count FROM device_registry WHERE first_seen_session_id = ? AND device_os = 'iOS' AND device_id IS NOT NULL AND device_id != 'unknown'`,
+      sid
+    );
+    const newAndroidRow = await db.get(
+      `SELECT COUNT(*) as count FROM device_registry WHERE first_seen_session_id = ? AND device_os = 'Android' AND device_id IS NOT NULL AND device_id != 'unknown'`,
+      sid
+    );
+    const newOtherRow = await db.get(
+      `SELECT COUNT(*) as count FROM device_registry WHERE first_seen_session_id = ? AND (device_os NOT IN ('iOS', 'Android') OR device_os IS NULL) AND device_id IS NOT NULL AND device_id != 'unknown'`,
+      sid
+    );
+
+    const newIosDevices = newIosRow?.count || 0;
+    const newAndroidDevices = newAndroidRow?.count || 0;
+    const newOtherDevices = newOtherRow?.count || 0;
+
     return {
       success: true,
       session: targetSession,
@@ -437,7 +546,14 @@ export class DiagnosticsService {
         successfulScans: targetSession.successful_scans,
         failedEvents: targetSession.failed_events,
         iosSuccessRate,
-        androidSuccessRate
+        androidSuccessRate,
+        uniqueDevices,
+        newDevices,
+        returningDevices,
+        totalDevicesEverSeen,
+        newIosDevices,
+        newAndroidDevices,
+        newOtherDevices
       }
     };
   }
