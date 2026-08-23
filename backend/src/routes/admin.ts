@@ -515,4 +515,20 @@ router.get('/admin/analytics', authenticateToken, async (req: AuthenticatedReque
   }
 });
 
+// GET /api/admin/analytics/devices - Retrieve persistent device analytics
+router.get('/admin/analytics/devices', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { getDeviceAnalytics } = require('../services/analyticsService');
+    const period = typeof req.query.period === 'string' ? req.query.period : 'today';
+    const analytics = await getDeviceAnalytics(period);
+    res.json(analytics);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve device analytics',
+      error: error.message || error
+    });
+  }
+});
+
 export default router;

@@ -215,6 +215,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_diag_device_telemetry_session ON diagnostic_device_telemetry(session_id);
     CREATE INDEX IF NOT EXISTS idx_diag_events_aggregates_session ON diagnostic_events_and_aggregates(session_id);
     CREATE INDEX IF NOT EXISTS idx_device_registry_first_seen_session ON device_registry(first_seen_session_id);
+    CREATE INDEX IF NOT EXISTS idx_device_registry_first_seen ON device_registry(first_seen_at);
+    CREATE INDEX IF NOT EXISTS idx_device_registry_last_seen ON device_registry(last_seen_at);
+    CREATE INDEX IF NOT EXISTS idx_device_registry_os ON device_registry(device_os);
   `);
 
   try {

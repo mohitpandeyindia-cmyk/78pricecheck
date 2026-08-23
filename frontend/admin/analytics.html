@@ -235,6 +235,70 @@
       </div>
     </div>
 
+    <!-- Section: Business-Level Device Analytics -->
+    <div class="card" style="margin-bottom: 30px; border-top: 4px solid #8b5cf6;">
+      <div class="chart-header" style="margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
+        <div>
+          <h2 class="card-title" style="font-size: 1.25rem; font-weight: 700; color: #8b5cf6; margin-bottom: 4px;">
+            📱 DEVICE ANALYTICS
+          </h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">
+            Authoritative unique device acquisition & retention metrics from persistent device registry
+          </p>
+        </div>
+        <div class="toggle-group" id="device-period-toggle">
+          <button data-period="today" class="toggle-btn active" id="btn-dev-today">TODAY</button>
+          <button data-period="week" class="toggle-btn" id="btn-dev-week">THIS WEEK</button>
+          <button data-period="month" class="toggle-btn" id="btn-dev-month">THIS MONTH</button>
+          <button data-period="all" class="toggle-btn" id="btn-dev-all">ALL TIME</button>
+        </div>
+      </div>
+
+      <!-- Primary Device Metrics Grid -->
+      <div class="analytics-metrics-grid" style="margin-bottom: 20px;">
+        <div class="metric-card" style="border-top: 3px solid #ec4899;">
+          <div class="metric-label">NEW DEVICES TODAY</div>
+          <div class="metric-value" id="dev-val-today">0</div>
+          <div class="metric-subtext">First-time visitors today</div>
+        </div>
+        <div class="metric-card" style="border-top: 3px solid #8b5cf6;">
+          <div class="metric-label">NEW DEVICES THIS WEEK</div>
+          <div class="metric-value" id="dev-val-week">0</div>
+          <div class="metric-subtext">Last 7 days new acquisitions</div>
+        </div>
+        <div class="metric-card" style="border-top: 3px solid #3b82f6;">
+          <div class="metric-label">NEW DEVICES THIS MONTH</div>
+          <div class="metric-value" id="dev-val-month">0</div>
+          <div class="metric-subtext">Calendar month new acquisitions</div>
+        </div>
+        <div class="metric-card" style="border-top: 3px solid #16a34a;">
+          <div class="metric-label">TOTAL UNIQUE DEVICES</div>
+          <div class="metric-value" id="dev-val-total">0</div>
+          <div class="metric-subtext">All-time persistent registry</div>
+        </div>
+      </div>
+
+      <!-- Selected Period Specific OS Breakdown & Returning Devices -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 15px; border-radius: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: #1e40af; text-transform: uppercase;">NEW iOS DEVICES</span>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #1d4ed8; margin-top: 6px;" id="dev-val-new-ios">0</div>
+        </div>
+        <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: #065f46; text-transform: uppercase;">NEW Android DEVICES</span>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #047857; margin-top: 6px;" id="dev-val-new-android">0</div>
+        </div>
+        <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 15px; border-radius: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: #5b21b6; text-transform: uppercase;">NEW OTHER DEVICES</span>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #6d28d9; margin-top: 6px;" id="dev-val-new-other">0</div>
+        </div>
+        <div style="background: #fef3c7; border: 1px solid #fde68a; padding: 15px; border-radius: 6px;">
+          <span style="font-size: 0.78rem; font-weight: 700; color: #92400e; text-transform: uppercase;">RETURNING DEVICES</span>
+          <div style="font-size: 1.8rem; font-weight: 800; color: #d97706; margin-top: 6px;" id="dev-val-returning">0</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Section 2 & 3: Activity & Peak Hours -->
     <div class="analytics-two-col">
       <!-- 7 / 30 Days Chart -->

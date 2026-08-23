@@ -115,3 +115,87 @@ export async function getAdminAnalytics(daysLimit: number = 7): Promise<any> {
     unknownBarcodes: unknownBarcodesRows.map(r => ({ barcode: r.barcode, attempts: Number(r.attempts) }))
   };
 }
+
+export async function getDeviceAnalytics(period: string = 'today'): Promise<any> {
+  const db = await getDb();
+
+  const validPeriod = ['today', 'week', 'month', 'all'].includes(period) ? period : 'today';
+
+  let dateWhereClause = "";
+  if (validPeriod === 'today') {
+    dateWhereClause = "date(first_seen_at, '+5 hours', '+30 minutes') = date('now', '+5 hours', '+30 minutes')";
+  } else if (validPeriod === 'week') {
+    dateWhereClause = "date(first_seen_at, '+5 hours', '+30 minutes') >= date('now', '+5 hours', '+30 minutes', '-6 days')";
+  } else if (validPeriod === 'month') {
+    dateWhereClause = "strftime('%Y-%m', first_seen_at, '+5 hours', '+30 minutes') = strftime('%Y-%m', 'now', '+5 hours', '+30 minutes')";
+  } else {
+    dateWhereClause = "1=1";
+  }
+
+  // 1. New Devices in selected period
+  const newRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND ${dateWhereClause}`
+  );
+  const newDevices = newRow ? Number(newRow.count) : 0;
+
+  // 2. OS Breakdown for New Devices in selected period
+  const newIosRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND device_os = 'iOS' AND ${dateWhereClause}`
+  );
+  const newAndroidRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND device_os = 'Android' AND ${dateWhereClause}`
+  );
+  const newOtherRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND (device_os NOT IN ('iOS', 'Android') OR device_os IS NULL) AND ${dateWhereClause}`
+  );
+
+  // 3. Total Unique Devices Ever
+  const totalRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown'`
+  );
+  const totalUniqueDevices = totalRow ? Number(totalRow.count) : 0;
+
+  // 4. Returning Devices in selected period
+  let returningClause = "";
+  if (validPeriod === 'today') {
+    returningClause = "date(first_seen_at, '+5 hours', '+30 minutes') < date('now', '+5 hours', '+30 minutes') AND date(last_seen_at, '+5 hours', '+30 minutes') = date('now', '+5 hours', '+30 minutes')";
+  } else if (validPeriod === 'week') {
+    returningClause = "date(first_seen_at, '+5 hours', '+30 minutes') < date('now', '+5 hours', '+30 minutes', '-6 days') AND date(last_seen_at, '+5 hours', '+30 minutes') >= date('now', '+5 hours', '+30 minutes', '-6 days')";
+  } else if (validPeriod === 'month') {
+    returningClause = "strftime('%Y-%m', first_seen_at, '+5 hours', '+30 minutes') < strftime('%Y-%m', 'now', '+5 hours', '+30 minutes') AND strftime('%Y-%m', last_seen_at, '+5 hours', '+30 minutes') = strftime('%Y-%m', 'now', '+5 hours', '+30 minutes')";
+  } else {
+    returningClause = "date(last_seen_at, '+5 hours', '+30 minutes') > date(first_seen_at, '+5 hours', '+30 minutes') OR strftime('%Y-%m-%d %H:%M', last_seen_at) > strftime('%Y-%m-%d %H:%M', first_seen_at)";
+  }
+
+  const returningRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND ${returningClause}`
+  );
+  const returningDevices = returningRow ? Number(returningRow.count) : 0;
+
+  // Summary counts for Today, Week, Month
+  const newTodayRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND date(first_seen_at, '+5 hours', '+30 minutes') = date('now', '+5 hours', '+30 minutes')`
+  );
+  const newWeekRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND date(first_seen_at, '+5 hours', '+30 minutes') >= date('now', '+5 hours', '+30 minutes', '-6 days')`
+  );
+  const newMonthRow = await db.get(
+    `SELECT COUNT(*) as count FROM device_registry WHERE device_id IS NOT NULL AND device_id != 'unknown' AND strftime('%Y-%m', first_seen_at, '+5 hours', '+30 minutes') = strftime('%Y-%m', 'now', '+5 hours', '+30 minutes')`
+  );
+
+  return {
+    period: validPeriod,
+    newDevices,
+    totalUniqueDevices,
+    returningDevices,
+    newIosDevices: newIosRow ? Number(newIosRow.count) : 0,
+    newAndroidDevices: newAndroidRow ? Number(newAndroidRow.count) : 0,
+    newOtherDevices: newOtherRow ? Number(newOtherRow.count) : 0,
+    summary: {
+      today: newTodayRow ? Number(newTodayRow.count) : 0,
+      week: newWeekRow ? Number(newWeekRow.count) : 0,
+      month: newMonthRow ? Number(newMonthRow.count) : 0,
+      total: totalUniqueDevices
+    }
+  };
+}

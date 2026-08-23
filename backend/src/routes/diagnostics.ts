@@ -51,6 +51,75 @@ router.post('/diagnostics/telemetry', async (req: Request, res: Response): Promi
   }
 });
 
+// Rate limiting store for public register-device requests (sliding 60s window)
+const registerRateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function isRegisterRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = registerRateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    registerRateLimitMap.set(ip, { count: 1, resetAt: now + 60000 });
+    return false;
+  }
+  entry.count++;
+  return entry.count > 15;
+}
+
+// Clean up stale rate limiting entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of registerRateLimitMap.entries()) {
+    if (now > entry.resetAt) {
+      registerRateLimitMap.delete(ip);
+    }
+  }
+}, 300000);
+
+// POST /api/diagnostics/register-device - Non-blocking public device registration for general customer visits
+router.post('/diagnostics/register-device', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.ip || '127.0.0.1').split(',')[0].trim();
+    if (isRegisterRateLimited(clientIp)) {
+      res.json({ success: false, message: 'Rate limit exceeded' });
+      return;
+    }
+
+    const { deviceId, os, browser, userAgent, platform, devicePixelRatio, viewportWidth, viewportHeight } = req.body;
+    
+    // Strict Device ID Validation: Must be 10-64 chars hex/UUID/alphanumeric
+    const isValidDeviceId = typeof deviceId === 'string' &&
+      deviceId.length >= 10 &&
+      deviceId.length <= 64 &&
+      /^[a-zA-Z0-9_-]+$/.test(deviceId) &&
+      deviceId !== 'unknown';
+
+    if (!isValidDeviceId) {
+      res.json({ success: false, message: 'Invalid device ID' });
+      return;
+    }
+
+    // Sanitize metadata string lengths to prevent payload inflation
+    const cleanOs = typeof os === 'string' ? os.substring(0, 32) : 'Other';
+    const cleanBrowser = typeof browser === 'string' ? browser.substring(0, 32) : 'Other';
+    const cleanUserAgent = typeof userAgent === 'string' ? userAgent.substring(0, 256) : '';
+    const cleanPlatform = typeof platform === 'string' ? platform.substring(0, 32) : '';
+
+    await DiagnosticsService.registerOrUpdateDevice(deviceId, 'general', {
+      deviceOs: cleanOs,
+      browser: cleanBrowser,
+      userAgent: cleanUserAgent,
+      platform: cleanPlatform,
+      devicePixelRatio: typeof devicePixelRatio === 'number' ? devicePixelRatio : 1,
+      viewportWidth: typeof viewportWidth === 'number' ? viewportWidth : 0,
+      viewportHeight: typeof viewportHeight === 'number' ? viewportHeight : 0
+    });
+
+    res.json({ success: true });
+  } catch (error: any) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
 // ==========================================
 // ADMIN ENDPOINTS (Authenticated Admin Controls)
 // ==========================================

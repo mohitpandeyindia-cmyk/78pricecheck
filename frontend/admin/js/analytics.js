@@ -45,6 +45,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  let currentDevicePeriod = 'today';
+
+  const devValToday = document.getElementById('dev-val-today');
+  const devValWeek = document.getElementById('dev-val-week');
+  const devValMonth = document.getElementById('dev-val-month');
+  const devValTotal = document.getElementById('dev-val-total');
+  const devValNewIos = document.getElementById('dev-val-new-ios');
+  const devValNewAndroid = document.getElementById('dev-val-new-android');
+  const devValNewOther = document.getElementById('dev-val-new-other');
+  const devValReturning = document.getElementById('dev-val-returning');
+  const deviceToggleContainer = document.getElementById('device-period-toggle');
+
+  if (deviceToggleContainer) {
+    deviceToggleContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (btn && btn.dataset.period) {
+        const period = btn.dataset.period;
+        if (currentDevicePeriod !== period) {
+          currentDevicePeriod = period;
+          deviceToggleContainer.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          fetchDeviceAnalytics(period);
+        }
+      }
+    });
+  }
+
   async function fetchAnalytics() {
     try {
       const response = await authenticatedFetch(`/api/admin/analytics?days=${currentDaysLimit}`);
@@ -63,6 +90,31 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('[Analytics Dashboard Error]', err);
     }
+  }
+
+  async function fetchDeviceAnalytics(period = 'today') {
+    try {
+      const response = await authenticatedFetch(`/api/admin/analytics/devices?period=${period}`);
+      if (!response || !response.ok) return;
+
+      const data = await response.json();
+      renderDeviceMetrics(data);
+    } catch (err) {
+      console.error('[Device Analytics Error]', err);
+    }
+  }
+
+  function renderDeviceMetrics(data) {
+    const sum = data.summary || {};
+    if (devValToday) devValToday.textContent = (sum.today || 0).toLocaleString();
+    if (devValWeek) devValWeek.textContent = (sum.week || 0).toLocaleString();
+    if (devValMonth) devValMonth.textContent = (sum.month || 0).toLocaleString();
+    if (devValTotal) devValTotal.textContent = (data.totalUniqueDevices || 0).toLocaleString();
+
+    if (devValNewIos) devValNewIos.textContent = (data.newIosDevices || 0).toLocaleString();
+    if (devValNewAndroid) devValNewAndroid.textContent = (data.newAndroidDevices || 0).toLocaleString();
+    if (devValNewOther) devValNewOther.textContent = (data.newOtherDevices || 0).toLocaleString();
+    if (devValReturning) devValReturning.textContent = (data.returningDevices || 0).toLocaleString();
   }
 
   function renderMetrics(data) {
@@ -182,4 +234,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial fetch
   fetchAnalytics();
+  fetchDeviceAnalytics(currentDevicePeriod);
 });

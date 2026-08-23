@@ -311,11 +311,36 @@ const SilentDiagnosticService = {
   failedFramesCount: 0,
   lastScanTimestamp: null,
 
+  hasRegisteredDeviceThisVisit: false,
+
   async init() {
+    this.registerDeviceIfNeeded();
     await this.checkActiveSession();
     if (!this.checkInterval) {
       this.checkInterval = setInterval(() => this.checkActiveSession(), 15000);
     }
+  },
+
+  registerDeviceIfNeeded() {
+    try {
+      const devId = this.getOrCreateDeviceId();
+      if (!devId || devId === 'unknown' || this.hasRegisteredDeviceThisVisit) return;
+      this.hasRegisteredDeviceThisVisit = true;
+      fetch('/api/diagnostics/register-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          deviceId: devId,
+          os: CameraManager.isIOS ? 'iOS' : this.getDeviceClassification(),
+          browser: /CriOS|Chrome/.test(navigator.userAgent) ? 'Chrome' : (/Safari/.test(navigator.userAgent) ? 'Safari' : 'Other'),
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          devicePixelRatio: window.devicePixelRatio || 1,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight
+        })
+      }).catch(() => {});
+    } catch (e) {}
   },
 
   async checkActiveSession() {
