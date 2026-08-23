@@ -45,6 +45,66 @@ function getStates() {
   };
 }
 
+// Helper to extract genuine barcode bounding box from ZXing / html5-qrcode result points
+function extractBboxFromDecodedResult(decodedResult, video) {
+  if (!decodedResult || !video || !(video.videoWidth > 0)) return null;
+
+  let points = null;
+  if (Array.isArray(decodedResult.resultPoints)) {
+    points = decodedResult.resultPoints;
+  } else if (decodedResult.result && Array.isArray(decodedResult.result.resultPoints)) {
+    points = decodedResult.result.resultPoints;
+  } else if (typeof decodedResult.getResultPoints === 'function') {
+    try { points = decodedResult.getResultPoints(); } catch (e) {}
+  } else if (decodedResult.result && typeof decodedResult.result.getResultPoints === 'function') {
+    try { points = decodedResult.result.getResultPoints(); } catch (e) {}
+  }
+
+  if (!points || !Array.isArray(points) || points.length < 2) return null;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  let validCount = 0;
+
+  points.forEach(pt => {
+    if (!pt) return;
+    let px = null, py = null;
+    if (typeof pt.x === 'number') px = pt.x;
+    else if (typeof pt.getX === 'function') { try { px = pt.getX(); } catch (e) {} }
+    else if (typeof pt[0] === 'number') px = pt[0];
+
+    if (typeof pt.y === 'number') py = pt.y;
+    else if (typeof pt.getY === 'function') { try { py = pt.getY(); } catch (e) {} }
+    else if (typeof pt[1] === 'number') py = pt[1];
+
+    if (px !== null && py !== null && !isNaN(px) && !isNaN(py)) {
+      if (px < minX) minX = px;
+      if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
+      validCount++;
+    }
+  });
+
+  if (validCount >= 2 && minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
+    const boxW = Math.round(maxX - minX);
+    const boxH = Math.round(maxY - minY);
+    const cX = Math.round((minX + maxX) / 2);
+    const cY = Math.round((minY + maxY) / 2);
+    const pctW = Number(((boxW / video.videoWidth) * 100).toFixed(1));
+    const pctH = Number(((boxH / video.videoHeight) * 100).toFixed(1));
+    return {
+      width: boxW,
+      height: boxH,
+      centerX: cX,
+      centerY: cY,
+      pctW: pctW,
+      pctH: pctH
+    };
+  }
+
+  return null;
+}
+
 // Phase 1 Forensic Diagnostic Telemetry Engine (?scannerDebug=1)
 const DiagnosticTelemetry = {
   isScannerDebug: false,
@@ -55,7 +115,7 @@ const DiagnosticTelemetry = {
   interDecodeIntervalMs: null,
   lastDecodedFormat: 'N/A',
   lastBarcodeOccupancy: null,
-  occupancyNote: 'Barcode occupancy cannot currently be measured reliably from the existing decoder.',
+  occupancyNote: 'Genuine barcode result points unavailable from decoder (recorded as NULL).',
 
   init() {
     try {
@@ -100,38 +160,8 @@ const DiagnosticTelemetry = {
       }
     }
 
-    // Measure barcode bounding box / occupancy from resultPoints if provided by decoder
     const video = document.querySelector('#reader video');
-    const points = decodedResult && (decodedResult.resultPoints || (decodedResult.result && decodedResult.result.resultPoints));
-    if (points && Array.isArray(points) && points.length >= 2 && video && video.videoWidth > 0) {
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      points.forEach(pt => {
-        const px = typeof pt.x === 'number' ? pt.x : (typeof pt[0] === 'number' ? pt[0] : null);
-        const py = typeof pt.y === 'number' ? pt.y : (typeof pt[1] === 'number' ? pt[1] : null);
-        if (px !== null && py !== null) {
-          if (px < minX) minX = px;
-          if (px > maxX) maxX = px;
-          if (py < minY) minY = py;
-          if (py > maxY) maxY = py;
-        }
-      });
-      if (minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
-        const boxW = Math.round(maxX - minX);
-        const boxH = Math.round(maxY - minY);
-        const cX = Math.round((minX + maxX) / 2);
-        const cY = Math.round((minY + maxY) / 2);
-        const pctW = ((boxW / video.videoWidth) * 100).toFixed(1);
-        const pctH = ((boxH / video.videoHeight) * 100).toFixed(1);
-        this.lastBarcodeOccupancy = {
-          width: boxW,
-          height: boxH,
-          centerX: cX,
-          centerY: cY,
-          pctW: pctW,
-          pctH: pctH
-        };
-      }
-    }
+    this.lastBarcodeOccupancy = extractBboxFromDecodedResult(decodedResult, video);
 
     if (this.isScannerDebug) {
       this.updatePanel();
@@ -186,72 +216,87 @@ const DiagnosticTelemetry = {
     const decodesPerSec = runningSec > 0 ? (totalDecodes / runningSec).toFixed(1) : '0';
 
     const isIOS = CameraManager.isIOS;
-    const reqRes = isIOS ? '1280x720 (ideal)' : 'Default / Unconstrained';
+    const reqRes = '640x480 (ideal)';
     const reqFacing = 'environment';
     const reqFps = CameraManager.config ? CameraManager.config.fps : 15;
-    const reqCrop = isIOS ? 'Disabled (Full Frame)' : 'Enabled (80% W x ~45% H)';
+    const reqCrop = 'ENABLED (Android-equivalent formula)';
 
-    const actRes = video && video.videoWidth > 0 ? `${video.videoWidth}x${video.videoHeight} (rendered: ${video.clientWidth}x${video.clientHeight})` : (settings.width ? `${settings.width}x${settings.height}` : 'N/A / Uninitialized');
+    const actWidth = video && video.videoWidth > 0 ? video.videoWidth : (settings.width || 'N/A');
+    const actHeight = video && video.videoHeight > 0 ? video.videoHeight : (settings.height || 'N/A');
+    const actRes = `${actWidth} × ${actHeight}`;
     const actFacing = settings.facingMode || (track ? track.label : 'N/A');
     const actFps = currentFps > 0 ? currentFps : (settings.frameRate ? Math.round(settings.frameRate) : 'N/A');
 
-    const capZoom = capabilities.zoom ? `min:${capabilities.zoom.min}, max:${capabilities.zoom.max}, step:${capabilities.zoom.step}` : 'N/A / Unsupported';
-    const capFocusMode = capabilities.focusMode ? JSON.stringify(capabilities.focusMode) : 'N/A / Unsupported';
-    const capFocusDist = capabilities.focusDistance ? `min:${capabilities.focusDistance.min}, max:${capabilities.focusDistance.max}` : 'N/A / Unsupported';
-    const capTorch = capabilities.torch ? 'Supported' : 'N/A / Unsupported';
-    const capExpMode = capabilities.exposureMode ? JSON.stringify(capabilities.exposureMode) : 'N/A / Unsupported';
-    const capExpComp = capabilities.exposureCompensation ? `min:${capabilities.exposureCompensation.min}, max:${capabilities.exposureCompensation.max}` : 'N/A / Unsupported';
-    const capWb = capabilities.whiteBalanceMode ? JSON.stringify(capabilities.whiteBalanceMode) : 'N/A / Unsupported';
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const dpr = window.devicePixelRatio || 1;
+
+    let qW = 'N/A', qH = 'N/A', qL = 'N/A', qT = 'N/A', qPctW = 'N/A', qPctH = 'N/A';
+    const reader = document.getElementById('reader');
+    if (typeof CameraManager.config?.qrbox === 'function' && reader) {
+      const rRect = reader.getBoundingClientRect();
+      const qDim = CameraManager.config.qrbox(rRect.width || vw, rRect.height || vh);
+      if (qDim && qDim.width && qDim.height) {
+        qW = qDim.width;
+        qH = qDim.height;
+        qL = Math.round(((rRect.width || vw) - qW) / 2);
+        qT = Math.round(((rRect.height || vh) - qH) / 2);
+        qPctW = ((qW / vw) * 100).toFixed(1);
+        qPctH = ((qH / vh) * 100).toFixed(1);
+      }
+    }
 
     let occHtml = '';
     if (this.lastBarcodeOccupancy) {
       const o = this.lastBarcodeOccupancy;
-      occHtml = `Box: ${o.width}x${o.height}px | Center: (${o.centerX}, ${o.centerY}) | Occupancy: ${o.pctW}% W, ${o.pctH}% H`;
+      occHtml = `BBox: ${o.width}x${o.height}px | Center: (${o.centerX}, ${o.centerY}) | BBox % width: ${o.pctW}% | BBox % height: ${o.pctH}%`;
     } else {
       occHtml = this.occupancyNote;
     }
 
     panel.innerHTML = `
       <div style="display:flex; justify-content:space-between; font-weight:bold; border-bottom:1px solid #0369a1; padding-bottom:4px; margin-bottom:6px; color:#f0f9ff;">
-        <span>🔍 BARCODE SCANNER DIAGNOSTICS (?scannerDebug=1)</span>
+        <span>🔍 IOS QRBOX EXPERIMENT (ios_vga_qrbox)</span>
         <button onclick="document.getElementById('scanner-debug-panel').style.display='none'" style="background:none; border:none; color:#f43f5e; font-weight:bold; cursor:pointer; padding:0 4px;">✕</button>
       </div>
 
       <div style="margin-bottom:6px;">
-        <strong style="color:#fde047;">DEVICE & BROWSER:</strong><br>
-        UserAgent: ${navigator.userAgent}<br>
-        Platform: ${navigator.platform} | iOS: ${isIOS} | Screen: ${window.innerWidth}x${window.innerHeight} (DPR: ${window.devicePixelRatio})
+        <strong style="color:#fde047;">EXPERIMENT IDENTIFIER:</strong> ios_vga_qrbox<br>
+        Resolution requested: 640×480<br>
+        Resolution actual: ${actRes}<br>
+        QRBOX: ENABLED
       </div>
 
       <div style="margin-bottom:6px;">
-        <strong style="color:#fde047;">REQUESTED SETTINGS:</strong><br>
-        FacingMode: ${reqFacing} | Resolution: ${reqRes} | Target FPS: ${reqFps} | Crop (qrbox): ${reqCrop}
+        <strong style="color:#fde047;">VIEWPORT & DEVICE:</strong><br>
+        Viewport: ${vw} × ${vh}<br>
+        DPR: ${dpr} | OS: ${isIOS ? 'iOS' : 'Android/Desktop'}<br>
+        UserAgent: ${navigator.userAgent}
       </div>
 
       <div style="margin-bottom:6px;">
-        <strong style="color:#fde047;">ACTUAL CAMERA SETTINGS:</strong><br>
-        Camera Label: ${track ? track.label : 'N/A'}<br>
-        Resolution: ${actRes} | FacingMode: ${actFacing} | Actual FPS: ${actFps}
+        <strong style="color:#fde047;">QRBOX FORENSIC GEOMETRY:</strong><br>
+        width = ${qW}px | height = ${qH}px<br>
+        left = ${qL}px | top = ${qT}px<br>
+        QRBOX %: width = ${qPctW}% | height = ${qPctH}%
       </div>
 
       <div style="margin-bottom:6px;">
-        <strong style="color:#fde047;">CAMERA CAPABILITIES:</strong><br>
-        Zoom: ${capZoom}<br>
-        FocusMode: ${capFocusMode} | FocusDistance: ${capFocusDist}<br>
-        Torch: ${capTorch} | ExposureMode: ${capExpMode} | ExpComp: ${capExpComp} | WB: ${capWb}
+        <strong style="color:#fde047;">COORDINATE SYSTEM:</strong><br>
+        Viewport (CSS px) mapped to Video Stream (${actRes} hardware px) via html5-qrcode canvas crop
       </div>
 
       <div style="margin-bottom:6px;">
         <strong style="color:#fde047;">DECODER TELEMETRY:</strong><br>
-        Running Time: ${runningSec}s | Decode Attempts/sec: ${decodesPerSec} FPS<br>
-        Successful Decodes: ${this.successfulDecodeCount} | Failed Frame Decodes: ${this.failedDecodeCount}<br>
+        Running Time: ${runningSec}s | Attempts/sec: ${decodesPerSec} FPS<br>
+        Successful Decodes: ${this.successfulDecodeCount} | Failed Attempts: ${this.failedDecodeCount}<br>
         First Decode Latency: ${this.firstDecodeLatencyMs !== null ? this.firstDecodeLatencyMs + 'ms' : 'Waiting...'}<br>
         Inter-Decode Interval: ${this.interDecodeIntervalMs !== null ? this.interDecodeIntervalMs + 'ms' : 'N/A'}<br>
         Last Decoded Format: ${this.lastDecodedFormat}
       </div>
 
       <div>
-        <strong style="color:#fde047;">BARCODE OCCUPANCY ESTIMATION:</strong><br>
+        <strong style="color:#fde047;">BARCODE GEOMETRY (BBOX):</strong><br>
         ${occHtml}
       </div>
     `;
@@ -325,25 +370,47 @@ const SilentDiagnosticService = {
     const ua = navigator.userAgent;
     const isIOS = CameraManager.isIOS;
     const classification = this.getDeviceClassification();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    let qW = null, qH = null, qPctW = null, qPctH = null;
+    const reader = document.getElementById('reader');
+    if (typeof CameraManager.config?.qrbox === 'function' && reader) {
+      const rRect = reader.getBoundingClientRect();
+      const qDim = CameraManager.config.qrbox(rRect.width || vw, rRect.height || vh);
+      if (qDim && qDim.width && qDim.height) {
+        qW = qDim.width;
+        qH = qDim.height;
+        qPctW = Number(((qW / vw) * 100).toFixed(1));
+        qPctH = Number(((qH / vh) * 100).toFixed(1));
+      }
+    }
 
     const payload = {
       sessionId: this.activeSessionId,
       type: 'device',
       data: {
+        scannerExperiment: 'ios_vga_qrbox',
         os: isIOS ? 'iOS' : (classification === 'Android' ? 'Android' : navigator.platform),
         browser: /CriOS|Chrome/.test(ua) ? 'Chrome' : (/Safari/.test(ua) ? 'Safari' : 'Other'),
         userAgent: ua,
         platform: navigator.platform,
         devicePixelRatio: window.devicePixelRatio || 1,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
+        viewportWidth: vw,
+        viewportHeight: vh,
         classification: classification,
         facingMode: settings.facingMode || 'environment',
         cameraLabel: track ? track.label : null,
+        requestedWidth: 640,
+        requestedHeight: 480,
         videoWidth: video ? video.videoWidth : (settings.width || null),
         videoHeight: video ? video.videoHeight : (settings.height || null),
         aspectRatio: video && video.videoHeight > 0 ? (video.videoWidth / video.videoHeight) : (settings.aspectRatio || null),
         actualFps: currentFps > 0 ? currentFps : (settings.frameRate || null),
+        qrboxWidth: qW,
+        qrboxHeight: qH,
+        qrboxPctW: qPctW,
+        qrboxPctH: qPctH,
 
         zoomSupported: capabilities.zoom ? 1 : (capabilities.zoom === false ? 0 : null),
         zoomMin: capabilities.zoom ? capabilities.zoom.min : null,
@@ -388,49 +455,30 @@ const SilentDiagnosticService = {
       }
     }
 
-    let bboxW = null, bboxH = null, cX = null, cY = null, pctW = null, pctH = null;
-    const points = decodedResult && (decodedResult.resultPoints || (decodedResult.result && decodedResult.result.resultPoints));
-    if (points && Array.isArray(points) && points.length >= 2 && video && video.videoWidth > 0) {
-      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      points.forEach(pt => {
-        const px = typeof pt.x === 'number' ? pt.x : (typeof pt[0] === 'number' ? pt[0] : null);
-        const py = typeof pt.y === 'number' ? pt.y : (typeof pt[1] === 'number' ? pt[1] : null);
-        if (px !== null && py !== null) {
-          if (px < minX) minX = px;
-          if (px > maxX) maxX = px;
-          if (py < minY) minY = py;
-          if (py > maxY) maxY = py;
-        }
-      });
-      if (minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
-        bboxW = Math.round(maxX - minX);
-        bboxH = Math.round(maxY - minY);
-        cX = Math.round((minX + maxX) / 2);
-        cY = Math.round((minY + maxY) / 2);
-        pctW = Number(((bboxW / video.videoWidth) * 100).toFixed(1));
-        pctH = Number(((bboxH / video.videoHeight) * 100).toFixed(1));
-      }
-    }
+    const bbox = extractBboxFromDecodedResult(decodedResult, video);
 
     const payload = {
       sessionId: this.activeSessionId,
       type: 'scan_event',
       data: {
+        scannerExperiment: 'ios_vga_qrbox',
         barcode: barcode,
         format: format,
         deviceOs: CameraManager.isIOS ? 'iOS' : this.getDeviceClassification(),
         browser: /CriOS|Chrome/.test(navigator.userAgent) ? 'Chrome' : (/Safari/.test(navigator.userAgent) ? 'Safari' : 'Other'),
+        requestedWidth: 640,
+        requestedHeight: 480,
         videoWidth: video ? video.videoWidth : null,
         videoHeight: video ? video.videoHeight : null,
         timeSinceStartMs: timeSinceStartMs,
         timeSincePrevScanMs: timeSincePrevMs,
         decodeAttemptsSincePrev: this.failedFramesCount,
-        bboxWidth: bboxW,
-        bboxHeight: bboxH,
-        bboxCenterX: cX,
-        bboxCenterY: cY,
-        bboxPctW: pctW,
-        bboxPctH: pctH
+        bboxWidth: bbox ? bbox.width : null,
+        bboxHeight: bbox ? bbox.height : null,
+        bboxCenterX: bbox ? bbox.centerX : null,
+        bboxCenterY: bbox ? bbox.centerY : null,
+        bboxPctW: bbox ? bbox.pctW : null,
+        bboxPctH: bbox ? bbox.pctH : null
       }
     };
 
@@ -641,18 +689,18 @@ const CameraManager = {
         formatsToSupport: this.config.formatsToSupport
       };
 
+      // Controlled Single-Variable Experiment: Reuse exact same Android qrbox calculation on iOS
+      scanConfig.qrbox = this.config.qrbox;
+
       if (this.isIOS) {
-        console.log('[CameraManager] iOS device detected. Diagnostic Experiment: Requesting ~480x640 stream resolution (640x480 ideal) and bypassing qrbox crop...');
-        // Diagnostic Experiment: Reduce camera frame resolution on iOS Safari from 720x1280 to ~480x640
+        console.log('[CameraManager] iOS device detected. Controlled Experiment (ios_vga_qrbox): Requesting 640x480 ideal resolution WITH Android-equivalent qrbox crop...');
         scanConfig.videoConstraints = {
           facingMode: "environment",
           width: { ideal: 640 },
           height: { ideal: 480 }
         };
-        // Disable qrbox on iOS so the decoder scans the full frame
         await this.html5Qrcode.start({ facingMode: "environment" }, scanConfig, onBarcodeDecoded, onBarcodeScanError);
       } else {
-        scanConfig.qrbox = this.config.qrbox;
         let cameraIdToUse = null;
         try {
           const devices = await Html5Qrcode.getCameras();
