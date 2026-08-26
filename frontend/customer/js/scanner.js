@@ -45,15 +45,41 @@ function getStates() {
   };
 }
 
+function extractFormatFromDecodedResult(decodedResult) {
+  if (!decodedResult) return 'N/A';
+  if (decodedResult.result && decodedResult.result.format && decodedResult.result.format.formatName) {
+    return decodedResult.result.format.formatName;
+  }
+  if (decodedResult.result && decodedResult.result.formatName) {
+    return decodedResult.result.formatName;
+  }
+  if (decodedResult.resultFormat && decodedResult.resultFormat.formatName) {
+    return decodedResult.resultFormat.formatName;
+  }
+  if (decodedResult.format && decodedResult.format.formatName) {
+    return decodedResult.format.formatName;
+  }
+  if (typeof decodedResult.resultFormat === 'string') return decodedResult.resultFormat;
+  if (typeof decodedResult.format === 'string') return decodedResult.format;
+  if (decodedResult.result && typeof decodedResult.result.format === 'string') return decodedResult.result.format;
+  return 'N/A';
+}
+
 // Helper to extract genuine barcode bounding box from ZXing / html5-qrcode result points
 function extractBboxFromDecodedResult(decodedResult, video) {
-  if (!decodedResult || !video || !(video.videoWidth > 0)) return null;
+  if (!decodedResult) return null;
 
   let points = null;
-  if (Array.isArray(decodedResult.resultPoints)) {
+  if (decodedResult.result && Array.isArray(decodedResult.result.points)) {
+    points = decodedResult.result.points;
+  } else if (Array.isArray(decodedResult.resultPoints)) {
     points = decodedResult.resultPoints;
   } else if (decodedResult.result && Array.isArray(decodedResult.result.resultPoints)) {
     points = decodedResult.result.resultPoints;
+  } else if (Array.isArray(decodedResult.cornerPoints)) {
+    points = decodedResult.cornerPoints;
+  } else if (Array.isArray(decodedResult.points)) {
+    points = decodedResult.points;
   } else if (typeof decodedResult.getResultPoints === 'function') {
     try { points = decodedResult.getResultPoints(); } catch (e) {}
   } else if (decodedResult.result && typeof decodedResult.result.getResultPoints === 'function') {
@@ -61,6 +87,9 @@ function extractBboxFromDecodedResult(decodedResult, video) {
   }
 
   if (!points || !Array.isArray(points) || points.length < 2) return null;
+
+  const vW = (video && video.videoWidth > 0) ? video.videoWidth : window.innerWidth;
+  const vH = (video && video.videoHeight > 0) ? video.videoHeight : window.innerHeight;
 
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   let validCount = 0;
@@ -90,8 +119,8 @@ function extractBboxFromDecodedResult(decodedResult, video) {
     const boxH = Math.round(maxY - minY);
     const cX = Math.round((minX + maxX) / 2);
     const cY = Math.round((minY + maxY) / 2);
-    const pctW = Number(((boxW / video.videoWidth) * 100).toFixed(1));
-    const pctH = Number(((boxH / video.videoHeight) * 100).toFixed(1));
+    const pctW = Number(((boxW / vW) * 100).toFixed(1));
+    const pctH = Number(((boxH / vH) * 100).toFixed(1));
     return {
       width: boxW,
       height: boxH,
@@ -149,15 +178,7 @@ const DiagnosticTelemetry = {
     }
 
     if (decodedResult) {
-      if (decodedResult.resultFormat && decodedResult.resultFormat.formatName) {
-        this.lastDecodedFormat = decodedResult.resultFormat.formatName;
-      } else if (decodedResult.format && decodedResult.format.formatName) {
-        this.lastDecodedFormat = decodedResult.format.formatName;
-      } else if (typeof decodedResult.resultFormat === 'string') {
-        this.lastDecodedFormat = decodedResult.resultFormat;
-      } else if (typeof decodedResult.format === 'string') {
-        this.lastDecodedFormat = decodedResult.format;
-      }
+      this.lastDecodedFormat = extractFormatFromDecodedResult(decodedResult);
     }
 
     const video = document.querySelector('#reader video');
@@ -393,6 +414,38 @@ const SilentDiagnosticService = {
     return isIOS ? 'iOS' : (isAndroid ? 'Android' : 'Other');
   },
 
+  getHardwareInfo() {
+    let cores = null;
+    if (typeof navigator !== 'undefined' && typeof navigator.hardwareConcurrency === 'number') {
+      cores = navigator.hardwareConcurrency;
+    }
+
+    let memoryGb = null;
+    if (typeof navigator !== 'undefined' && typeof navigator.deviceMemory === 'number') {
+      memoryGb = navigator.deviceMemory;
+    }
+
+    let gpuRenderer = null;
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      if (gl) {
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          gpuRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || gl.getParameter(gl.RENDERER);
+        } else {
+          gpuRenderer = gl.getParameter(gl.RENDERER);
+        }
+      }
+    } catch (e) {}
+
+    return {
+      cpuCores: cores,
+      deviceMemoryGb: memoryGb,
+      gpuRenderer: gpuRenderer ? String(gpuRenderer).substring(0, 128) : null
+    };
+  },
+
   async sendDeviceTelemetry() {
     if (!this.activeSessionId) return;
 
@@ -416,6 +469,7 @@ const SilentDiagnosticService = {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const devId = this.getOrCreateDeviceId();
+    const hw = this.getHardwareInfo();
 
     let qW = null, qH = null, qPctW = null, qPctH = null;
     const reader = document.getElementById('reader');
@@ -456,6 +510,9 @@ const SilentDiagnosticService = {
         qrboxHeight: qH,
         qrboxPctW: qPctW,
         qrboxPctH: qPctH,
+        cpuCores: hw.cpuCores,
+        deviceMemoryGb: hw.deviceMemoryGb,
+        gpuRenderer: hw.gpuRenderer,
 
         zoomSupported: capabilities.zoom ? 1 : (capabilities.zoom === false ? 0 : null),
         zoomMin: capabilities.zoom ? capabilities.zoom.min : null,
@@ -487,21 +544,10 @@ const SilentDiagnosticService = {
     const timeSincePrevMs = this.lastScanTimestamp !== null ? Math.round(now - this.lastScanTimestamp) : null;
     this.lastScanTimestamp = now;
 
-    let format = 'N/A';
-    if (decodedResult) {
-      if (decodedResult.resultFormat && decodedResult.resultFormat.formatName) {
-        format = decodedResult.resultFormat.formatName;
-      } else if (decodedResult.format && decodedResult.format.formatName) {
-        format = decodedResult.format.formatName;
-      } else if (typeof decodedResult.resultFormat === 'string') {
-        format = decodedResult.resultFormat;
-      } else if (typeof decodedResult.format === 'string') {
-        format = decodedResult.format;
-      }
-    }
-
+    const format = extractFormatFromDecodedResult(decodedResult);
     const bbox = extractBboxFromDecodedResult(decodedResult, video);
     const devId = this.getOrCreateDeviceId();
+    const hw = this.getHardwareInfo();
 
     const payload = {
       sessionId: this.activeSessionId,
@@ -525,7 +571,10 @@ const SilentDiagnosticService = {
         bboxCenterX: bbox ? bbox.centerX : null,
         bboxCenterY: bbox ? bbox.centerY : null,
         bboxPctW: bbox ? bbox.pctW : null,
-        bboxPctH: bbox ? bbox.pctH : null
+        bboxPctH: bbox ? bbox.pctH : null,
+        cpuCores: hw.cpuCores,
+        deviceMemoryGb: hw.deviceMemoryGb,
+        gpuRenderer: hw.gpuRenderer
       }
     };
 
@@ -547,14 +596,22 @@ const SilentDiagnosticService = {
   async recordMeaningfulEvent(eventType, errorMessage = null) {
     if (!this.activeSessionId) return;
 
+    const devId = this.getOrCreateDeviceId();
+    const hw = this.getHardwareInfo();
+
     const payload = {
       sessionId: this.activeSessionId,
       type: 'event',
       data: {
+        deviceId: devId,
         eventType: eventType,
         classification: this.getDeviceClassification(),
         errorMessage: errorMessage,
-        decodeAttempts: this.failedFramesCount
+        decodeAttempts: this.failedFramesCount,
+        cpuCores: hw.cpuCores,
+        deviceMemoryGb: hw.deviceMemoryGb,
+        gpuRenderer: hw.gpuRenderer,
+        tabVisible: document.visibilityState === 'visible' ? 1 : 0
       }
     };
 
@@ -585,15 +642,33 @@ const SilentDiagnosticService = {
     const failed = this.failedFramesCount;
     this.failedFramesCount = 0;
 
+    const devId = this.getOrCreateDeviceId();
+    const hw = this.getHardwareInfo();
+    const isTabVisible = document.visibilityState === 'visible';
+    const fps = currentFps > 0 ? currentFps : 15;
+
+    let structuredError = null;
+    if (!isTabVisible) {
+      structuredError = 'TAB_BACKGROUNDED: browser background tab throttling active';
+    } else if (fps <= 5) {
+      structuredError = `LOW_FPS_STALL: avg_fps dropped to ${fps} (possible thermal throttling or hardware constraint)`;
+    }
+
     const payload = {
       sessionId: this.activeSessionId,
       type: 'interval_aggregate',
       data: {
+        deviceId: devId,
         eventType: 'interval_aggregate',
         classification: this.getDeviceClassification(),
+        errorMessage: structuredError,
         failedAttempts: failed,
-        avgFps: currentFps > 0 ? currentFps : 15,
-        durationSec: 30
+        avgFps: fps,
+        durationSec: 30,
+        cpuCores: hw.cpuCores,
+        deviceMemoryGb: hw.deviceMemoryGb,
+        gpuRenderer: hw.gpuRenderer,
+        tabVisible: isTabVisible ? 1 : 0
       }
     };
 

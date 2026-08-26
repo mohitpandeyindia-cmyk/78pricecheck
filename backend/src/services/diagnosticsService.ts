@@ -97,6 +97,9 @@ export class DiagnosticsService {
       devicePixelRatio?: number | null;
       viewportWidth?: number | null;
       viewportHeight?: number | null;
+      cpuCores?: number | null;
+      deviceMemoryGb?: number | null;
+      gpuRenderer?: string | null;
     }
   ): Promise<void> {
     if (!deviceId || deviceId === 'unknown' || !sessionId) return;
@@ -107,10 +110,13 @@ export class DiagnosticsService {
         `INSERT INTO device_registry (
            device_id, first_seen_at, last_seen_at, first_seen_session_id,
            device_os, browser, user_agent, platform, device_pixel_ratio,
-           viewport_width, viewport_height
-         ) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?)
+           viewport_width, viewport_height, cpu_cores, device_memory_gb, gpu_renderer
+         ) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(device_id) DO UPDATE SET
-           last_seen_at = CURRENT_TIMESTAMP`,
+           last_seen_at = CURRENT_TIMESTAMP,
+           cpu_cores = COALESCE(excluded.cpu_cores, device_registry.cpu_cores),
+           device_memory_gb = COALESCE(excluded.device_memory_gb, device_registry.device_memory_gb),
+           gpu_renderer = COALESCE(excluded.gpu_renderer, device_registry.gpu_renderer)`,
         deviceId,
         sessionId,
         metadata.deviceOs || null,
@@ -119,7 +125,10 @@ export class DiagnosticsService {
         metadata.platform || null,
         metadata.devicePixelRatio || null,
         metadata.viewportWidth || null,
-        metadata.viewportHeight || null
+        metadata.viewportHeight || null,
+        metadata.cpuCores || null,
+        metadata.deviceMemoryGb || null,
+        metadata.gpuRenderer || null
       );
     } catch (e) {
       // Fail silently to avoid breaking telemetry pipeline
@@ -156,6 +165,9 @@ export class DiagnosticsService {
     };
 
     const deviceId = cleanStr(data.deviceId || data.device_id || data.deviceIdHash, 128);
+    const cpuCores = cleanNum(data.cpuCores, 1, 128);
+    const deviceMemoryGb = cleanNum(data.deviceMemoryGb, 0.1, 512);
+    const gpuRenderer = cleanStr(data.gpuRenderer, 128);
 
     if (type === 'device') {
       const rawClassification = cleanStr(data.classification, 32) || 'Other';
@@ -169,7 +181,10 @@ export class DiagnosticsService {
         platform: cleanStr(data.platform, 64),
         devicePixelRatio: cleanNum(data.devicePixelRatio, 0.1, 10),
         viewportWidth: cleanNum(data.viewportWidth, 100, 10000),
-        viewportHeight: cleanNum(data.viewportHeight, 100, 10000)
+        viewportHeight: cleanNum(data.viewportHeight, 100, 10000),
+        cpuCores,
+        deviceMemoryGb,
+        gpuRenderer
       });
 
       // Save device telemetry row
@@ -178,8 +193,8 @@ export class DiagnosticsService {
          (session_id, device_id, device_id_hash, os, browser, user_agent, platform, device_pixel_ratio, viewport_width, viewport_height, 
           classification, facing_mode, camera_label, video_width, video_height, aspect_ratio, actual_fps, 
           zoom_supported, zoom_min, zoom_max, zoom_step, focus_mode_supported, available_focus_modes, 
-          focus_distance_supported, torch_supported, exposure_supported)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          focus_distance_supported, torch_supported, exposure_supported, cpu_cores, device_memory_gb, gpu_renderer)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         payload.sessionId,
         deviceId,
         deviceId,
@@ -205,7 +220,10 @@ export class DiagnosticsService {
         cleanStr(data.availableFocusModes, 500),
         data.focusDistanceSupported === 1 ? 1 : (data.focusDistanceSupported === 0 ? 0 : null),
         data.torchSupported === 1 ? 1 : (data.torchSupported === 0 ? 0 : null),
-        data.exposureSupported === 1 ? 1 : (data.exposureSupported === 0 ? 0 : null)
+        data.exposureSupported === 1 ? 1 : (data.exposureSupported === 0 ? 0 : null),
+        cpuCores,
+        deviceMemoryGb,
+        gpuRenderer
       );
 
       // Increment classification counter in session summary
@@ -224,7 +242,10 @@ export class DiagnosticsService {
       if (deviceId) {
         await this.registerOrUpdateDevice(deviceId, payload.sessionId, {
           deviceOs: cleanStr(data.deviceOs, 32),
-          browser: cleanStr(data.browser, 64)
+          browser: cleanStr(data.browser, 64),
+          cpuCores,
+          deviceMemoryGb,
+          gpuRenderer
         });
       }
 
@@ -264,13 +285,19 @@ export class DiagnosticsService {
       const eventType = cleanStr(data.eventType, 64) || 'event';
       await db.run(
         `INSERT INTO diagnostic_events_and_aggregates
-         (session_id, event_type, classification, error_message, decode_attempts)
-         VALUES (?, ?, ?, ?, ?)`,
+         (session_id, device_id, device_id_hash, event_type, classification, error_message, decode_attempts, cpu_cores, device_memory_gb, gpu_renderer, tab_visible)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         payload.sessionId,
+        deviceId,
+        deviceId,
         eventType,
         cleanStr(data.classification, 32),
         cleanStr(data.errorMessage, 500),
-        cleanNum(data.decodeAttempts, 0, 100000)
+        cleanNum(data.decodeAttempts, 0, 100000),
+        cpuCores,
+        deviceMemoryGb,
+        gpuRenderer,
+        cleanNum(data.tabVisible, 0, 1)
       );
 
       if (eventType.includes('error') || eventType.includes('failure')) {
@@ -279,15 +306,23 @@ export class DiagnosticsService {
 
     } else if (type === 'interval_aggregate') {
       const failedAttempts = cleanNum(data.failedAttempts, 0, 10000) || 0;
+      const errorMessage = cleanStr(data.errorMessage, 500);
       await db.run(
         `INSERT INTO diagnostic_events_and_aggregates
-         (session_id, event_type, classification, failed_attempts, avg_fps, duration_sec)
-         VALUES (?, 'interval_aggregate', ?, ?, ?, ?)`,
+         (session_id, device_id, device_id_hash, event_type, classification, error_message, failed_attempts, avg_fps, duration_sec, cpu_cores, device_memory_gb, gpu_renderer, tab_visible)
+         VALUES (?, ?, ?, 'interval_aggregate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         payload.sessionId,
+        deviceId,
+        deviceId,
         cleanStr(data.classification, 32),
+        errorMessage,
         failedAttempts,
         cleanNum(data.avgFps, 1, 120),
-        cleanNum(data.durationSec, 1, 3600) || 30
+        cleanNum(data.durationSec, 1, 3600) || 30,
+        cpuCores,
+        deviceMemoryGb,
+        gpuRenderer,
+        cleanNum(data.tabVisible, 0, 1)
       );
 
       if (failedAttempts > 0) {

@@ -132,7 +132,10 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       platform TEXT,
       device_pixel_ratio REAL,
       viewport_width INTEGER,
-      viewport_height INTEGER
+      viewport_height INTEGER,
+      cpu_cores INTEGER,
+      device_memory_gb REAL,
+      gpu_renderer TEXT
     );
 
     CREATE TABLE IF NOT EXISTS diagnostic_device_telemetry (
@@ -163,6 +166,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       focus_distance_supported INTEGER,
       torch_supported INTEGER,
       exposure_supported INTEGER,
+      cpu_cores INTEGER,
+      device_memory_gb REAL,
+      gpu_renderer TEXT,
       recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
     );
@@ -193,6 +199,8 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     CREATE TABLE IF NOT EXISTS diagnostic_events_and_aggregates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       session_id TEXT NOT NULL,
+      device_id TEXT,
+      device_id_hash TEXT,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       event_type TEXT NOT NULL,
       classification TEXT,
@@ -202,6 +210,10 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       failed_attempts INTEGER,
       avg_fps REAL,
       duration_sec INTEGER,
+      cpu_cores INTEGER,
+      device_memory_gb REAL,
+      gpu_renderer TEXT,
+      tab_visible INTEGER,
       FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
     );
 
@@ -220,12 +232,23 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_device_registry_os ON device_registry(device_os);
   `);
 
-  try {
-    await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN device_id TEXT;`);
-  } catch (e) {}
-  try {
-    await db.exec(`ALTER TABLE diagnostic_scan_events ADD COLUMN device_id TEXT;`);
-  } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN gpu_renderer TEXT;`); } catch (e) {}
+
+  try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN device_id TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN gpu_renderer TEXT;`); } catch (e) {}
+
+  try { await db.exec(`ALTER TABLE diagnostic_scan_events ADD COLUMN device_id TEXT;`); } catch (e) {}
+
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN device_id TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN device_id_hash TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN gpu_renderer TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN tab_visible INTEGER;`); } catch (e) {}
 
   // Initialize setup status setting if not present
   const setupSetting = await db.get(
