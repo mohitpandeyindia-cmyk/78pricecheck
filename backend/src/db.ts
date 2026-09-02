@@ -214,6 +214,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       device_memory_gb REAL,
       gpu_renderer TEXT,
       tab_visible INTEGER,
+      nudge_var_before REAL,
+      nudge_var_after REAL,
+      nudge_decode_success INTEGER,
       FOREIGN KEY (session_id) REFERENCES diagnostic_sessions(session_id) ON DELETE CASCADE
     );
 
@@ -235,6 +238,15 @@ export async function initializeDatabase(seedData = false): Promise<void> {
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN gpu_renderer TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN focus_mode_supported INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN available_focus_modes TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN focus_distance_supported INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN zoom_supported INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN zoom_min REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN zoom_max REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN zoom_step REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN torch_supported INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE device_registry ADD COLUMN exposure_supported INTEGER;`); } catch (e) {}
 
   try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN device_id TEXT;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE diagnostic_device_telemetry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
@@ -249,6 +261,9 @@ export async function initializeDatabase(seedData = false): Promise<void> {
   try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN gpu_renderer TEXT;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN tab_visible INTEGER;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN nudge_var_before REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN nudge_var_after REAL;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE diagnostic_events_and_aggregates ADD COLUMN nudge_decode_success INTEGER;`); } catch (e) {}
 
   // Initialize setup status setting if not present
   const setupSetting = await db.get(

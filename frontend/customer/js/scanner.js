@@ -70,69 +70,142 @@ function extractBboxFromDecodedResult(decodedResult, video) {
   if (!decodedResult) return null;
 
   let points = null;
-  if (decodedResult.result && Array.isArray(decodedResult.result.points)) {
-    points = decodedResult.result.points;
-  } else if (Array.isArray(decodedResult.resultPoints)) {
-    points = decodedResult.resultPoints;
-  } else if (decodedResult.result && Array.isArray(decodedResult.result.resultPoints)) {
-    points = decodedResult.result.resultPoints;
-  } else if (Array.isArray(decodedResult.cornerPoints)) {
-    points = decodedResult.cornerPoints;
-  } else if (Array.isArray(decodedResult.points)) {
-    points = decodedResult.points;
-  } else if (typeof decodedResult.getResultPoints === 'function') {
-    try { points = decodedResult.getResultPoints(); } catch (e) {}
-  } else if (decodedResult.result && typeof decodedResult.result.getResultPoints === 'function') {
-    try { points = decodedResult.result.getResultPoints(); } catch (e) {}
+  let boundingBox = null;
+
+  if (decodedResult.result && typeof decodedResult.result === 'object') {
+    const res = decodedResult.result;
+    if (Array.isArray(res.points)) points = res.points;
+    else if (Array.isArray(res.resultPoints)) points = res.resultPoints;
+    else if (Array.isArray(res.cornerPoints)) points = res.cornerPoints;
+    else if (typeof res.getResultPoints === 'function') {
+      try { points = res.getResultPoints(); } catch (e) {}
+    }
+    if (res.boundingBox && typeof res.boundingBox === 'object') {
+      boundingBox = res.boundingBox;
+    }
   }
 
-  if (!points || !Array.isArray(points) || points.length < 2) return null;
+  if (!points) {
+    if (Array.isArray(decodedResult.resultPoints)) points = decodedResult.resultPoints;
+    else if (Array.isArray(decodedResult.cornerPoints)) points = decodedResult.cornerPoints;
+    else if (Array.isArray(decodedResult.points)) points = decodedResult.points;
+    else if (typeof decodedResult.getResultPoints === 'function') {
+      try { points = decodedResult.getResultPoints(); } catch (e) {}
+    }
+    if (decodedResult.boundingBox && typeof decodedResult.boundingBox === 'object') {
+      boundingBox = decodedResult.boundingBox;
+    }
+  }
 
   const vW = (video && video.videoWidth > 0) ? video.videoWidth : window.innerWidth;
   const vH = (video && video.videoHeight > 0) ? video.videoHeight : window.innerHeight;
 
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  let validCount = 0;
+  if (points && Array.isArray(points) && points.length >= 2) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    let validCount = 0;
 
-  points.forEach(pt => {
-    if (!pt) return;
-    let px = null, py = null;
-    if (typeof pt.x === 'number') px = pt.x;
-    else if (typeof pt.getX === 'function') { try { px = pt.getX(); } catch (e) {} }
-    else if (typeof pt[0] === 'number') px = pt[0];
+    points.forEach(pt => {
+      if (!pt) return;
+      let px = null, py = null;
+      if (typeof pt.x === 'number') px = pt.x;
+      else if (typeof pt.getX === 'function') { try { px = pt.getX(); } catch (e) {} }
+      else if (Array.isArray(pt) && typeof pt[0] === 'number') px = pt[0];
 
-    if (typeof pt.y === 'number') py = pt.y;
-    else if (typeof pt.getY === 'function') { try { py = pt.getY(); } catch (e) {} }
-    else if (typeof pt[1] === 'number') py = pt[1];
+      if (typeof pt.y === 'number') py = pt.y;
+      else if (typeof pt.getY === 'function') { try { py = pt.getY(); } catch (e) {} }
+      else if (Array.isArray(pt) && typeof pt[1] === 'number') py = pt[1];
 
-    if (px !== null && py !== null && !isNaN(px) && !isNaN(py)) {
-      if (px < minX) minX = px;
-      if (px > maxX) maxX = px;
-      if (py < minY) minY = py;
-      if (py > maxY) maxY = py;
-      validCount++;
+      if (px !== null && py !== null && !isNaN(px) && !isNaN(py)) {
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+        validCount++;
+      }
+    });
+
+    if (validCount >= 2 && minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
+      const boxW = Math.round(maxX - minX);
+      const boxH = Math.round(maxY - minY);
+      const cX = Math.round((minX + maxX) / 2);
+      const cY = Math.round((minY + maxY) / 2);
+      const pctW = Number(((boxW / vW) * 100).toFixed(1));
+      const pctH = Number(((boxH / vH) * 100).toFixed(1));
+      return {
+        width: boxW,
+        height: boxH,
+        centerX: cX,
+        centerY: cY,
+        pctW: pctW,
+        pctH: pctH
+      };
     }
-  });
+  }
 
-  if (validCount >= 2 && minX !== Infinity && maxX !== -Infinity && (maxX - minX) > 0) {
-    const boxW = Math.round(maxX - minX);
-    const boxH = Math.round(maxY - minY);
-    const cX = Math.round((minX + maxX) / 2);
-    const cY = Math.round((minY + maxY) / 2);
-    const pctW = Number(((boxW / vW) * 100).toFixed(1));
-    const pctH = Number(((boxH / vH) * 100).toFixed(1));
-    return {
-      width: boxW,
-      height: boxH,
-      centerX: cX,
-      centerY: cY,
-      pctW: pctW,
-      pctH: pctH
-    };
+  if (boundingBox) {
+    const bw = boundingBox.width || 0;
+    const bh = boundingBox.height || 0;
+    const bx = boundingBox.x !== undefined ? boundingBox.x : (boundingBox.left || 0);
+    const by = boundingBox.y !== undefined ? boundingBox.y : (boundingBox.top || 0);
+
+    if (bw > 0 && bh > 0) {
+      const boxW = Math.round(bw);
+      const boxH = Math.round(bh);
+      const cX = Math.round(bx + boxW / 2);
+      const cY = Math.round(by + boxH / 2);
+      const pctW = Number(((boxW / vW) * 100).toFixed(1));
+      const pctH = Number(((boxH / vH) * 100).toFixed(1));
+      return {
+        width: boxW,
+        height: boxH,
+        centerX: cX,
+        centerY: cY,
+        pctW: pctW,
+        pctH: pctH
+      };
+    }
   }
 
   return null;
 }
+
+// Centralized Focus & Sharpness Diagnostic Configuration (Tunable Parameters)
+const ScannerFocusConfig = {
+  // Variance of Laplacian threshold (lower values indicate blur)
+  BLUR_VARIANCE_THRESHOLD: 45,
+  // Failed decode attempt threshold before sustained blur guidance is shown
+  SUSTAINED_BLUR_FAILED_ATTEMPTS: 15,
+  // Consecutive blurry frames required before guidance triggers
+  SUSTAINED_BLUR_CONSECUTIVE_FRAMES: 10,
+  // Failed attempt threshold to attempt zoom refocus nudge
+  REFOCUS_NUDGE_FAILED_ATTEMPTS: 25,
+  // Feature flag to enable/disable hardware zoom refocus nudge (1-day test: ENABLED by default)
+  ENABLE_ZOOM_NUDGE: true,
+
+  init() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('blurThreshold')) {
+        const val = parseInt(params.get('blurThreshold'), 10);
+        if (!isNaN(val)) this.BLUR_VARIANCE_THRESHOLD = val;
+      }
+      if (params.has('failedAttemptsThreshold')) {
+        const val = parseInt(params.get('failedAttemptsThreshold'), 10);
+        if (!isNaN(val)) this.SUSTAINED_BLUR_FAILED_ATTEMPTS = val;
+      }
+      if (params.has('zoomNudge')) {
+        this.ENABLE_ZOOM_NUDGE = params.get('zoomNudge') === '1' || params.get('zoomNudge') === 'true';
+      }
+      console.log('[ScannerFocusConfig] Active Focus Configuration:', {
+        blurThreshold: this.BLUR_VARIANCE_THRESHOLD,
+        failedAttemptsThreshold: this.SUSTAINED_BLUR_FAILED_ATTEMPTS,
+        consecutiveBlurFrames: this.SUSTAINED_BLUR_CONSECUTIVE_FRAMES,
+        refocusNudgeAttempts: this.REFOCUS_NUDGE_FAILED_ATTEMPTS,
+        enableZoomNudge: this.ENABLE_ZOOM_NUDGE
+      });
+    } catch (e) {}
+  }
+};
 
 // Phase 1 Forensic Diagnostic Telemetry Engine (?scannerDebug=1)
 const DiagnosticTelemetry = {
@@ -447,7 +520,7 @@ const SilentDiagnosticService = {
   },
 
   async sendDeviceTelemetry() {
-    if (!this.activeSessionId) return;
+    const currentSessionId = this.activeSessionId || 'general';
 
     const video = document.querySelector('#reader video');
     const track = CameraManager.activeTrack || (video && video.srcObject ? video.srcObject.getVideoTracks()[0] : null);
@@ -485,7 +558,7 @@ const SilentDiagnosticService = {
     }
 
     const payload = {
-      sessionId: this.activeSessionId,
+      sessionId: currentSessionId,
       type: 'device',
       data: {
         scannerExperiment: 'ios_vga_qrbox',
@@ -526,17 +599,28 @@ const SilentDiagnosticService = {
       }
     };
 
+    console.log('[SilentDiagnostic] Dispatching sendDeviceTelemetry POST to /api/diagnostics/telemetry:', {
+      deviceId: devId,
+      sessionId: currentSessionId,
+      focusModeSupported: payload.data.focusModeSupported,
+      availableFocusModes: payload.data.availableFocusModes,
+      zoomSupported: payload.data.zoomSupported
+    });
+
     try {
-      await fetch('/api/diagnostics/telemetry', {
+      const res = await fetch('/api/diagnostics/telemetry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-    } catch (e) {}
+      console.log('[SilentDiagnostic] sendDeviceTelemetry response status:', res.status);
+    } catch (e) {
+      console.warn('[SilentDiagnostic] sendDeviceTelemetry network error:', e);
+    }
   },
 
   async recordScanEvent(barcode, decodedResult) {
-    if (!this.activeSessionId) return;
+    const currentSessionId = this.activeSessionId || 'general';
 
     const now = performance.now();
     const video = document.querySelector('#reader video');
@@ -550,7 +634,7 @@ const SilentDiagnosticService = {
     const hw = this.getHardwareInfo();
 
     const payload = {
-      sessionId: this.activeSessionId,
+      sessionId: currentSessionId,
       type: 'scan_event',
       data: {
         scannerExperiment: 'ios_vga_qrbox',
@@ -593,14 +677,14 @@ const SilentDiagnosticService = {
     this.failedFramesCount++;
   },
 
-  async recordMeaningfulEvent(eventType, errorMessage = null) {
-    if (!this.activeSessionId) return;
+  async recordMeaningfulEvent(eventType, errorMessage = null, extraData = {}) {
+    const currentSessionId = this.activeSessionId || 'general';
 
     const devId = this.getOrCreateDeviceId();
     const hw = this.getHardwareInfo();
 
     const payload = {
-      sessionId: this.activeSessionId,
+      sessionId: currentSessionId,
       type: 'event',
       data: {
         deviceId: devId,
@@ -611,17 +695,29 @@ const SilentDiagnosticService = {
         cpuCores: hw.cpuCores,
         deviceMemoryGb: hw.deviceMemoryGb,
         gpuRenderer: hw.gpuRenderer,
-        tabVisible: document.visibilityState === 'visible' ? 1 : 0
+        tabVisible: document.visibilityState === 'visible' ? 1 : 0,
+        nudgeVarBefore: extraData && extraData.nudgeVarBefore !== undefined ? extraData.nudgeVarBefore : null,
+        nudgeVarAfter: extraData && extraData.nudgeVarAfter !== undefined ? extraData.nudgeVarAfter : null,
+        nudgeDecodeSuccess: extraData && extraData.nudgeDecodeSuccess !== undefined ? extraData.nudgeDecodeSuccess : null
       }
     };
 
+    console.log(`[SilentDiagnostic] Dispatching recordMeaningfulEvent POST (${eventType}) to /api/diagnostics/telemetry:`, {
+      deviceId: devId,
+      sessionId: currentSessionId,
+      errorMessage: errorMessage
+    });
+
     try {
-      await fetch('/api/diagnostics/telemetry', {
+      const res = await fetch('/api/diagnostics/telemetry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-    } catch (e) {}
+      console.log(`[SilentDiagnostic] recordMeaningfulEvent (${eventType}) response status:`, res.status);
+    } catch (e) {
+      console.warn(`[SilentDiagnostic] recordMeaningfulEvent (${eventType}) network error:`, e);
+    }
   },
 
   startAggregateTimer() {
@@ -690,6 +786,7 @@ const CameraManager = {
   activeTrack: null,
 
   init() {
+    ScannerFocusConfig.init();
     DiagnosticTelemetry.init();
     SilentDiagnosticService.init();
 
@@ -975,14 +1072,25 @@ const CameraManager = {
 
             if (typeof this.activeTrack.getCapabilities === 'function') {
               const capabilities = this.activeTrack.getCapabilities();
-              if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-                this.activeTrack.applyConstraints({
-                  advanced: [{ focusMode: 'continuous' }]
-                }).catch(e => console.log('[CameraManager] Continuous autofocus track constraint failed:', e));
+              console.log('[CameraManager] Deployed Video Track Capabilities:', JSON.stringify(capabilities));
+              if (capabilities.focusMode) {
+                console.log('[CameraManager] Hardware focusMode supported options:', capabilities.focusMode);
+                if (capabilities.focusMode.includes('continuous')) {
+                  this.activeTrack.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                  }).then(() => {
+                    console.log('[CameraManager] focusMode:continuous SUCCESSFULLY APPLIED to active video track.');
+                  }).catch(e => console.log('[CameraManager] focusMode:continuous REJECTED by hardware/driver:', e));
+                } else {
+                  console.log('[CameraManager] focusMode:continuous NOT OFFERED by hardware. Available modes:', capabilities.focusMode);
+                }
+              } else {
+                console.log('[CameraManager] focusMode capability NOT EXPOSED by browser/MediaStreamTrack.');
               }
             }
 
             DiagnosticTelemetry.updatePanel();
+            SilentDiagnosticService.sendDeviceTelemetry();
           }
         };
 
@@ -995,6 +1103,63 @@ const CameraManager = {
       }
     } catch (focusErr) {
       console.warn('[CameraManager] Autofocus track capabilities validation failed:', focusErr);
+    }
+  },
+
+  pendingNudgeEvent: null,
+
+  async triggerRefocusNudge() {
+    if (!ScannerFocusConfig.ENABLE_ZOOM_NUDGE) {
+      console.log('[RefocusNudge] Zoom nudge skipped (ENABLE_ZOOM_NUDGE is false). Pass ?zoomNudge=1 or set flag.');
+      return false;
+    }
+
+    if (!this.activeTrack || typeof this.activeTrack.getCapabilities !== 'function') return false;
+    try {
+      const capabilities = this.activeTrack.getCapabilities();
+      if (!capabilities.zoom) {
+        console.log('[RefocusNudge] Zoom capability not supported on active video track.');
+        return false;
+      }
+
+      const video = document.querySelector('#reader video');
+      const varBefore = video ? FrameSharpnessAnalyzer.calculateLaplacianVariance(video) : null;
+
+      const settings = typeof this.activeTrack.getSettings === 'function' ? this.activeTrack.getSettings() : {};
+      const currentZoom = settings.zoom || 1;
+      const maxZoom = capabilities.zoom.max || 1;
+      const minZoom = capabilities.zoom.min || 1;
+      const step = capabilities.zoom.step || 0.1;
+
+      const bumpVal = (currentZoom + step <= maxZoom) ? (currentZoom + step) : (currentZoom - step >= minZoom ? currentZoom - step : currentZoom);
+      if (bumpVal === currentZoom) return false;
+
+      console.log(`[RefocusNudge] Executing hardware refocus zoom bump (${currentZoom} -> ${bumpVal} -> ${currentZoom}) | Variance Before: ${varBefore}`);
+      await this.activeTrack.applyConstraints({ advanced: [{ zoom: bumpVal }] });
+      await new Promise(r => setTimeout(r, 120));
+      await this.activeTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] });
+      await new Promise(r => setTimeout(r, 250));
+
+      const varAfter = video ? FrameSharpnessAnalyzer.calculateLaplacianVariance(video) : null;
+      const delta = (varAfter !== null && varBefore !== null) ? (varAfter - varBefore) : null;
+      console.log(`[RefocusNudge] Refocus zoom bump completed | Variance After: ${varAfter} | Delta: ${delta >= 0 ? '+' : ''}${delta}`);
+
+      const availableFocusModes = capabilities.focusMode ? JSON.stringify(capabilities.focusMode) : 'none';
+
+      // Register pending nudge evaluation window (tracks next 15 frames / ~1s for decode success)
+      this.pendingNudgeEvent = {
+        varBefore: varBefore !== null ? varBefore : 0,
+        varAfter: varAfter !== null ? varAfter : 0,
+        delta: delta !== null ? delta : 0,
+        focusModes: availableFocusModes,
+        framesRemaining: 15,
+        recorded: false
+      };
+
+      return true;
+    } catch (e) {
+      console.warn('[RefocusNudge] Refocus zoom bump failed:', e);
+      return false;
     }
   },
 
@@ -2114,6 +2279,18 @@ function appendDebugInfo(container, errText) {
 
 // Handler functions
 function onBarcodeDecoded(decodedText, decodedResult) {
+  if (CameraManager.pendingNudgeEvent && !CameraManager.pendingNudgeEvent.recorded) {
+    const p = CameraManager.pendingNudgeEvent;
+    p.recorded = true;
+    const msg = `NUDGE_RESULT | var_before:${p.varBefore} | var_after:${p.varAfter} | delta:${p.delta} | decode_success:1 | focus_modes:${p.focusModes}`;
+    console.log('[RefocusNudge] Post-nudge outcome: DECODE SUCCESSFUL! Logging telemetry:', msg);
+    SilentDiagnosticService.recordMeaningfulEvent('REFOCUS_NUDGE_RESULT', msg, {
+      nudgeVarBefore: p.varBefore,
+      nudgeVarAfter: p.varAfter,
+      nudgeDecodeSuccess: 1
+    });
+  }
+
   DiagnosticTelemetry.recordSuccessfulDecode(decodedText, decodedResult);
   SilentDiagnosticService.recordScanEvent(decodedText, decodedResult);
 
@@ -2203,11 +2380,137 @@ function onBarcodeDecoded(decodedText, decodedResult) {
   lookupBarcode(decodedText);
 }
 
+// Real-time Frame Sharpness Analyzer (Variance of Laplacian heuristic)
+const FrameSharpnessAnalyzer = {
+  canvas: null,
+  ctx: null,
+  consecutiveBlurFrames: 0,
+  lastVariance: null,
+
+  init() {
+    if (!this.canvas) {
+      this.canvas = document.createElement('canvas');
+      this.canvas.width = 64;
+      this.canvas.height = 64;
+      this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    }
+  },
+
+  calculateLaplacianVariance(videoEl) {
+    if (!videoEl || videoEl.readyState < 2) return null;
+    this.init();
+    try {
+      const vW = videoEl.videoWidth || 640;
+      const vH = videoEl.videoHeight || 480;
+      const cropW = Math.round(vW * 0.4);
+      const cropH = Math.round(vH * 0.4);
+      const cropX = Math.round((vW - cropW) / 2);
+      const cropY = Math.round((vH - cropH) / 2);
+
+      this.ctx.drawImage(videoEl, cropX, cropY, cropW, cropH, 0, 0, 64, 64);
+      const imgData = this.ctx.getImageData(0, 0, 64, 64);
+      const data = imgData.data;
+
+      const gray = new Float32Array(64 * 64);
+      for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+        gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      }
+
+      let sumL = 0;
+      let count = 0;
+      const laplacian = new Float32Array(62 * 62);
+
+      for (let y = 1; y < 63; y++) {
+        for (let x = 1; x < 63; x++) {
+          const idx = y * 64 + x;
+          const val = gray[idx + 1] + gray[idx - 1] + gray[idx + 64] + gray[idx - 64] - 4 * gray[idx];
+          laplacian[count] = val;
+          sumL += val;
+          count++;
+        }
+      }
+
+      const mean = sumL / count;
+      let sumSqDiff = 0;
+      for (let i = 0; i < count; i++) {
+        const diff = laplacian[i] - mean;
+        sumSqDiff += diff * diff;
+      }
+
+      const variance = Math.round(sumSqDiff / count);
+      this.lastVariance = variance;
+      return variance;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  checkFrameBlur(videoEl, failedAttemptsCount) {
+    const variance = this.calculateLaplacianVariance(videoEl);
+    if (variance === null) return;
+
+    if (DiagnosticTelemetry.isScannerDebug || new URLSearchParams(window.location.search).get('focusDebug') === '1') {
+      console.log(`[FocusDiagnostic] Live Laplacian Variance: ${variance} (Threshold: ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) | Consecutive Blurry Frames: ${this.consecutiveBlurFrames} | Failed Attempts: ${failedAttemptsCount}`);
+    }
+
+    if (variance < ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD) {
+      this.consecutiveBlurFrames++;
+    } else {
+      this.consecutiveBlurFrames = 0;
+    }
+
+    // Prompt user to adjust camera distance if sustained blur occurs over threshold failed attempts
+    if (failedAttemptsCount >= ScannerFocusConfig.SUSTAINED_BLUR_FAILED_ATTEMPTS && 
+        this.consecutiveBlurFrames >= ScannerFocusConfig.SUSTAINED_BLUR_CONSECUTIVE_FRAMES) {
+      setScannerGuidance('Move Back');
+      const dot = document.querySelector('.status-dot');
+      const text = document.querySelector('.status-text');
+      if (dot && text) {
+        dot.style.backgroundColor = '#f59e0b';
+        text.textContent = 'Hold phone 2–3 inches farther back to focus';
+      }
+      console.warn(`[FocusDiagnostic] Sustained blur detected (Variance: ${variance} < ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames.`);
+      SilentDiagnosticService.recordMeaningfulEvent('SUSTAINED_FRAME_BLUR', `Variance of Laplacian dropped to ${variance} (threshold ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames`);
+    }
+  }
+};
+
 function onBarcodeScanError(errorMessage) {
   // Increment frames for real-time FPS overlay calculation
   registerFrameForFps();
   DiagnosticTelemetry.recordFrameError();
   SilentDiagnosticService.recordFrameError();
+
+  const failedCount = SilentDiagnosticService.failedFramesCount;
+
+  // Unconditional logging the moment failed decode attempts reach/cross 25
+  if (failedCount >= 25) {
+    console.log(`[NudgeThresholdTrigger] Decode attempts reached/crossed 25! (Current Count: ${failedCount}, ZoomNudgeEnabled: ${ScannerFocusConfig.ENABLE_ZOOM_NUDGE})`);
+  }
+
+  const video = document.querySelector('#reader video');
+  FrameSharpnessAnalyzer.checkFrameBlur(video, failedCount);
+
+  if (CameraManager.pendingNudgeEvent && !CameraManager.pendingNudgeEvent.recorded) {
+    CameraManager.pendingNudgeEvent.framesRemaining--;
+    if (CameraManager.pendingNudgeEvent.framesRemaining <= 0) {
+      const p = CameraManager.pendingNudgeEvent;
+      p.recorded = true;
+      const msg = `NUDGE_RESULT | var_before:${p.varBefore} | var_after:${p.varAfter} | delta:${p.delta} | decode_success:0 | focus_modes:${p.focusModes}`;
+      console.log('[RefocusNudge] Post-nudge window expired without decode. Logging telemetry:', msg);
+      SilentDiagnosticService.recordMeaningfulEvent('REFOCUS_NUDGE_RESULT', msg, {
+        nudgeVarBefore: p.varBefore,
+        nudgeVarAfter: p.varAfter,
+        nudgeDecodeSuccess: 0
+      });
+    }
+  }
+
+  // Trigger autofocus zoom bump once at configured failed attempts threshold
+  if (failedCount === ScannerFocusConfig.REFOCUS_NUDGE_FAILED_ATTEMPTS) {
+    console.log(`[RefocusNudgeTrigger] ${ScannerFocusConfig.REFOCUS_NUDGE_FAILED_ATTEMPTS} failed decode attempts threshold reached! Invoking CameraManager.triggerRefocusNudge()... (EnableZoomNudge: ${ScannerFocusConfig.ENABLE_ZOOM_NUDGE})`);
+    CameraManager.triggerRefocusNudge();
+  }
 }
 
 // Stop camera scan stream

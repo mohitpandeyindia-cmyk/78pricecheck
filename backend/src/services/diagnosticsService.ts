@@ -100,6 +100,15 @@ export class DiagnosticsService {
       cpuCores?: number | null;
       deviceMemoryGb?: number | null;
       gpuRenderer?: string | null;
+      focusModeSupported?: number | null;
+      availableFocusModes?: string | null;
+      focusDistanceSupported?: number | null;
+      zoomSupported?: number | null;
+      zoomMin?: number | null;
+      zoomMax?: number | null;
+      zoomStep?: number | null;
+      torchSupported?: number | null;
+      exposureSupported?: number | null;
     }
   ): Promise<void> {
     if (!deviceId || deviceId === 'unknown' || !sessionId) return;
@@ -110,13 +119,24 @@ export class DiagnosticsService {
         `INSERT INTO device_registry (
            device_id, first_seen_at, last_seen_at, first_seen_session_id,
            device_os, browser, user_agent, platform, device_pixel_ratio,
-           viewport_width, viewport_height, cpu_cores, device_memory_gb, gpu_renderer
-         ) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           viewport_width, viewport_height, cpu_cores, device_memory_gb, gpu_renderer,
+           focus_mode_supported, available_focus_modes, focus_distance_supported,
+           zoom_supported, zoom_min, zoom_max, zoom_step, torch_supported, exposure_supported
+         ) VALUES (?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(device_id) DO UPDATE SET
            last_seen_at = CURRENT_TIMESTAMP,
            cpu_cores = COALESCE(excluded.cpu_cores, device_registry.cpu_cores),
            device_memory_gb = COALESCE(excluded.device_memory_gb, device_registry.device_memory_gb),
-           gpu_renderer = COALESCE(excluded.gpu_renderer, device_registry.gpu_renderer)`,
+           gpu_renderer = COALESCE(excluded.gpu_renderer, device_registry.gpu_renderer),
+           focus_mode_supported = COALESCE(excluded.focus_mode_supported, device_registry.focus_mode_supported),
+           available_focus_modes = COALESCE(excluded.available_focus_modes, device_registry.available_focus_modes),
+           focus_distance_supported = COALESCE(excluded.focus_distance_supported, device_registry.focus_distance_supported),
+           zoom_supported = COALESCE(excluded.zoom_supported, device_registry.zoom_supported),
+           zoom_min = COALESCE(excluded.zoom_min, device_registry.zoom_min),
+           zoom_max = COALESCE(excluded.zoom_max, device_registry.zoom_max),
+           zoom_step = COALESCE(excluded.zoom_step, device_registry.zoom_step),
+           torch_supported = COALESCE(excluded.torch_supported, device_registry.torch_supported),
+           exposure_supported = COALESCE(excluded.exposure_supported, device_registry.exposure_supported)`,
         deviceId,
         sessionId,
         metadata.deviceOs || null,
@@ -128,7 +148,16 @@ export class DiagnosticsService {
         metadata.viewportHeight || null,
         metadata.cpuCores || null,
         metadata.deviceMemoryGb || null,
-        metadata.gpuRenderer || null
+        metadata.gpuRenderer || null,
+        metadata.focusModeSupported !== undefined ? metadata.focusModeSupported : null,
+        metadata.availableFocusModes || null,
+        metadata.focusDistanceSupported !== undefined ? metadata.focusDistanceSupported : null,
+        metadata.zoomSupported !== undefined ? metadata.zoomSupported : null,
+        metadata.zoomMin !== undefined ? metadata.zoomMin : null,
+        metadata.zoomMax !== undefined ? metadata.zoomMax : null,
+        metadata.zoomStep !== undefined ? metadata.zoomStep : null,
+        metadata.torchSupported !== undefined ? metadata.torchSupported : null,
+        metadata.exposureSupported !== undefined ? metadata.exposureSupported : null
       );
     } catch (e) {
       // Fail silently to avoid breaking telemetry pipeline
@@ -138,17 +167,23 @@ export class DiagnosticsService {
   /**
    * Records dynamic telemetry payload sent silently from customer scanner
    */
-  static async recordTelemetry(payload: { sessionId: string; type: string; data: any }): Promise<void> {
-    if (!payload || !payload.sessionId || !payload.type || !payload.data) return;
+  static async recordTelemetry(payload: { sessionId?: string; type: string; data: any }): Promise<void> {
+    if (!payload || !payload.type || !payload.data) return;
+    const targetSessionId = payload.sessionId || 'general';
 
     const db = await getDb();
+
+    // Auto-ensure default 'general' session exists for foreign key integrity
+    await db.run(
+      `INSERT OR IGNORE INTO diagnostic_sessions (session_id, status, created_by) VALUES ('general', 'ACTIVE', 'system')`
+    );
+
     const session = await db.get<DiagnosticSession>(
-      `SELECT * FROM diagnostic_sessions WHERE session_id = ? AND status = 'ACTIVE'`,
-      payload.sessionId
+      `SELECT * FROM diagnostic_sessions WHERE session_id = ?`,
+      targetSessionId
     );
 
     if (!session) {
-      // Session is not active, ignore silently
       return;
     }
 
@@ -172,9 +207,19 @@ export class DiagnosticsService {
     if (type === 'device') {
       const rawClassification = cleanStr(data.classification, 32) || 'Other';
       const classification = (rawClassification === 'iOS' || rawClassification === 'Android') ? rawClassification : 'Other';
+
+      const focusModeSupported = data.focusModeSupported === 1 ? 1 : (data.focusModeSupported === 0 ? 0 : null);
+      const availableFocusModes = cleanStr(data.availableFocusModes, 500);
+      const focusDistanceSupported = data.focusDistanceSupported === 1 ? 1 : (data.focusDistanceSupported === 0 ? 0 : null);
+      const zoomSupported = data.zoomSupported === 1 ? 1 : (data.zoomSupported === 0 ? 0 : null);
+      const zoomMin = cleanNum(data.zoomMin, 0, 100);
+      const zoomMax = cleanNum(data.zoomMax, 0, 100);
+      const zoomStep = cleanNum(data.zoomStep, 0, 10);
+      const torchSupported = data.torchSupported === 1 ? 1 : (data.torchSupported === 0 ? 0 : null);
+      const exposureSupported = data.exposureSupported === 1 ? 1 : (data.exposureSupported === 0 ? 0 : null);
       
       // Idempotent persistent device registry update
-      await this.registerOrUpdateDevice(deviceId, payload.sessionId, {
+      await this.registerOrUpdateDevice(deviceId, targetSessionId, {
         deviceOs: classification,
         browser: cleanStr(data.browser, 64),
         userAgent: cleanStr(data.userAgent, 500),
@@ -184,7 +229,15 @@ export class DiagnosticsService {
         viewportHeight: cleanNum(data.viewportHeight, 100, 10000),
         cpuCores,
         deviceMemoryGb,
-        gpuRenderer
+        gpuRenderer,
+        focusModeSupported,
+        availableFocusModes,
+        focusDistanceSupported,
+        zoomSupported,
+        zoomMin,
+        zoomMax,
+        zoomStep,
+        torchSupported,
       });
 
       // Save device telemetry row
@@ -238,9 +291,13 @@ export class DiagnosticsService {
     } else if (type === 'scan_event') {
       const barcode = cleanStr(data.barcode, 128) || 'UNKNOWN';
 
+      if (data.rawDecodedResult) {
+        console.log('[PRODUCTION_SCAN_RAW_DECODED_RESULT]', data.rawDecodedResult);
+      }
+
       // Idempotent safeguard: register device if deviceId provided
       if (deviceId) {
-        await this.registerOrUpdateDevice(deviceId, payload.sessionId, {
+        await this.registerOrUpdateDevice(deviceId, targetSessionId, {
           deviceOs: cleanStr(data.deviceOs, 32),
           browser: cleanStr(data.browser, 64),
           cpuCores,
@@ -255,7 +312,7 @@ export class DiagnosticsService {
           time_since_start_ms, time_since_prev_scan_ms, decode_attempts_since_prev, 
           bbox_width, bbox_height, bbox_center_x, bbox_center_y, bbox_pct_w, bbox_pct_h)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        payload.sessionId,
+        targetSessionId,
         barcode,
         deviceId,
         cleanStr(data.format, 64),
@@ -278,16 +335,20 @@ export class DiagnosticsService {
         `UPDATE diagnostic_sessions 
          SET total_scans = total_scans + 1, successful_scans = successful_scans + 1 
          WHERE session_id = ?`,
-        payload.sessionId
+        targetSessionId
       );
 
     } else if (type === 'event') {
       const eventType = cleanStr(data.eventType, 64) || 'event';
+      const nudgeVarBefore = cleanNum(data.nudgeVarBefore, 0, 100000);
+      const nudgeVarAfter = cleanNum(data.nudgeVarAfter, 0, 100000);
+      const nudgeDecodeSuccess = (data.nudgeDecodeSuccess === 1 || data.nudgeDecodeSuccess === 0) ? data.nudgeDecodeSuccess : null;
+
       await db.run(
         `INSERT INTO diagnostic_events_and_aggregates
-         (session_id, device_id, device_id_hash, event_type, classification, error_message, decode_attempts, cpu_cores, device_memory_gb, gpu_renderer, tab_visible)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        payload.sessionId,
+         (session_id, device_id, device_id_hash, event_type, classification, error_message, decode_attempts, cpu_cores, device_memory_gb, gpu_renderer, tab_visible, nudge_var_before, nudge_var_after, nudge_decode_success)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        targetSessionId,
         deviceId,
         deviceId,
         eventType,
@@ -297,11 +358,14 @@ export class DiagnosticsService {
         cpuCores,
         deviceMemoryGb,
         gpuRenderer,
-        cleanNum(data.tabVisible, 0, 1)
+        cleanNum(data.tabVisible, 0, 1),
+        nudgeVarBefore,
+        nudgeVarAfter,
+        nudgeDecodeSuccess
       );
 
       if (eventType.includes('error') || eventType.includes('failure')) {
-        await db.run(`UPDATE diagnostic_sessions SET failed_events = failed_events + 1 WHERE session_id = ?`, payload.sessionId);
+        await db.run(`UPDATE diagnostic_sessions SET failed_events = failed_events + 1 WHERE session_id = ?`, targetSessionId);
       }
 
     } else if (type === 'interval_aggregate') {
@@ -311,7 +375,7 @@ export class DiagnosticsService {
         `INSERT INTO diagnostic_events_and_aggregates
          (session_id, device_id, device_id_hash, event_type, classification, error_message, failed_attempts, avg_fps, duration_sec, cpu_cores, device_memory_gb, gpu_renderer, tab_visible)
          VALUES (?, ?, ?, 'interval_aggregate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        payload.sessionId,
+        targetSessionId,
         deviceId,
         deviceId,
         cleanStr(data.classification, 32),
@@ -329,10 +393,51 @@ export class DiagnosticsService {
         await db.run(
           `UPDATE diagnostic_sessions SET failed_events = failed_events + ? WHERE session_id = ?`,
           failedAttempts,
-          payload.sessionId
+          targetSessionId
         );
       }
     }
+  }
+
+  /**
+   * Automatically prunes 'general' session telemetry older than 30 days.
+   * Preserves persistent device_registry rows indefinitely.
+   */
+  static async pruneStaleTelemetry(): Promise<number> {
+    try {
+      const db = await getDb();
+      
+      const resEvents = await db.run(
+        `DELETE FROM diagnostic_events_and_aggregates 
+         WHERE session_id = 'general' AND timestamp < DATETIME('now', '-30 days')`
+      );
+      
+      const resScans = await db.run(
+        `DELETE FROM diagnostic_scan_events 
+         WHERE session_id = 'general' AND timestamp < DATETIME('now', '-30 days')`
+      );
+
+      const resTelemetry = await db.run(
+        `DELETE FROM diagnostic_device_telemetry 
+         WHERE session_id = 'general' AND recorded_at < DATETIME('now', '-30 days')`
+      );
+
+      const prunedCount = (resEvents.changes || 0) + (resScans.changes || 0) + (resTelemetry.changes || 0);
+      if (prunedCount > 0) {
+        console.log(`[TelemetryRetention] Automatically pruned ${prunedCount} general telemetry rows older than 30 days.`);
+      }
+      return prunedCount;
+    } catch (e) {
+      console.warn('[TelemetryRetention] Automated telemetry retention cleanup failed:', e);
+      return 0;
+    }
+  }
+
+  static startRetentionScheduler(): void {
+    // Run initial cleanup task immediately on server start
+    this.pruneStaleTelemetry();
+    // Schedule recurring cleanup every 24 hours (86,400,000 ms)
+    setInterval(() => this.pruneStaleTelemetry(), 86400000);
   }
 
   /**
@@ -564,6 +669,23 @@ export class DiagnosticsService {
     const newAndroidDevices = newAndroidRow?.count || 0;
     const newOtherDevices = newOtherRow?.count || 0;
 
+    // Hardware Focus & Camera Capabilities Breakdown
+    const focusCapabilityStats = await db.all(
+      `SELECT 
+         classification as os,
+         focus_mode_supported,
+         available_focus_modes,
+         focus_distance_supported,
+         zoom_supported,
+         torch_supported,
+         COUNT(DISTINCT device_id) as device_count,
+         AVG(actual_fps) as avg_fps
+       FROM diagnostic_device_telemetry
+       WHERE session_id = ?
+       GROUP BY classification, focus_mode_supported, available_focus_modes`,
+      sid
+    );
+
     return {
       success: true,
       session: targetSession,
@@ -574,6 +696,7 @@ export class DiagnosticsService {
       formatStats,
       resolutionStats,
       aggregateEvents,
+      focusCapabilityStats,
       devices,
       keyCorrelations,
       summary: {

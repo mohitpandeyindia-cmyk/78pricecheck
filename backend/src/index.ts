@@ -284,6 +284,11 @@ async function startServer() {
     await initializeDatabase(false);
     logApp('SQLite database initialized successfully.');
 
+    // Start 30-day automated telemetry retention scheduler
+    const { DiagnosticsService } = require('./services/diagnosticsService');
+    DiagnosticsService.startRetentionScheduler();
+    logApp('Automated 30-day telemetry retention scheduler started.');
+
     app.listen(PORT, () => {
       console.log(`===============================================`);
       console.log(`  SEVENTYEIGHTOS BACKEND SERVING ONLINE        `);
