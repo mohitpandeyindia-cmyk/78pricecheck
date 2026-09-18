@@ -1,19 +1,77 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-color: #f8f9fa;
-  --card-bg: #ffffff;
-  --text-color: #212529;
-  --text-muted: #6c757d;
-  --primary-color: #1b5e20;
-  --primary-hover: #144417;
-  --border-color: #dee2e6;
-  --danger-color: #dc3545;
-  --danger-bg: #f8d7da;
-  --danger-border: #f5c2c7;
-  --success-color: #198754;
-  --success-bg: #d1e7dd;
-  --success-border: #badbcc;
+  /* ==========================================================================
+     Centralized 78 Supermaart Admin Dark Theme Tokens
+     ========================================================================== */
+  
+  /* Layered Surface Hierarchy */
+  --admin-bg: #0F1115;             /* Base page background */
+  --admin-surface: #151922;        /* Navigation, secondary panels, drawer background */
+  --admin-surface-2: #191E27;      /* Primary cards, tables, modal containers */
+  --admin-surface-3: #202631;      /* Elevated surfaces, table headers, hover rows, inputs */
+  --admin-surface-4: #28303e;      /* Popovers, active toggle states, subtle highlights */
+
+  /* Structural & Soft Borders */
+  --admin-border: #2A313C;         /* Default structural borders */
+  --admin-border-soft: #222934;    /* Subtle dividers, row lines */
+  --admin-border-hover: #3d4655;   /* Interactive hover border */
+  --admin-border-focus: #22c55e;   /* Brand focus outline */
+
+  /* High-Readability Typography */
+  --admin-text: #F3F5F7;           /* High-contrast primary text */
+  --admin-text-secondary: #A8B0BC; /* Supporting descriptions, labels, column headers */
+  --admin-text-muted: #737D8A;     /* Placeholders, disabled states, timestamps */
+
+  /* Brand Accent: 78 Supermaart Green */
+  --admin-brand: #22c55e;
+  --admin-brand-hover: #16a34a;
+  --admin-brand-dim: rgba(34, 197, 94, 0.12);
+  --admin-brand-border: rgba(34, 197, 94, 0.3);
+
+  /* Semantic Status Palette (Calibrated for Dark Surfaces) */
+  --admin-success: #4ade80;
+  --admin-success-bg: rgba(74, 222, 128, 0.12);
+  --admin-success-border: rgba(74, 222, 128, 0.25);
+
+  --admin-danger: #f87171;
+  --admin-danger-bg: rgba(248, 113, 113, 0.12);
+  --admin-danger-border: rgba(248, 113, 113, 0.25);
+
+  --admin-warning: #fbbf24;
+  --admin-warning-bg: rgba(251, 191, 36, 0.12);
+  --admin-warning-border: rgba(251, 191, 36, 0.25);
+
+  --admin-orange: #fb923c;
+  --admin-orange-bg: rgba(251, 146, 60, 0.12);
+  --admin-orange-border: rgba(251, 146, 60, 0.25);
+
+  --admin-info: #38bdf8;
+  --admin-info-bg: rgba(56, 189, 248, 0.12);
+  --admin-info-border: rgba(56, 189, 248, 0.25);
+
+  --admin-review: #a5b4fc;
+  --admin-review-bg: rgba(165, 180, 252, 0.12);
+  --admin-review-border: rgba(165, 180, 252, 0.25);
+
+  --admin-resolution: #22d3ee;
+  --admin-resolution-bg: rgba(34, 211, 238, 0.12);
+  --admin-resolution-border: rgba(34, 211, 238, 0.25);
+
+  /* Backward Compatibility Aliases */
+  --bg-color: var(--admin-bg);
+  --card-bg: var(--admin-surface-2);
+  --text-color: var(--admin-text);
+  --text-muted: var(--admin-text-secondary);
+  --border-color: var(--admin-border);
+  --primary-color: var(--admin-brand);
+  --primary-hover: var(--admin-brand-hover);
+  --danger-color: var(--admin-danger);
+  --danger-bg: var(--admin-danger-bg);
+  --danger-border: var(--admin-danger-border);
+  --success-color: var(--admin-success);
+  --success-bg: var(--admin-success-bg);
+  --success-border: var(--admin-success-border);
   --font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
@@ -24,25 +82,43 @@
 }
 
 body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
   font-family: var(--font-family);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Dark Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--admin-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-border-hover);
 }
 
 /* Layout Structure */
 .navbar {
-  background-color: #ffffff;
-  border-bottom: 1px solid var(--border-color);
-  padding: 15px 0;
+  background-color: var(--admin-surface);
+  border-bottom: 1px solid var(--admin-border);
+  padding: 14px 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
 .nav-container {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 0 20px;
   display: flex;
@@ -52,30 +128,45 @@ body {
 
 .nav-brand {
   font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary-color);
+  font-weight: 800;
+  color: var(--admin-brand);
+  letter-spacing: -0.01em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 8px;
 }
 
 .nav-link {
   text-decoration: none;
-  color: var(--text-muted);
+  color: var(--admin-text-secondary);
   font-weight: 500;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border-radius: 5px;
+  transition: all 0.15s ease;
 }
 
-.nav-link:hover, .nav-link.active {
-  color: var(--primary-color);
+.nav-link:hover {
+  color: var(--admin-text);
+  background-color: var(--admin-surface-3);
+}
+
+.nav-link.active {
+  color: var(--admin-brand);
+  background-color: var(--admin-brand-dim);
+  font-weight: 600;
+  border: 1px solid var(--admin-brand-border);
 }
 
 .main-container {
-  max-width: 1200px;
-  margin: 30px auto;
+  max-width: 1240px;
+  margin: 28px auto;
   padding: 0 20px;
 }
 
@@ -83,7 +174,7 @@ body {
 .grid-layout {
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 30px;
+  gap: 28px;
 }
 
 @media (max-width: 768px) {
@@ -93,26 +184,31 @@ body {
 }
 
 .card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 30px;
+  background-color: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 28px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .card-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: var(--text-color);
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--admin-text);
+  letter-spacing: -0.01em;
 }
 
 .card-desc {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  margin-bottom: 25px;
+  color: var(--admin-text-secondary);
+  font-size: 0.92rem;
+  margin-bottom: 24px;
+  line-height: 1.45;
 }
 
-/* Buttons */
+/* ==========================================================================
+   Buttons
+   ========================================================================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -120,57 +216,65 @@ body {
   font-family: inherit;
   font-weight: 600;
   font-size: 0.9rem;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 10px 18px;
+  border-radius: 5px;
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
+  transition: all 0.15s ease;
 }
 
 .btn-primary {
-  background-color: var(--primary-color);
-  color: #ffffff;
+  background-color: var(--admin-brand);
+  color: #0b1e10;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--primary-hover);
+  background-color: var(--admin-brand-hover);
+  color: #ffffff;
 }
 
 .btn-primary:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background-color: #f1f3f5;
-  color: #495057;
-  border-color: #ced4da;
+  background-color: var(--admin-surface-3);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
 }
 
-.btn-secondary:hover {
-  background-color: #e9ecef;
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--admin-surface-4);
+  border-color: var(--admin-border-hover);
 }
 
 .btn-outline {
   background-color: transparent;
-  border-color: var(--primary-color);
-  color: var(--primary-color);
+  border: 1px solid var(--admin-brand);
+  color: var(--admin-brand);
 }
 
-.btn-outline:hover {
-  background-color: rgba(27, 94, 32, 0.05);
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--admin-brand-dim);
 }
 
 .btn-link {
   background: none;
   border: none;
-  color: var(--text-muted);
-  padding: 0;
+  color: var(--admin-text-secondary);
+  padding: 6px 10px;
   cursor: pointer;
+  font-weight: 500;
+  border-radius: 4px;
 }
 
 .btn-link:hover {
-  color: var(--danger-color);
+  color: var(--admin-danger);
+  background-color: var(--admin-danger-bg);
 }
 
 .btn-block {
@@ -178,76 +282,111 @@ body {
 }
 
 .btn-danger {
-  background-color: var(--danger-color);
-  color: #ffffff;
+  background-color: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid var(--admin-danger-border);
 }
 
-.btn-danger:hover {
-  background-color: #bd2130;
+.btn-danger:hover:not(:disabled) {
+  background-color: rgba(248, 113, 113, 0.22);
 }
 
 .btn-sm {
   padding: 6px 12px;
   font-size: 0.8rem;
+  border-radius: 4px;
 }
 
-/* Forms */
+/* ==========================================================================
+   Forms & Inputs
+   ========================================================================== */
 .form-group {
   margin-bottom: 20px;
 }
 
 .form-group label {
   display: block;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 0.88rem;
   margin-bottom: 8px;
+  color: var(--admin-text-secondary);
 }
 
-.form-group input {
+.form-group input,
+input[type="text"],
+input[type="password"],
+input[type="number"],
+select,
+textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px 14px;
   font-family: inherit;
   font-size: 0.95rem;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background-color: var(--admin-surface-3);
+  border: 1px solid var(--admin-border);
+  border-radius: 5px;
+  color: var(--admin-text);
   outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.form-group input:focus {
-  border-color: var(--primary-color);
+.form-group input:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--admin-brand);
+  box-shadow: 0 0 0 2px var(--admin-brand-dim);
 }
 
-/* Upload Area */
+input::placeholder,
+textarea::placeholder {
+  color: var(--admin-text-muted);
+}
+
+/* ==========================================================================
+   Upload Area
+   ========================================================================== */
 .upload-area {
-  border: 2px dashed var(--border-color);
-  border-radius: 4px;
-  padding: 40px 20px;
+  border: 2px dashed var(--admin-border);
+  border-radius: 6px;
+  padding: 36px 20px;
   text-align: center;
   margin-bottom: 25px;
-  background-color: #fafbfc;
+  background-color: var(--admin-surface-3);
+  transition: all 0.2s ease;
+}
+
+.upload-area:hover {
+  border-color: var(--admin-brand);
+  background-color: rgba(34, 197, 94, 0.04);
 }
 
 .file-picker {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
 .file-name-label {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--admin-text-secondary);
+  font-style: normal;
 }
 
-/* Progress Bar */
+/* ==========================================================================
+   Progress Bar
+   ========================================================================== */
 .progress-container {
   margin-bottom: 20px;
 }
 
 .progress-bar-wrapper {
-  background-color: #e9ecef;
+  background-color: var(--admin-surface-3);
+  border: 1px solid var(--admin-border-soft);
   height: 10px;
   border-radius: 5px;
   overflow: hidden;
@@ -255,32 +394,34 @@ body {
 }
 
 .progress-bar {
-  background-color: var(--primary-color);
+  background-color: var(--admin-brand);
   height: 100%;
 }
 
 .progress-text {
   font-size: 0.85rem;
-  color: var(--text-muted);
+  color: var(--admin-text-secondary);
   font-weight: 500;
 }
 
-/* Alerts */
+/* ==========================================================================
+   Alerts
+   ========================================================================== */
 .alert {
   border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 15px 20px;
+  border-radius: 6px;
+  padding: 14px 18px;
   margin-bottom: 20px;
 }
 
 .alert-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .alert-details p {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   margin-bottom: 4px;
 }
 
@@ -289,33 +430,47 @@ body {
 }
 
 .alert-success {
-  background-color: var(--success-bg);
-  border-color: var(--success-border);
-  color: var(--success-color);
+  background-color: var(--admin-success-bg);
+  border-color: var(--admin-success-border);
+  color: var(--admin-success);
 }
 
 .alert-danger {
-  background-color: var(--danger-bg);
-  border-color: var(--danger-border);
-  color: var(--danger-color);
+  background-color: var(--admin-danger-bg);
+  border-color: var(--admin-danger-border);
+  color: var(--admin-danger);
 }
 
-/* Status Panel styling */
+.alert-warning {
+  background-color: var(--admin-warning-bg);
+  border-color: var(--admin-warning-border);
+  color: var(--admin-warning);
+}
+
+.alert-info {
+  background-color: var(--admin-info-bg);
+  border-color: var(--admin-info-border);
+  color: var(--admin-info);
+}
+
+/* ==========================================================================
+   Status Panel (Current Catalogue / Side Widget)
+   ========================================================================== */
 .status-card {
   align-self: start;
-  background-color: #ffffff;
+  background-color: var(--admin-surface-2);
 }
 
 .status-panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   margin-top: 10px;
 }
 
 .status-item {
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 15px;
+  border-bottom: 1px solid var(--admin-border-soft);
+  padding-bottom: 14px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -327,61 +482,77 @@ body {
 }
 
 .status-label {
-  font-size: 0.95rem;
-  color: var(--text-muted);
+  font-size: 0.88rem;
+  color: var(--admin-text-secondary);
   font-weight: 500;
 }
 
 .status-val {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--primary-color);
+  color: var(--admin-brand);
 }
 
 .status-val-multi {
   text-align: right;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--admin-text);
   line-height: 1.4;
 }
 
-/* Tables */
+/* ==========================================================================
+   Tables
+   ========================================================================== */
 .table-responsive {
   overflow-x: auto;
   margin-top: 15px;
+  background-color: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
 }
 
 .history-table, .error-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   text-align: left;
 }
 
 .history-table th, .history-table td,
 .error-table th, .error-table td {
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--admin-border-soft);
 }
 
 .history-table th, .error-table th {
-  background-color: #f1f3f5;
-  font-weight: 600;
-  color: #495057;
+  background-color: var(--admin-surface-3);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.history-table tbody tr,
+.error-table tbody tr {
+  background-color: var(--admin-surface-2);
+  color: var(--admin-text);
+  transition: background-color 0.1s ease;
 }
 
 .history-table tbody tr:hover,
 .error-table tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: var(--admin-surface-3);
 }
 
 .error-log-wrapper {
-  max-height: 300px;
+  max-height: 320px;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
   margin-top: 15px;
+  background-color: var(--admin-surface-2);
 }
 
 .error-table th {
@@ -390,63 +561,86 @@ body {
   z-index: 10;
 }
 
-/* Badges */
+/* ==========================================================================
+   Badges
+   ========================================================================== */
 .badge {
   display: inline-block;
   font-size: 0.75rem;
-  font-weight: 600;
-  padding: 3px 8px;
+  font-weight: 700;
+  padding: 3px 9px;
   border-radius: 12px;
+  letter-spacing: 0.02em;
 }
 
 .badge-success {
-  background-color: #d1e7dd;
-  color: #0f5132;
+  background-color: var(--admin-success-bg);
+  color: var(--admin-success);
+  border: 1px solid var(--admin-success-border);
 }
 
 .badge-danger {
-  background-color: #f8d7da;
-  color: #842029;
+  background-color: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid var(--admin-danger-border);
 }
 
-/* Login Card style */
+.badge-warning {
+  background-color: var(--admin-warning-bg);
+  color: var(--admin-warning);
+  border: 1px solid var(--admin-warning-border);
+}
+
+.badge-info {
+  background-color: var(--admin-info-bg);
+  color: var(--admin-info);
+  border: 1px solid var(--admin-info-border);
+}
+
+/* ==========================================================================
+   Login Page Container & Card
+   ========================================================================== */
 .login-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
-  background-color: #f1f3f5;
+  background-color: var(--admin-bg);
 }
 
 .login-card {
-  background-color: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background-color: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
   padding: 40px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .brand-title {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--primary-color);
+  color: var(--admin-brand);
   text-align: center;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
+  letter-spacing: -0.02em;
 }
 
 .form-subtitle {
-  font-size: 0.95rem;
-  color: var(--text-muted);
+  font-size: 0.92rem;
+  color: var(--admin-text-secondary);
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
   font-weight: 500;
 }
 
-/* Helper classes */
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
 .monospace {
-  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 .text-semibold {
@@ -457,10 +651,216 @@ body {
   text-align: center;
 }
 
+.text-right {
+  text-align: right;
+}
+
 .text-muted {
-  color: var(--text-muted);
+  color: var(--admin-text-muted);
+}
+
+.text-secondary {
+  color: var(--admin-text-secondary);
 }
 
 .text-danger {
-  color: var(--danger-color);
+  color: var(--admin-danger);
 }
+
+.text-success {
+  color: var(--admin-success);
+}
+
+/* ==========================================================================
+   Shared Tabs & Pill Indicators
+   ========================================================================== */
+.tab-navigation {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 22px;
+  border-bottom: 2px solid var(--admin-border);
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 12px 18px;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -4px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--admin-text);
+  background: var(--admin-surface-3);
+  border-radius: 4px 4px 0 0;
+}
+
+.tab-btn.active {
+  color: var(--admin-text);
+  border-bottom-color: var(--admin-brand);
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Urgency Pills */
+.urgency-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.urgency-critical {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid var(--admin-danger-border);
+}
+
+.urgency-high {
+  background: rgba(249, 115, 22, 0.14);
+  color: #fb923c;
+  border: 1px solid rgba(249, 115, 22, 0.28);
+}
+
+.urgency-buy {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+  border: 1px solid var(--admin-warning-border);
+}
+
+.urgency-watch {
+  background: var(--admin-surface-3);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+}
+
+/* Trend Tags */
+.trend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.trend-rising {
+  background: var(--admin-success-bg);
+  color: var(--admin-success);
+  border: 1px solid var(--admin-success-border);
+}
+
+.trend-falling {
+  background: var(--admin-danger-bg);
+  color: var(--admin-danger);
+  border: 1px solid var(--admin-danger-border);
+}
+
+.trend-stable {
+  background: var(--admin-surface-3);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+}
+
+.trend-insufficient {
+  background: var(--admin-surface-3);
+  color: var(--admin-text-muted);
+  border: 1px solid var(--admin-border-soft);
+}
+
+/* Toggle Group */
+.toggle-group {
+  display: flex;
+  gap: 3px;
+  background: var(--admin-surface-3);
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid var(--admin-border);
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.toggle-btn:hover {
+  color: var(--admin-text);
+}
+
+.toggle-btn.active {
+  background: var(--admin-surface-2);
+  color: var(--admin-brand);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--admin-border);
+}
+
+/* Metric Cards */
+.metric-card {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.metric-card--primary { border-top: 3px solid var(--admin-brand); }
+.metric-card--info { border-top: 3px solid var(--admin-info); }
+.metric-card--success { border-top: 3px solid var(--admin-success); }
+.metric-card--danger { border-top: 3px solid var(--admin-danger); }
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.metric-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--admin-text);
+  line-height: 1;
+}
+
+.metric-subtext {
+  font-size: 0.76rem;
+  color: var(--admin-text-secondary);
+  margin-top: 6px;
+}
+

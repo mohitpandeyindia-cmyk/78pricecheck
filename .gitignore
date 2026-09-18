@@ -11,6 +11,9 @@ dist/
 
 # SQLite databases
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 *.sqlite
 
 # Uploads folder files
@@ -28,3 +31,8 @@ Thumbs.db
 
 # Redundant extracted folder
 78pricecheck/
+78pricecheck-release/
+scratch/
+*.zip
+inventory-analysis/data/backups/
+inventory-analysis/data/*.tmp*

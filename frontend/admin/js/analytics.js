@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     activityChart.innerHTML = '';
 
     if (activityData.length === 0) {
-      activityChart.innerHTML = `<div style="width: 100%; text-align: center; color: #94a3b8; padding-top: 60px;">No scan activity recorded yet</div>`;
+      activityChart.innerHTML = `<div style="width: 100%; text-align: center; color: var(--admin-text-muted); padding-top: 60px;">No scan activity recorded yet</div>`;
       return;
     }
 
@@ -187,16 +187,16 @@ document.addEventListener('DOMContentLoaded', () => {
     topProductsBody.innerHTML = '';
 
     if (products.length === 0) {
-      topProductsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px;">No product scans recorded yet</td></tr>`;
+      topProductsBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--admin-text-muted); padding: 20px;">No product scans recorded yet</td></tr>`;
       return;
     }
 
     products.forEach((p, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-weight: 700; color: #64748b;">${idx + 1}</td>
-        <td style="font-weight: 600; color: #0f172a;">${escapeHtml(p.name)}</td>
-        <td style="font-family: monospace; color: #475569;">${escapeHtml(p.barcode)}</td>
+        <td style="font-weight: 700; color: var(--admin-text-muted);">${idx + 1}</td>
+        <td style="font-weight: 600; color: var(--admin-text);">${escapeHtml(p.name)}</td>
+        <td style="font-family: monospace; color: var(--admin-text-secondary);">${escapeHtml(p.barcode)}</td>
         <td style="text-align: right;"><span class="count-badge">${p.scanCount.toLocaleString()} scans</span></td>
       `;
       topProductsBody.appendChild(tr);
@@ -208,15 +208,15 @@ document.addEventListener('DOMContentLoaded', () => {
     unknownBarcodesBody.innerHTML = '';
 
     if (barcodes.length === 0) {
-      unknownBarcodesBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 20px;">No failed scan attempts recorded</td></tr>`;
+      unknownBarcodesBody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--admin-text-muted); padding: 20px;">No failed scan attempts recorded</td></tr>`;
       return;
     }
 
     barcodes.forEach((b, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td style="font-weight: 700; color: #64748b;">${idx + 1}</td>
-        <td style="font-family: monospace; color: #b91c1c; font-weight: 600;">${escapeHtml(b.barcode)}</td>
+        <td style="font-weight: 700; color: var(--admin-text-muted);">${idx + 1}</td>
+        <td style="font-family: monospace; color: var(--admin-danger); font-weight: 600;">${escapeHtml(b.barcode)}</td>
         <td style="text-align: right;"><span class="count-badge count-badge--danger">${b.attempts.toLocaleString()} attempts</span></td>
       `;
       unknownBarcodesBody.appendChild(tr);

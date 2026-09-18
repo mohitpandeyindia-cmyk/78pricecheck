@@ -1,0 +1,369 @@
+{
+  "updatedAt": "2026-09-18T22:11:34.969Z",
+  "merges": [
+    {
+      "rawName": "AMUL BUTTER 100 GM",
+      "canonicalName": "AMUL BTTR 100 GM",
+      "source": "MANUAL",
+      "date": "2026-09-17T06:56:09.801Z"
+    },
+    {
+      "rawName": "AMUL BTTR 500 GM",
+      "canonicalName": "AMUL BUTTER 500 GM",
+      "source": "MANUAL",
+      "date": "2026-09-17T12:47:26.446Z"
+    },
+    {
+      "rawName": "WHSPR CHOICE XL 6S",
+      "canonicalName": "WHSPR CHC XL 6S",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:17:39.199Z"
+    },
+    {
+      "rawName": "WHSPR CHOICE XL 12S",
+      "canonicalName": "WHSPR CHC XL 12S",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:46:06.493Z"
+    },
+    {
+      "rawName": "AMUL DICED CHSE BLND 200 GM",
+      "canonicalName": "AMUL DICED CHEESE BLEND 200 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:47:00.224Z"
+    },
+    {
+      "rawName": "BRIT GBBLS CHOCO CKE 100 GM",
+      "canonicalName": "BRIT CKE GBBLS CHOCO 100 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:52:50.419Z"
+    },
+    {
+      "rawName": "BRIT MILK BIKIES CRM 47 GM",
+      "canonicalName": "BRIT BIKIS MILK CRM 47 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:53:42.132Z"
+    },
+    {
+      "rawName": "BRIT GD BUTTR 200 GM",
+      "canonicalName": "BRIT GD BTTR 200 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T19:54:11.675Z"
+    },
+    {
+      "rawName": "EO BRKFAST BREAD",
+      "canonicalName": "EO BRKFST BRD",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:04:36.921Z"
+    },
+    {
+      "rawName": "KURKURE MM",
+      "canonicalName": "KURKURE MM 10",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:07:27.681Z"
+    },
+    {
+      "rawName": "RB MP CHNS MNCHRN 128 GM",
+      "canonicalName": "RB MP CHINESE MNCHRN 128 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:08:10.858Z"
+    },
+    {
+      "rawName": "PRLE HAPPY HAPPY CHOCOCHP",
+      "canonicalName": "PRLE HPPY HPPY CHOCOCHP",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:13:24.044Z"
+    },
+    {
+      "rawName": "KPVA ALOVERA GEL 60 GM",
+      "canonicalName": "KPVA ALOEVERA GEL 60 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:15:42.795Z"
+    },
+    {
+      "rawName": "HR PLAIN BHUJIA 400 GM",
+      "canonicalName": "HR BHUJIA 400 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:18:16.669Z"
+    },
+    {
+      "rawName": "DO Dark Choco chip BRWNIE 37 GM",
+      "canonicalName": "DO DRK CHOCO CHIP BRWNIE 37 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:18:16.694Z"
+    },
+    {
+      "rawName": "IC MSLA E CHSKA SCHT 5",
+      "canonicalName": "IC MSLA E CHSKA SCHT",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:19:29.847Z"
+    },
+    {
+      "rawName": "SRF EXL MTC LQ TL 2 LTR",
+      "canonicalName": "SRF EXL MTC LQ PCH TL 2 LTR",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:22:03.819Z"
+    },
+    {
+      "rawName": "SRF EXL MTC LIQ TL 1 LTR PCH",
+      "canonicalName": "SRF EXL MTC LIQ TL 1 LTR",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:22:33.622Z"
+    },
+    {
+      "rawName": "GLDEE HALDI 100 GM",
+      "canonicalName": "GLDEE HLDI 100 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:24:58.387Z"
+    },
+    {
+      "rawName": "GLDEE DHANIA 100 GM",
+      "canonicalName": "GLDEE DHNIA 100 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:25:30.642Z"
+    },
+    {
+      "rawName": "TDC 2PER NCNMD OILY SKN CLNR",
+      "canonicalName": "TDC 2PER NCNMD GNTL SKN CLNR",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:26:10.624Z"
+    },
+    {
+      "rawName": "DRS KSR & KOJIC ACID 50 GM MOIST",
+      "canonicalName": "DRS KSR & KJC ACID 50 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:26:29.796Z"
+    },
+    {
+      "rawName": "VGA BTH SPNG",
+      "canonicalName": "VGA BATH SPONGE",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:34:59.246Z"
+    },
+    {
+      "rawName": "NSCFE GLD 200 GM",
+      "canonicalName": "NSCFE GOLD 200 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:40:24.530Z"
+    },
+    {
+      "rawName": "VGA PD 03N",
+      "canonicalName": "VGA PD 03",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:47:35.083Z"
+    },
+    {
+      "rawName": "NSCFE CLAS DWN JAR 45 GM 250",
+      "canonicalName": "NSCFE CLAS DWN JAR 45 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:50:53.400Z"
+    },
+    {
+      "rawName": "NSTLE CLAS 16",
+      "canonicalName": "NSTLE CLAS",
+      "source": "MANUAL",
+      "date": "2026-09-18T20:51:28.959Z"
+    },
+    {
+      "rawName": "NSTLE MNCH CHOCO FILLS 17 GM",
+      "canonicalName": "NSTLE MUNCH CHOCO FILLS 17 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:03:23.081Z"
+    },
+    {
+      "rawName": "K CHOCOS FILLS 153 GM",
+      "canonicalName": "K CHOCOS Fills 153 GM",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:05:49.960Z"
+    },
+    {
+      "rawName": "GILL VCTR 2S",
+      "canonicalName": "GILL VCTOR 2S",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:08:43.772Z"
+    },
+    {
+      "rawName": "GILL FUSION 2S",
+      "canonicalName": "GILL FUSION 2N",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:09:47.324Z"
+    },
+    {
+      "rawName": "BTQ Neem AD SHMP 180 ML",
+      "canonicalName": "BTQ NEEM AD SHMP 180 ML",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:11:15.601Z"
+    },
+    {
+      "rawName": "FMD SPRL NT BK SNGL LINE 704961",
+      "canonicalName": "FMD SPRL NT BK SNGL LINE",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:11:47.284Z"
+    },
+    {
+      "rawName": "FMD MY SPRL NT BK SNGL LINE",
+      "canonicalName": "FMD SPRL NT BK SNGL LINE",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:12:07.464Z"
+    },
+    {
+      "rawName": "PTNJLI DK NTRL TP 300 GM BRSH 70",
+      "canonicalName": "PTNJLI DK NTRL TP 300 GM BRSH 70N",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:13:50.661Z"
+    },
+    {
+      "rawName": "HRLCKS 1 KG BIB",
+      "canonicalName": "HRLCKS BIB 1 KG",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:14:37.756Z"
+    },
+    {
+      "rawName": "GDRJ XPRT NTRL BRWN 15",
+      "canonicalName": "GDRJ XPRT NTRL BRWN",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:15:48.328Z"
+    },
+    {
+      "rawName": "HRLCKS BIB 500 GM",
+      "canonicalName": "HRLCKS 500 GM BIB",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:16:21.609Z"
+    },
+    {
+      "rawName": "HRLCKS ICON JAR 500 GM",
+      "canonicalName": "HRLCKS 500 GM ICON JAR",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:16:21.614Z"
+    },
+    {
+      "rawName": "OREOGO ICE CRM STRAWBERRY CONE",
+      "canonicalName": "OREOGO ICE CRM CONE",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:17:44.688Z"
+    },
+    {
+      "rawName": "MYR JM O JM SB 88 GM B2G1",
+      "canonicalName": "MYR JM O JM BB 88 GM B2G1",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:18:12.088Z"
+    },
+    {
+      "rawName": "WNKS SLCD FRUIT CKE",
+      "canonicalName": "WNKS FRUIT SLCD CKE",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:20:36.093Z"
+    },
+    {
+      "rawName": "WNKS EGG F FRUIT SLCD 10",
+      "canonicalName": "WNKS EGG F FRUIT SLCD",
+      "source": "MANUAL",
+      "date": "2026-09-18T21:20:53.075Z"
+    }
+  ],
+  "separates": [
+    "WHSPR THCK NIGHT XXXL|||WHSPR THCK NIGHT XXXL 10S",
+    "MAG MSLA E MAGIC SCHT|||MAG MSLA E MAGIC SCHT 20",
+    "MAG MSLA E MAGIC SCHT|||MAG MSLA E MAGIC SCHT 5",
+    "TATA LITE SALT 1 KG|||TATA SALT 1 KG",
+    "TATA TEA AGNI 250 GM|||TATA TEA AGNI 250 GM ELAICHI",
+    "KURKURE PC|||KURKURE PC 10",
+    "LAYS SH|||LAYS SH 10",
+    "LAYS CL|||LAYS CL 20",
+    "LAYS CL|||LAYS CL 10",
+    "LAYS HNDS|||LAYS HNDS 10",
+    "LAYS STT|||LAYS STT 20",
+    "LAYS MM|||LAYS MM 20",
+    "PRLE GLD|||PRLE GLD 10",
+    "PRLE 20-20 BTTR|||PRLE 20-20 BTTR 5",
+    "PRLE H&S CHOC 30|||PRLE H&S CHOCO",
+    "PRLE MELODY|||PRLE MELODY 100",
+    "KPVA ALOVERA GEL|||KPVA ALOVERA GEL 150",
+    "IC MSLA E CHSKA SCHT|||IC MSLA E CHSKA SCHT 5",
+    "CDBRY SILK 55 GM|||CDBRY SLK PLAIN 55 GM",
+    "JBSN SUN DRIED PTTO CHIPS MSLA 110 GM|||JBSN SUN DRIED PTTO CHIPS SLTD 110 GM",
+    "SRF EXL MTC LIQ FL 1 LTR PCH|||SRF EXL MTC LIQ TL 1 LTR PCH",
+    "SRF EXL MTK PWD POLY FL 2 KG|||SRF EXL MTK PWD POLY TL 2 KG",
+    "SRF EXL MTC LQD FL 3.2 LTR PCH|||SRF EXL MTC LQD TL 3.2 LTR PCH",
+    "CHNGS SCHEZ MSLA|||CHNGS SCHEZ MSLA 50",
+    "CHNGS MNCHRIAN|||CHNGS MNCHRIAN 60",
+    "CHNGS SPORE CRRY|||CHNGS SPORE CRRY 60",
+    "BRU COFFEE|||BRU COFFEE 10",
+    "VGA BA|||VGA BA 235",
+    "VGA NAIL CLIPPER|||VGA NAIL CLIPPER 80",
+    "VGA E 39 BRSH|||VGA E BRSH",
+    "VGA HMWC|||VGA HMWC 06",
+    "VGA HMWC|||VGA HMWC 01",
+    "VGA MB|||VGA MB 65",
+    "VGA EB|||VGA EB 01",
+    "VGA HMC|||VGA HMC 71",
+    "VGA TCC|||VGA TCC 02",
+    "VGA EB|||VGA EB 02",
+    "VGA HMC|||VGA HMC 03",
+    "VGA R 3 BRSH|||VGA R BRSH",
+    "VGA HMWC|||VGA HMWC 02",
+    "VGA E BRSH|||VGA E BRSH 425",
+    "VGA COMB 89 A|||VGA COMB A",
+    "VGA E BRSH|||VGA E BRSH 299",
+    "VGA E BRSH|||VGA E BRSH 325",
+    "VGA E BRSH|||VGA E BRSH 350",
+    "VGA HCS|||VGA HCS 04",
+    "VGA HMC|||VGA HMC 04",
+    "VGA HMC|||VGA HMC 06",
+    "VGA HMC|||VGA HMC 120",
+    "VGA HMC|||VGA HMC 30",
+    "VGA HMC|||VGA HMC 42",
+    "VGA HMWC|||VGA HMWC 03",
+    "VGA HMWC|||VGA HMWC 05",
+    "VGA PD|||VGA PD 01",
+    "VGA PD|||VGA PD 03",
+    "VGA PD|||VGA PD 03N",
+    "VGA PD|||VGA PD 06",
+    "VGA PD|||VGA PD 12",
+    "VGA PD|||VGA PD 16",
+    "VGA PD|||VGA PD 31",
+    "VGA PD|||VGA PD 20",
+    "VGA PD|||VGA PD 29",
+    "VGA PD|||VGA PD 34",
+    "VGA R|||VGA R 250",
+    "VGA R|||VGA R 29",
+    "VGA R 8 BRSH|||VGA R BRSH",
+    "H&S DAILY CLN 2|||H&S DLY CLN",
+    "NSTLE CLAS|||NSTLE CLAS 16",
+    "BLNT 5MIN SHMP HC BLCK 20MLX5|||BLNT 5MIN SHMP HC BRWN 20MLX5",
+    "SLFL MSLA OATS MSLA 500 GM|||SLFL MSLA OATS TMTO 500 GM",
+    "SLFL MSLA OATS MSLA 500 GM|||SLFL MSLA OATS VEGGIE 500 GM",
+    "MILKYBAR MOOSHA|||MILKYBAR MOOSHA 10",
+    "DORITOS NC|||DORITOS NC 10",
+    "HSR INX RIDER LQD FOUNTAIN PEN|||HSR INX XO LQD FOUNTAIN PEN",
+    "DORITOS SC|||DORITOS SC 10",
+    "OI TLSI GRN TB HON LEM 25S|||OI TLSI GRN TB LEM GIN 25S",
+    "DOMS AQUA WATER COLOUR PEN 24|||DOMS AQUA WATER COLOUR PEN PO",
+    "GILL GRD CRT SBD|||GILL GUARD CRT 4S SBD",
+    "GILL GRD CRT 8S SBD|||GILL GRD CRT SBD",
+    "GILL GRD CRT 1 SBD|||GILL GRD CRT SBD",
+    "HIMA NEEM & TRMRIC SOAP 125GX4|||HIMA NEEM & TRMRIC SOAP 75GX4",
+    "FMD A4 SCHL NT BK 184PG|||FMD A4 SCHL NT BK SIN.LINE 184PG",
+    "FMD A4 SPRL NT BK 200PG|||FMD A4 SPRL NT BK 300PG",
+    "LUX FRSH GLW PLUS 3X150 GM|||LUX FRSH GLW PLUS 4X100 GM",
+    "FMD A4 SPRL NT BK 300PG|||FMD A4 SPRL NT BK SNGL 300PG",
+    "BORO PLUS|||BORO PLUS 10",
+    "COT FC DECOC|||COT FC DECOC 12",
+    "BNGO TEDHE MEDHE|||BNGO TEDHE MEDHE 20",
+    "BNGO TEDHE MEDHE|||BNGO TEDHE MEDHE 10",
+    "PNTLA ORG B RICE CAKE SLTD 130 GM|||PNTLA ORG B RICE CAKE SM 130 GM",
+    "PNTLA ORG B RICE CAKE MLTGRN 130 GM|||PNTLA ORG B RICE CAKE SM 130 GM",
+    "PNTLA ORG B RICE CAKE MLTGRN 130 GM|||PNTLA ORG B RICE CAKE SLTD 130 GM",
+    "GBB STYLNG BRSH|||GBB STYLNG BRSH 355",
+    "PMPRS RDPNT 2S LG|||PMPRS RDPNT LG",
+    "PMPRS RDPNT 2S SM|||PMPRS RDPNT SM",
+    "PRKR LAT MTTE METAL|||PRKR LAT MTTE METAL 3",
+    "OREOGO ICE CRM CONE|||OREOGO ICE CRM STRAWBERRY CONE",
+    "INN USB FLASH DRIVE 2.0 (16 GB)|||INN USB FLASH DRIVE 2.0 (32 GB)",
+    "INN USB FLASH DRIVE 2.0 (32 GB)|||INN USB FLASH DRIVE 2.0 (64 GB)",
+    "INN USB FLASH DRIVE 2.0 (16 GB)|||INN USB FLASH DRIVE 2.0 (64 GB)",
+    "MDMIX NTR COOL SOAP 3P1X75 GM|||MDMIX NTR COOL SOAP 4P1X125 GM",
+    "TETLEY GTB SLIM CRE LH|||TETLEY GTB SLIM CRE LH LOTS",
+    "WNKS CHOCOLUV|||WNKS CHOCOLUV 10",
+    "WNKS EGG F FRUIT SLCD|||WNKS EGG F FRUIT SLCD 10"
+  ]
+}

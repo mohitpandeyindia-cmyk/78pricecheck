@@ -1,4 +1,4 @@
-const CACHE_NAME = '78pricecheck-202609022106';
+const CACHE_NAME = '78pricecheck-202609182222';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -58,11 +58,12 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   
-  // 1. Network Only for API data routes & health checks
+  // 1. Network Only for API data routes, health checks, and Admin portal
   if (
     url.pathname.includes('/api/') || 
     url.pathname.includes('/health') ||
-    url.pathname.includes('/version')
+    url.pathname.includes('/version') ||
+    url.pathname.startsWith('/admin')
   ) {
     event.respondWith(fetch(event.request));
     return;

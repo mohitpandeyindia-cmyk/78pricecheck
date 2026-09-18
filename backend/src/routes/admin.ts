@@ -4,6 +4,7 @@ import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 
 const router = Router();
 
@@ -528,6 +529,196 @@ router.get('/admin/analytics/devices', authenticateToken, async (req: Authentica
       message: 'Failed to retrieve device analytics',
       error: error.message || error
     });
+  }
+});
+
+// Configure Multer disk storage for inventory analysis uploads (.xls and .xlsx files)
+const inventoryUploadDir = path.resolve(__dirname, '../../../uploads');
+if (!fs.existsSync(inventoryUploadDir)) {
+  fs.mkdirSync(inventoryUploadDir, { recursive: true });
+}
+
+const inventoryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, inventoryUploadDir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase() || '.xls';
+    cb(null, `inv-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+
+const uploadInventoryFiles = multer({
+  storage: inventoryStorage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.xls' && ext !== '.xlsx') {
+      cb(new Error(`Invalid file type "${file.originalname}". Only .xls and .xlsx spreadsheet files are allowed.`));
+      return;
+    }
+    cb(null, true);
+  }
+}).fields([
+  { name: 'saleReport', maxCount: 1 },
+  { name: 'stockDetail', maxCount: 1 }
+]);
+
+// POST /api/admin/inventory/analyze - Run inventory reorder analysis
+router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: Response, next) => {
+  uploadInventoryFiles(req, res, (err: any) => {
+    if (err) {
+      res.status(400).json({ error: err.message || 'File upload failed.' });
+      return;
+    }
+    next();
+  });
+}, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+  const saleReportFile = files?.['saleReport']?.[0];
+  const stockDetailFile = files?.['stockDetail']?.[0];
+
+  if (!saleReportFile || !stockDetailFile) {
+    if (saleReportFile?.path && fs.existsSync(saleReportFile.path)) {
+      try { fs.unlinkSync(saleReportFile.path); } catch (e) { /* ignore */ }
+    }
+    if (stockDetailFile?.path && fs.existsSync(stockDetailFile.path)) {
+      try { fs.unlinkSync(stockDetailFile.path); } catch (e) { /* ignore */ }
+    }
+    res.status(400).json({ error: 'Both Sale Report and Stock Detail Report files are required.' });
+    return;
+  }
+
+  const saleReportPath = saleReportFile.path;
+  const stockDetailPath = stockDetailFile.path;
+
+  try {
+    const config: any = {};
+    if (req.body.leadTimeDays !== undefined && req.body.leadTimeDays !== '') {
+      const val = Number(req.body.leadTimeDays);
+      if (!isNaN(val) && val > 0) config.leadTimeDays = val;
+    }
+    if (req.body.reviewFrequencyDays !== undefined && req.body.reviewFrequencyDays !== '') {
+      const val = Number(req.body.reviewFrequencyDays);
+      if (!isNaN(val) && val > 0) config.reviewFrequencyDays = val;
+    }
+    if (req.body.orderCoverageDays !== undefined && req.body.orderCoverageDays !== '') {
+      const val = Number(req.body.orderCoverageDays);
+      if (!isNaN(val) && val > 0) config.orderCoverageDays = val;
+    } else if (req.body.planningHorizonDays !== undefined && req.body.planningHorizonDays !== '') {
+      const val = Number(req.body.planningHorizonDays);
+      if (!isNaN(val) && val > 0) config.orderCoverageDays = val;
+    }
+    if (req.body.serviceLevel !== undefined && req.body.serviceLevel !== '') {
+      const val = Number(req.body.serviceLevel);
+      if (!isNaN(val)) config.serviceLevel = val;
+    }
+    if (req.body.watchThresholdFactor !== undefined && req.body.watchThresholdFactor !== '') {
+      const val = Number(req.body.watchThresholdFactor);
+      if (!isNaN(val) && val >= 1.0) config.watchThresholdFactor = val;
+    }
+    if (req.body.useTrendAdjustedDemand !== undefined) {
+      config.useTrendAdjustedDemand = req.body.useTrendAdjustedDemand === 'true' || req.body.useTrendAdjustedDemand === true;
+    }
+
+    // Pass master catalog MRP lookup map from SQLite products table
+    try {
+      const db = await getDb();
+      const catalogProducts = await db.all('SELECT name, mrp FROM products WHERE mrp IS NOT NULL AND mrp > 0');
+      const masterCatalogMap = new Map<string, number>();
+      for (const p of catalogProducts) {
+        if (p.name) masterCatalogMap.set(p.name.trim().toUpperCase(), Number(p.mrp));
+      }
+      config.masterCatalogMap = masterCatalogMap;
+    } catch (e) {
+      // Non-blocking fallback if products table query fails
+    }
+
+    const inventoryAnalysisPath = path.resolve(__dirname, '../../../inventory-analysis');
+    const { runAnalysis } = require(inventoryAnalysisPath);
+
+    const result = runAnalysis({ saleReportPath, stockDetailPath }, config);
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ error: err.message || 'Inventory analysis failed.' });
+  } finally {
+    // Clean up uploaded temp files
+    if (saleReportPath && fs.existsSync(saleReportPath)) {
+      try { fs.unlinkSync(saleReportPath); } catch (e) { /* ignore */ }
+    }
+    if (stockDetailPath && fs.existsSync(stockDetailPath)) {
+      try { fs.unlinkSync(stockDetailPath); } catch (e) { /* ignore */ }
+    }
+  }
+});
+
+// GET /api/admin/inventory/mappings - Retrieve persistent name resolution ledger decisions
+router.get('/admin/inventory/mappings', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const inventoryAnalysisPath = path.resolve(__dirname, '../../../inventory-analysis/nameResolver');
+    const { CatalogLedger } = require(inventoryAnalysisPath);
+    const ledger = new CatalogLedger();
+    res.json({
+      success: true,
+      merges: ledger.getAllMerges(),
+      separates: ledger.getAllSeparates()
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to retrieve mappings.' });
+  }
+});
+
+// POST /api/admin/inventory/mappings/decision - Save human approval (MERGE or KEEP_SEPARATE)
+router.post('/admin/inventory/mappings/decision', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { action, rawName, canonicalName, itemA, itemB } = req.body;
+    const inventoryAnalysisPath = path.resolve(__dirname, '../../../inventory-analysis/nameResolver');
+    const { CatalogLedger } = require(inventoryAnalysisPath);
+    const ledger = new CatalogLedger();
+
+    if (action === 'MERGE') {
+      if (!rawName || !canonicalName) {
+        res.status(400).json({ success: false, error: 'rawName and canonicalName are required for MERGE action.' });
+        return;
+      }
+      ledger.recordMerge(rawName, canonicalName, 'MANUAL');
+      res.json({ success: true, message: `Merged "${rawName}" into "${canonicalName}".` });
+    } else if (action === 'KEEP_SEPARATE') {
+      if (!itemA || !itemB) {
+        res.status(400).json({ success: false, error: 'itemA and itemB are required for KEEP_SEPARATE action.' });
+        return;
+      }
+      ledger.recordKeepSeparate(itemA, itemB);
+      res.json({ success: true, message: `Recorded KEEP_SEPARATE decision for "${itemA}" and "${itemB}".` });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid action. Must be MERGE or KEEP_SEPARATE.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to record decision.' });
+  }
+});
+
+// DELETE /api/admin/inventory/mappings/decision - Remove a decision from ledger
+router.delete('/admin/inventory/mappings/decision', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const { rawName, itemA, itemB } = req.body;
+    const inventoryAnalysisPath = path.resolve(__dirname, '../../../inventory-analysis/nameResolver');
+    const { CatalogLedger } = require(inventoryAnalysisPath);
+    const ledger = new CatalogLedger();
+
+    if (itemA && itemB) {
+      ledger.removeDecision(itemA, itemB);
+      res.json({ success: true, message: `Removed KEEP_SEPARATE decision for "${itemA}" and "${itemB}".` });
+    } else if (rawName) {
+      ledger.removeDecision(rawName);
+      res.json({ success: true, message: `Removed MERGE decision for "${rawName}".` });
+    } else {
+      res.status(400).json({ success: false, error: 'rawName or itemA/itemB required.' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to remove decision.' });
   }
 });
 

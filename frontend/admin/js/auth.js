@@ -1,6 +1,7 @@
 (function() {
   const token = localStorage.getItem('admin_token');
-  const isLoginPage = window.location.pathname === '/admin' || window.location.pathname.endsWith('login.html');
+  const path = window.location.pathname.replace(/\/+$/, '');
+  const isLoginPage = path === '/admin' || window.location.pathname.endsWith('login.html');
   
   if (!token && !isLoginPage) {
     window.location.href = '/admin';

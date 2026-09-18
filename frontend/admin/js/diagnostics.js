@@ -547,17 +547,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
           <!-- NEW DEVICE OS BREAKDOWN -->
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px;">
-            <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.85rem; color: #1e40af; font-weight: 600;">NEW iOS DEVICES</span>
-              <strong style="font-size: 1.3rem; color: #1d4ed8; font-weight: 800;">${sum.newIosDevices || 0}</strong>
+            <div style="background: var(--admin-surface-3); border: 1px solid rgba(59, 130, 246, 0.3); padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #93c5fd; font-weight: 600;">NEW iOS DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #60a5fa; font-weight: 800;">${sum.newIosDevices || 0}</strong>
             </div>
-            <div style="background: #ecfdf5; border: 1px solid #a7f3d0; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.85rem; color: #065f46; font-weight: 600;">NEW Android DEVICES</span>
-              <strong style="font-size: 1.3rem; color: #047857; font-weight: 800;">${sum.newAndroidDevices || 0}</strong>
+            <div style="background: var(--admin-surface-3); border: 1px solid rgba(16, 185, 129, 0.3); padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #6ee7b7; font-weight: 600;">NEW Android DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #34d399; font-weight: 800;">${sum.newAndroidDevices || 0}</strong>
             </div>
-            <div style="background: #f5f3ff; border: 1px solid #ddd6fe; padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 0.85rem; color: #5b21b6; font-weight: 600;">NEW Other DEVICES</span>
-              <strong style="font-size: 1.3rem; color: #6d28d9; font-weight: 800;">${sum.newOtherDevices || 0}</strong>
+            <div style="background: var(--admin-surface-3); border: 1px solid rgba(168, 85, 247, 0.3); padding: 12px 15px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: #c4b5fd; font-weight: 600;">NEW Other DEVICES</span>
+              <strong style="font-size: 1.3rem; color: #a78bfa; font-weight: 800;">${sum.newOtherDevices || 0}</strong>
             </div>
           </div>
 
@@ -590,14 +590,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
 
           <!-- Strongest Correlations with iOS Failure -->
-          <div style="margin-bottom: 25px; background: #fffbe6; border: 1px solid #ffe58f; padding: 18px; border-radius: 8px;">
-            <h3 style="margin-top: 0; font-size: 1.1rem; color: #d46b08; font-weight: 700; margin-bottom: 12px;">
+          <div style="margin-bottom: 25px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 18px; border-radius: 8px;">
+            <h3 style="margin-top: 0; font-size: 1.1rem; color: #fbbf24; font-weight: 700; margin-bottom: 12px;">
               ⚡ STRONGEST CORRELATIONS WITH iOS SCAN FAILURES
             </h3>
-            <ul style="margin: 0; padding-left: 20px; color: #595959; font-size: 0.9rem; line-height: 1.6;">
+            <ul style="margin: 0; padding-left: 20px; color: var(--admin-text-secondary); font-size: 0.9rem; line-height: 1.6;">
               ${correlations.map(c => `
                 <li style="margin-bottom: 8px;">
-                  <strong style="color: #262626;">${c.factor} [${c.impact}]:</strong> ${c.finding}
+                  <strong style="color: var(--admin-text);">${c.factor} [${c.impact}]:</strong> ${c.finding}
                 </li>
               `).join('')}
             </ul>

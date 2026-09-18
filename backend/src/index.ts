@@ -209,6 +209,16 @@ app.get('/health', (req, res) => {
 // Mount routes for Customer Application
 app.use('/', express.static(path.join(FRONTEND_PATH, 'customer'), customerStaticOptions));
 
+// Admin cache-busting middleware: prevent browser from serving stale admin HTML, JS, or CSS
+const adminNoCacheMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+};
+
+app.use('/admin', adminNoCacheMiddleware);
+
 // Serve admin static pages explicitly
 app.get('/admin', (req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, 'admin/login.html'));
@@ -224,6 +234,10 @@ app.get('/admin/history', (req, res) => {
 
 app.get('/admin/analytics', (req, res) => {
   res.sendFile(path.join(FRONTEND_PATH, 'admin/analytics.html'));
+});
+
+app.get('/admin/inventory', (req, res) => {
+  res.sendFile(path.join(FRONTEND_PATH, 'admin/inventory.html'));
 });
 
 app.get('/admin/diagnostics', (req, res) => {
