@@ -41,10 +41,27 @@ function mapColumns(headerRow, columnDefs) {
   const colMap = {};
 
   for (const [field, keywords] of Object.entries(columnDefs)) {
-    const idx = normalized.findIndex((cell) =>
-      keywords.some((kw) => cell.includes(kw))
-    );
-    colMap[field] = idx;
+    let foundIdx = -1;
+    for (const kw of keywords) {
+      // 1. Exact match first
+      foundIdx = normalized.findIndex((cell) => cell === kw);
+      if (foundIdx !== -1) break;
+
+      // 2. Substring / boundary match
+      foundIdx = normalized.findIndex((cell) => {
+        if (cell.includes(kw)) {
+          if (field === 'itemName' && cell.includes('code')) return false;
+          if (kw.length <= 3) {
+            const regex = new RegExp('\\b' + kw + '\\b', 'i');
+            return regex.test(cell);
+          }
+          return true;
+        }
+        return false;
+      });
+      if (foundIdx !== -1) break;
+    }
+    colMap[field] = foundIdx;
   }
   return colMap;
 }

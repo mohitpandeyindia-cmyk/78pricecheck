@@ -189,6 +189,7 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
     meta: {
       salesPeriod: salesAnalysis.dateRange,
       stockSnapshotDate: stockParsed.generationDate,
+      stockSnapshotDateSource: stockParsed.snapshotDateSource || (stockParsed.generationDate ? 'title' : 'not provided by export'),
       trendWindowDays: salesAnalysis.trendWindowDays,
       flaggedRows: {
         sale: saleParsed.flagged,

@@ -285,7 +285,7 @@
     if (meta?.stockSnapshotDate) {
       ctxSnapshotDate.textContent = formatDate(meta.stockSnapshotDate);
     } else {
-      ctxSnapshotDate.textContent = 'Current snapshot';
+      ctxSnapshotDate.textContent = 'Not provided by export (Desktop Vyapar Stock Detail)';
     }
 
     if (analysisGeneratedAt) {
@@ -800,14 +800,14 @@
       const varA = cand.variantA || {
         name: cand.itemA,
         mrp: cand.avgMrpA ?? cand.mrpA ?? cand.avgPriceA ?? null,
-        mrpSource: cand.mrpSourceA || (cand.avgMrpA != null || cand.avgPriceA != null ? 'Sale Report' : 'Not available'),
+        mrpSource: cand.mrpSourceA || (cand.avgMrpA != null || cand.avgPriceA != null ? 'Sale Report / UnitPrice' : 'Not available'),
         salesQty: 0,
         stockQty: 0,
       };
       const varB = cand.variantB || {
         name: cand.itemB,
         mrp: cand.avgMrpB ?? cand.mrpB ?? cand.avgPriceB ?? null,
-        mrpSource: cand.mrpSourceB || (cand.avgMrpB != null || cand.avgPriceB != null ? 'Sale Report' : 'Not available'),
+        mrpSource: cand.mrpSourceB || (cand.avgMrpB != null || cand.avgPriceB != null ? 'Sale Report / UnitPrice' : 'Not available'),
         salesQty: 0,
         stockQty: 0,
       };

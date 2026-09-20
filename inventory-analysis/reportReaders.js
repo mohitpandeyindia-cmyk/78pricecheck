@@ -1,3 +1,4 @@
+const XLSX = require('xlsx');
 const {
   readSheetRaw,
   findHeaderRowIndex,
@@ -9,30 +10,61 @@ const {
 } = require('./parsers');
 
 /**
- * Sale Report -> Sale Items sheet (sheet index 1 in real Vyapar exports).
- * Columns confirmed from a real export: Date, Party Name, Invoice No.,
- * Item Name, Item code, HSN/SAC, Quantity, Unit, Price/Unit, GST, Amount.
+ * Sale Report -> Supports both Desktop ("Item Details" sheet) and Mobile ("Sale Items" sheet).
+ * Auto-detects the itemized sheet by content (Date, Item Name, Quantity) across all sheets in the workbook.
+ * Columns supported: Date, Invoice No., Item Name, Item Code, HSN/SAC, Quantity, Unit, UnitPrice (Price/Unit), Amount.
  */
-function parseSaleReport(filePath, sheetIndex = 1) {
-  const rows = readSheetRaw(filePath, sheetIndex);
-  const keywordSets = [['item'], ['qty', 'quantity'], ['date']];
-  const headerIdx = findHeaderRowIndex(rows, keywordSets);
+function parseSaleReport(filePath, sheetSelector = null) {
+  const wb = XLSX.readFile(filePath, { cellDates: true });
+  const sheetNames = wb.SheetNames;
 
+  let sheetName = null;
+  let rows = null;
+  let headerIdx = -1;
+  const keywordSets = [['item'], ['qty', 'quantity'], ['date']];
+
+  // If explicit sheetSelector passed, try that first
+  if (sheetSelector !== null && sheetSelector !== undefined) {
+    if (typeof sheetSelector === 'number') {
+      sheetName = sheetNames[sheetSelector];
+    } else {
+      sheetName = sheetSelector;
+    }
+    if (sheetName && wb.Sheets[sheetName]) {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: '' });
+      headerIdx = findHeaderRowIndex(rows, keywordSets);
+    }
+  }
+
+  // Scan all sheets by content if not found
   if (headerIdx === -1) {
+    for (const name of sheetNames) {
+      const candidateRows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+      const idx = findHeaderRowIndex(candidateRows, keywordSets);
+      if (idx !== -1) {
+        sheetName = name;
+        rows = candidateRows;
+        headerIdx = idx;
+        break;
+      }
+    }
+  }
+
+  if (headerIdx === -1 || !rows) {
     throw new Error(
-      `Could not locate a header row in "${filePath}" (sheet index ${sheetIndex}). ` +
-      `Expected columns matching item/quantity/date.`
+      `Could not locate a sale items sheet in "${filePath}". ` +
+      `Expected columns matching item, quantity, and date. Available sheets: ${sheetNames.join(', ')}`
     );
   }
 
   const headerRow = rows[headerIdx];
   const colMap = mapColumns(headerRow, {
     itemName: ['item name', 'item'],
-    quantity: ['qty', 'quantity'],
+    quantity: ['quantity', 'qty'],
     date: ['date'],
   });
 
-  // For 78 Supermaart: Price/Unit in Vyapar Sale Report = MRP
+  // For 78 Supermaart: Price/Unit or UnitPrice in Vyapar Sale Report = MRP
   const optionalColMap = mapColumns(headerRow, {
     pricePerUnit: ['price/unit', 'price per unit', 'unitprice', 'unit price'],
     mrp: ['mrp', 'm.r.p', 'max retail price', 'maximum retail price'],
@@ -59,56 +91,112 @@ function parseSaleReport(filePath, sheetIndex = 1) {
     const date = parseDateCell(row[colMap.date]);
     const priceUnitVal = optionalColMap.pricePerUnit !== -1 ? parseNumberCell(row[optionalColMap.pricePerUnit]) : null;
     const explicitMrp = optionalColMap.mrp !== -1 ? parseNumberCell(row[optionalColMap.mrp]) : null;
-    // Authoritative rule: Sale Report Price/Unit is MRP
+    // Authoritative rule: Sale Report Price/Unit or UnitPrice is MRP
     const mrp = priceUnitVal !== null ? priceUnitVal : explicitMrp;
     const pricePerUnit = mrp; // retained for backwards compatibility
+    const mrpSource = priceUnitVal !== null ? 'Sale Report / UnitPrice' : (explicitMrp !== null ? 'Sale Report' : 'Not available');
 
     if (!rawItemName) { flagged.push({ rowNumber: i + 1, reason: 'missing item name', raw: row }); continue; }
     if (quantity === null) { flagged.push({ rowNumber: i + 1, reason: 'unparseable quantity', raw: row }); continue; }
     if (quantity < 0) { flagged.push({ rowNumber: i + 1, reason: 'negative quantity', raw: row }); continue; }
     if (!date) { flagged.push({ rowNumber: i + 1, reason: 'unparseable date', raw: row }); continue; }
 
-    records.push({ itemName, rawItemName, quantity, date, mrp, pricePerUnit });
+    records.push({ itemName, rawItemName, quantity, date, mrp, pricePerUnit, mrpSource });
   }
 
   return { records, flagged };
 }
 
 /**
- * Stock Detail Report — a single point-in-time snapshot, NOT one row per
- * date. Real Vyapar export structure:
- *   Row 0: "Generated on Sept 13,2026 at 03:56 pm"  <- the snapshot date
- *   Row 2: header -> SL No. | Item Name | Opening Quantity | Quantity In | Quantity Out | Closing Quantity
- * Single sheet (index 0).
+ * Stock Detail Report — a single point-in-time snapshot.
+ * Supports:
+ *   - Desktop exports: Headers directly at row 0 without "Generated on" title;
+ *     spelling "Begining Quantity"; snapshotDateSource = "not provided by export".
+ *   - Mobile/Phone exports: Row 0 "Generated on <date>" title row; header at Row 2.
  */
-function parseStockDetailReport(filePath, sheetIndex = 0) {
-  const rows = readSheetRaw(filePath, sheetIndex);
+function parseStockDetailReport(filePath, sheetSelector = null) {
+  const wb = XLSX.readFile(filePath, { cellDates: true });
+  const sheetNames = wb.SheetNames;
 
-  const generationDate = parseGenerationDateFromTitle(rows[0] && rows[0][0]);
-  if (!generationDate) {
+  let sheetName = null;
+  let rows = null;
+  let headerIdx = -1;
+  const keywordSets = [['item'], ['opening', 'begining', 'beginning'], ['closing']];
+
+  // If explicit sheetSelector passed, try that first
+  if (sheetSelector !== null && sheetSelector !== undefined) {
+    if (typeof sheetSelector === 'number') {
+      sheetName = sheetNames[sheetSelector];
+    } else {
+      sheetName = sheetSelector;
+    }
+    if (sheetName && wb.Sheets[sheetName]) {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: '' });
+      headerIdx = findHeaderRowIndex(rows, keywordSets);
+    }
+  }
+
+  // Scan all sheets if not found
+  if (headerIdx === -1) {
+    for (const name of sheetNames) {
+      const candidateRows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+      const idx = findHeaderRowIndex(candidateRows, keywordSets);
+      if (idx !== -1) {
+        sheetName = name;
+        rows = candidateRows;
+        headerIdx = idx;
+        break;
+      }
+    }
+  }
+
+  // Fallback if opening/begining is not present: match item and closing
+  if (headerIdx === -1) {
+    const fallbackKeywordSets = [['item'], ['closing']];
+    for (const name of sheetNames) {
+      const candidateRows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+      const idx = findHeaderRowIndex(candidateRows, fallbackKeywordSets);
+      if (idx !== -1) {
+        sheetName = name;
+        rows = candidateRows;
+        headerIdx = idx;
+        break;
+      }
+    }
+  }
+
+  if (headerIdx === -1 || !rows) {
     throw new Error(
-      `Could not find a "Generated on <date>" title in "${filePath}" to determine the stock snapshot date. ` +
-      `First row was: [${(rows[0] || []).join(' | ')}]`
+      `Could not locate a header row in "${filePath}" matching item and closing quantity columns. Available sheets: ${sheetNames.join(', ')}`
     );
   }
 
-  const keywordSets = [['item'], ['opening'], ['closing']];
-  const headerIdx = findHeaderRowIndex(rows, keywordSets);
-  if (headerIdx === -1) {
-    throw new Error(`Could not locate a header row in "${filePath}" matching item/opening/closing quantity columns.`);
+  // Extract snapshot date from any title cell in rows preceding headerIdx (e.g. mobile exports)
+  let generationDate = null;
+  let snapshotDateSource = 'not provided by export';
+  for (let r = 0; r < headerIdx; r++) {
+    for (const cell of (rows[r] || [])) {
+      const parsed = parseGenerationDateFromTitle(cell);
+      if (parsed) {
+        generationDate = parsed;
+        snapshotDateSource = 'title';
+        break;
+      }
+    }
+    if (generationDate) break;
   }
 
   const headerRow = rows[headerIdx];
   const colMap = mapColumns(headerRow, {
     itemName: ['item name', 'item'],
-    openingQty: ['opening'],
-    quantityIn: ['quantity in', 'in'],
-    quantityOut: ['quantity out', 'out'],
-    closingQty: ['closing'],
+    openingQty: ['opening quantity', 'begining quantity', 'beginning quantity', 'opening', 'begining', 'beginning'],
+    quantityIn: ['quantity in', 'qty in', 'in'],
+    quantityOut: ['quantity out', 'qty out', 'out'],
+    closingQty: ['closing quantity', 'closing qty', 'closing'],
     mrp: ['mrp', 'm.r.p', 'max retail price', 'maximum retail price'],
   });
 
-  const missing = ['itemName', 'openingQty', 'closingQty'].filter((f) => colMap[f] === -1);
+  const missing = ['itemName', 'closingQty'].filter((f) => colMap[f] === -1);
   if (missing.length) {
     throw new Error(
       `Header row found at row ${headerIdx + 1}, but couldn't match column(s): ${missing.join(', ')}. ` +
@@ -134,7 +222,7 @@ function parseStockDetailReport(filePath, sheetIndex = 0) {
     }
 
     const itemName = normalizeItemName(rawItemName);
-    const openingQty = parseNumberCell(row[colMap.openingQty]);
+    const openingQty = colMap.openingQty !== -1 ? parseNumberCell(row[colMap.openingQty]) : null;
     const rawClosingQty = parseNumberCell(row[colMap.closingQty]);
     const quantityIn = colMap.quantityIn !== -1 ? parseNumberCell(row[colMap.quantityIn]) : null;
     const quantityOut = colMap.quantityOut !== -1 ? parseNumberCell(row[colMap.quantityOut]) : null;
@@ -157,7 +245,7 @@ function parseStockDetailReport(filePath, sheetIndex = 0) {
     records.push({ itemName, rawItemName, openingQty, quantityIn, quantityOut, closingQty, date: generationDate, mrp });
   }
 
-  return { records, flagged, generationDate, negativeStockItems };
+  return { records, flagged, generationDate, snapshotDateSource, negativeStockItems };
 }
 
 /**

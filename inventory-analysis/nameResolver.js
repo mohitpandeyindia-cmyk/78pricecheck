@@ -545,12 +545,13 @@ function resolveCatalogIdentity({
     if (saleMrp !== null && saleMrp !== undefined) {
       entry.priceSum += saleMrp;
       entry.priceCount++;
+      const src = r.mrpSource || 'Sale Report';
       if (!rawMrpMap.has(raw)) {
-        rawMrpMap.set(raw, { mrp: saleMrp, source: 'Sale Report' });
+        rawMrpMap.set(raw, { mrp: saleMrp, source: src });
       }
       const normRaw = normalizeDeterministic(raw);
       if (!rawMrpMap.has(normRaw)) {
-        rawMrpMap.set(normRaw, { mrp: saleMrp, source: 'Sale Report' });
+        rawMrpMap.set(normRaw, { mrp: saleMrp, source: src });
       }
     }
   }
