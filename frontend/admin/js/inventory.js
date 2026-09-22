@@ -239,7 +239,12 @@
         body: formData
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        throw new Error(`Server returned HTTP ${response.status} (${response.statusText || 'Non-JSON response'}). The upload or analysis may have timed out on the proxy.`);
+      }
 
       if (!response.ok) {
         throw new Error(data.error || data.message || 'Analysis failed on server.');
@@ -259,7 +264,11 @@
       }
       refreshLedgerStatus();
     } catch (err) {
-      errorMsg.textContent = err.message || 'An unexpected error occurred during inventory analysis.';
+      if (err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch')) {
+        errorMsg.textContent = 'Connection failed ("Failed to fetch"). Please verify you are using HTTPS (https://pricecheck.78supermaart.in/admin/inventory) and that your internet connection supports transferring 16.8 MB without interruption.';
+      } else {
+        errorMsg.textContent = err.message || 'An unexpected error occurred during inventory analysis.';
+      }
       errorAlert.style.display = 'block';
     } finally {
       loadingIndicator.style.display = 'none';
