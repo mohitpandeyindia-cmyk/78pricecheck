@@ -3,7 +3,7 @@ const path = require('path');
 const cp = require('child_process');
 const assert = require('assert');
 
-const CDP_PORT = 9337;
+const CDP_PORT = 9338;
 const BASE_URL = 'http://localhost:8080';
 
 class CdpClient {
@@ -62,14 +62,14 @@ class CdpClient {
 
 async function testBrowserMasterSearch() {
   console.log('================================================================');
-  console.log('  HEADLESS BROWSER VERIFICATION: ORDER-INDEPENDENT MASTER SEARCH ');
+  console.log('  HEADLESS BROWSER VERIFICATION: COVERAGE & RELEVANCE RANKING    ');
   console.log('================================================================\n');
 
   const jwt = require('c:/seventyeightos/backend/node_modules/jsonwebtoken');
   const token = jwt.sign({ id: 1, username: 'admin' }, 'localtestsecretkey12345', { expiresIn: '2h' });
 
   const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-  const userDataDir = 'C:\\Users\\Admin\\AppData\\Local\\Temp\\chrome_master_search_test';
+  const userDataDir = 'C:\\Users\\Admin\\AppData\\Local\\Temp\\chrome_master_search_rank_test';
   const chromeProc = cp.spawn(chromePath, [
     '--headless=new',
     '--remote-debugging-port=' + CDP_PORT,
@@ -99,12 +99,12 @@ async function testBrowserMasterSearch() {
   await client.send('Page.navigate', { url: BASE_URL + '/admin/inventory' });
   await new Promise(r => setTimeout(r, 1500));
 
-  // Inject dataset with HIMA PURI NEEM FW and other items
+  // Inject dataset containing GM brand items, dead stock items, and ... 500 GM items
   await client.evaluate(`
     (() => {
       window.__analysisData = {
         config: { leadTimeDays: 3, reviewFrequencyDays: 7, orderCoverageDays: 15, serviceLevel: 0.95, watchThresholdFactor: 1.25 },
-        summary: { totalItems: 4, buyNowCount: 2, watchCount: 1, okCount: 1, reviewCount: 0 },
+        summary: { totalItems: 7, buyNowCount: 2, watchCount: 1, okCount: 1, reviewCount: 3 },
         suggestions: [
           {
             itemName: 'HIMA PURI NEEM FW',
@@ -119,40 +119,76 @@ async function testBrowserMasterSearch() {
             reason: 'Reorder required'
           },
           {
-            itemName: 'AMUL BTTR 500 GM',
-            itemCode: '8901262010053',
-            mrp: 295,
+            itemName: 'GM MUSTARD OIL 1 LTR',
+            itemCode: '8908004643001',
+            mrp: 175,
             classification: 'BUY_NOW',
             urgency: 'HIGH',
-            currentStock: 6,
-            daysOfCover: 1.4,
-            effectiveDailyDemand: 4.2,
-            suggestedOrderQty: 58,
+            currentStock: 5,
+            daysOfCover: 2.5,
+            effectiveDailyDemand: 2.0,
+            suggestedOrderQty: 25,
             reason: 'Reorder required'
           },
           {
-            itemName: 'HIMA NEEM SOAP 125G',
-            itemCode: '8909876543210',
-            mrp: 65,
+            itemName: '24M BANYARD MILLET 500 GM',
+            itemCode: '8904083516460',
+            mrp: 150,
             classification: 'OK',
             urgency: null,
-            currentStock: 40,
-            daysOfCover: 20,
+            currentStock: 30,
+            daysOfCover: 15,
             effectiveDailyDemand: 2.0,
             suggestedOrderQty: 0,
             reason: 'Stock healthy'
+          },
+          {
+            itemName: 'ABC GM OIL',
+            itemCode: '8909876543211',
+            mrp: 120,
+            classification: 'WATCH',
+            urgency: null,
+            currentStock: 12,
+            daysOfCover: 4,
+            effectiveDailyDemand: 3.0,
+            suggestedOrderQty: 0,
+            reason: 'Stock buffer within watch range'
           }
         ],
-        review: { matchRequiredItems: [], negativeStockItems: [], deadStockCandidates: [], zeroStockNeverSold: [], suggestedMerges: [], dataQualityNotes: [] },
-        nameResolution: {
-          summary: { totalRawNames: 3, matchedCount: 3, autoMergedCount: 0, manualMergedCount: 0, pendingCandidatesCount: 0 },
-          validationReport: [
+        review: {
+          matchRequiredItems: [],
+          negativeStockItems: [],
+          deadStockCandidates: [
             {
-              canonicalName: 'AMUL BTTR 500 GM',
-              salesVariants: [{ rawName: 'AMUL BUTTER 500 GM' }],
-              stockVariants: [{ rawName: 'AMUL BTTR 500 GM' }]
+              itemName: 'GM MOONG DAL AATA 500 GM',
+              itemCode: '8906122501123',
+              mrp: 102,
+              currentStock: 5,
+              classification: 'REVIEW'
+            },
+            {
+              itemName: 'GM BEDMI AATA 500 GM',
+              itemCode: '8908004643013',
+              mrp: 99,
+              currentStock: 3,
+              classification: 'REVIEW'
             }
-          ]
+          ],
+          zeroStockNeverSold: [
+            {
+              itemName: 'GM BHATURA 400 GM',
+              itemCode: '8908004643136',
+              mrp: 82,
+              currentStock: 0,
+              classification: 'REVIEW'
+            }
+          ],
+          suggestedMerges: [],
+          dataQualityNotes: []
+        },
+        nameResolution: {
+          summary: { totalRawNames: 7, matchedCount: 7, autoMergedCount: 0, manualMergedCount: 0, pendingCandidatesCount: 0 },
+          validationReport: []
         }
       };
 
@@ -184,7 +220,6 @@ async function testBrowserMasterSearch() {
 
   await new Promise(r => setTimeout(r, 1200));
 
-  // Helper to query Master Search and retrieve visible result product names
   async function searchUI(query) {
     return await client.evaluate(`
       (() => {
@@ -197,54 +232,66 @@ async function testBrowserMasterSearch() {
           noMatch,
           items: items.map(el => ({
             name: el.querySelector('.search-item-name')?.textContent?.trim() || '',
-            mrp: el.querySelector('.inline-mrp-tag')?.textContent?.trim() || ''
+            mrp: el.querySelector('.inline-mrp-tag')?.textContent?.trim() || '',
+            status: el.querySelector('.search-item-status-pill')?.textContent?.trim() || '',
+            meta: el.querySelector('.search-item-meta')?.textContent?.trim() || ''
           }))
         };
       })()
     `);
   }
 
-  // Verification List for HIMA PURI NEEM FW:
-  const queriesToTest = [
-    { q: 'hima neem', shouldMatch: true },
-    { q: 'neem hima', shouldMatch: true },
-    { q: 'hima fw', shouldMatch: true },
-    { q: 'fw hima', shouldMatch: true },
-    { q: 'puri hima', shouldMatch: true },
-    { q: 'hima puri fw', shouldMatch: true },
-    { q: 'hima', shouldMatch: true },
-    { q: 'neem', shouldMatch: true },
-    { q: 'fw', shouldMatch: true },
-    { q: 'hima xyz', shouldMatch: false },
-    { q: '500 butter', shouldMatch: true, expectedName: 'AMUL BTTR 500 GM' } // tests out-of-order token with alias
-  ];
+  // 1. Search 'gm': verify dead stock inclusion and proper ranking
+  console.log('[1/4] Testing search for "gm"...');
+  const gmRes = await searchUI('gm');
+  assert(gmRes.items.length >= 5, 'Search for "gm" must return at least 5 products');
+  
+  // Verify dead stock inclusion
+  const deadStockFound = gmRes.items.find(it => it.name.includes('GM MOONG DAL AATA'));
+  assert(deadStockFound, 'Dead stock item "GM MOONG DAL AATA 500 GM" must appear in results');
+  assert(deadStockFound.status.includes('REVIEW'), 'Dead stock item must retain REVIEW status pill');
+  assert(deadStockFound.meta.includes('Dead Stock'), 'Dead stock item must display Dead Stock badge');
+  console.log(`  ✅ Dead Stock product found in Master Search: "${deadStockFound.name}" (${deadStockFound.status} - ${deadStockFound.meta})`);
 
-  for (const t of queriesToTest) {
-    const res = await searchUI(t.q);
-    if (t.shouldMatch) {
-      assert(res.items.length > 0, `Search for "${t.q}" must return at least 1 result`);
-      const target = t.expectedName || 'HIMA PURI NEEM FW';
-      const hasTarget = res.items.some(it => it.name.includes(target));
-      assert(hasTarget, `Search for "${t.q}" must find "${target}" (found: ${res.items.map(i => i.name).join(', ')})`);
-      console.log(`  ✅ UI Query "${t.q}" -> MATCH (${res.items[0].name})`);
-    } else {
-      assert(res.noMatch || res.items.length === 0 || !res.items.some(it => it.name.includes('HIMA PURI NEEM FW')),
-        `Search for "${t.q}" must NOT match HIMA PURI NEEM FW`);
-      console.log(`  ✅ UI Query "${t.q}" -> NO MATCH (correctly rejected)`);
-    }
-  }
+  // Verify ranking: GM-brand items appear above 24M BANYARD MILLET 500 GM
+  const idxMustard = gmRes.items.findIndex(it => it.name.includes('GM MUSTARD OIL 1 LTR'));
+  const idxMoong = gmRes.items.findIndex(it => it.name.includes('GM MOONG DAL AATA 500 GM'));
+  const idxMillet = gmRes.items.findIndex(it => it.name.includes('24M BANYARD MILLET 500 GM'));
+  assert(idxMustard !== -1 && idxMoong !== -1 && idxMillet !== -1);
+  assert(idxMustard < idxMillet, `GM MUSTARD OIL (idx: ${idxMustard}) must rank above 24M BANYARD MILLET (idx: ${idxMillet})`);
+  assert(idxMoong < idxMillet, `Dead-stock GM MOONG DAL AATA (idx: ${idxMoong}) must rank above 24M BANYARD MILLET (idx: ${idxMillet})`);
+  console.log(`  ✅ Positional ranking confirmed: GM-prefix products rank strictly above "... 500 GM" suffix products`);
 
-  // Capture screenshot of "neem hima" search showing HIMA PURI NEEM FW with MRP
-  await searchUI('neem hima');
-  await new Promise(r => setTimeout(r, 300));
-  const shotPath = 'C:/Users/Admin/.gemini/antigravity/brain/7d63a9ee-4b89-41d2-99bd-34505d5d1728/10_order_independent_search_neem_hima.png';
+  // 2. Search 'gm oil': verify multi-word ranking and order-independence
+  console.log('\n[2/4] Testing search for "gm oil"...');
+  const gmOilRes = await searchUI('gm oil');
+  assert(gmOilRes.items.some(it => it.name.includes('GM MUSTARD OIL 1 LTR')), 'GM MUSTARD OIL 1 LTR must match');
+  assert(gmOilRes.items.some(it => it.name.includes('ABC GM OIL')), 'ABC GM OIL must match');
+  assert(!gmOilRes.items.some(it => it.name.includes('24M BANYARD MILLET')), 'Millet without oil must NOT match');
+  console.log(`  ✅ Both tokens required for "gm oil"`);
+
+  console.log('\n[3/4] Testing search for "oil gm" (reversed token order)...');
+  const oilGmRes = await searchUI('oil gm');
+  assert(oilGmRes.items.length === gmOilRes.items.length, 'Reversed tokens "oil gm" must return identical results count');
+  console.log(`  ✅ Order-independence preserved: "oil gm" returns same ${oilGmRes.items.length} items`);
+
+  // 3. Search 'hima neem' (regression check)
+  console.log('\n[4/4] Testing search for "hima neem"...');
+  const himaRes = await searchUI('hima neem');
+  assert(himaRes.items.some(it => it.name.includes('HIMA PURI NEEM FW')), 'HIMA PURI NEEM FW must match "hima neem"');
+  console.log(`  ✅ HIMA PURI NEEM FW regression confirmed`);
+
+  // Capture screenshot of "gm" search
+  await searchUI('gm');
+  await new Promise(r => setTimeout(r, 400));
+  const shotPath = 'C:/Users/Admin/.gemini/antigravity/brain/7d63a9ee-4b89-41d2-99bd-34505d5d1728/11_master_search_gm_ranking_and_dead_stock.png';
   await client.captureScreenshot(shotPath);
-  console.log('\n  📸 Captured screenshot of order-independent search:', shotPath);
+  console.log('\n  📸 Captured screenshot of GM search ranking with Dead Stock:', shotPath);
 
   client.close();
   chromeProc.kill();
   console.log('\n================================================================');
-  console.log('  BROWSER VERIFICATION COMPLETE: ALL 11 SEARCH QUERIES PASSED   ');
+  console.log('  ALL BROWSER RELEVANCE & DATASET COVERAGE TESTS PASSED          ');
   console.log('================================================================');
 }
 

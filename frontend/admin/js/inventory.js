@@ -336,7 +336,7 @@
     const normalizedTexts = [normPrimary, ...searchableTexts.map(t => normalizeSearchText(t))].filter(Boolean);
     const combinedSearchable = normalizedTexts.join(' ');
 
-    // Core rule: Every query token must exist somewhere in the product's searchable text
+    // Core rule: Every query token must exist somewhere in the product's searchable text (order-independent)
     for (const qTok of queryTokens) {
       if (!combinedSearchable.includes(qTok)) {
         return null; // Token missing -> no match
@@ -344,35 +344,108 @@
     }
 
     const normQuery = normalizeSearchText(rawQuery);
+    const primaryWords = normPrimary.split(' ').filter(Boolean);
+    const firstQueryToken = queryTokens[0];
 
-    // Rank Tier 1: Exact full-name match
+    // Priority 1: Exact full-name match
     if (normPrimary === normQuery) {
-      return { rank: 1, name: normPrimary };
+      return { rank: 10, name: normPrimary };
     }
 
-    // Rank Tier 2: Exact phrase match
-    if (normPrimary.includes(normQuery)) {
-      return { rank: 2, name: normPrimary };
-    }
-    if (normalizedTexts.some(t => t.includes(normQuery))) {
-      return { rank: 2.5, name: normPrimary };
-    }
+    if (queryTokens.length === 1) {
+      const token = queryTokens[0];
 
-    // Rank Tier 3: All query tokens match as whole words
-    const primaryWords = new Set(normPrimary.split(' ').filter(Boolean));
-    const allWordsInPrimary = queryTokens.every(qTok => primaryWords.has(qTok));
-    if (allWordsInPrimary) {
-      return { rank: 3, name: normPrimary };
-    }
+      // Priority 1: Product name starts with the query token (e.g., GM MUSTARD OIL)
+      if (primaryWords[0] === token) {
+        return { rank: 20, name: normPrimary };
+      }
+      if (primaryWords[0] && primaryWords[0].startsWith(token)) {
+        return { rank: 25, name: normPrimary };
+      }
 
-    const combinedWords = new Set(combinedSearchable.split(' ').filter(Boolean));
-    const allWordsInCombined = queryTokens.every(qTok => combinedWords.has(qTok));
-    if (allWordsInCombined) {
-      return { rank: 3.5, name: normPrimary };
-    }
+      // Priority 2: A later word starts with the query token (e.g., ABC GM OIL)
+      // Note: If the token is acting as a pack-size unit measurement suffix following a numeric quantity
+      // (such as '500 GM', '100 GM', '1 LTR'), it should be categorized as Priority 3 (rank: 60)
+      const UNIT_MEASURE_TOKENS = new Set(['gm', 'gms', 'g', 'kg', 'kgs', 'ml', 'mls', 'l', 'ltr', 'ltrs', 'pc', 'pcs', 's', 'n']);
+      
+      const laterWordExactIdx = primaryWords.slice(1).findIndex((w, sliceIdx) => {
+        if (w !== token) return false;
+        const actualIdx = sliceIdx + 1;
+        if (UNIT_MEASURE_TOKENS.has(token) && actualIdx > 0 && /^\d+(\.\d+)?$/.test(primaryWords[actualIdx - 1])) {
+          return false; // measurement suffix (e.g. 500 GM) -> defer to Priority 3
+        }
+        return true;
+      });
 
-    // Rank Tier 4: All query tokens match as partial substrings
-    return { rank: 4, name: normPrimary };
+      if (laterWordExactIdx !== -1) {
+        return { rank: 30 + Math.min(laterWordExactIdx + 1, 9), name: normPrimary };
+      }
+
+      const laterWordPrefixIdx = primaryWords.slice(1).findIndex((w, sliceIdx) => {
+        if (!w.startsWith(token)) return false;
+        const actualIdx = sliceIdx + 1;
+        if (UNIT_MEASURE_TOKENS.has(token) && actualIdx > 0 && /^\d+(\.\d+)?$/.test(primaryWords[actualIdx - 1])) {
+          return false; // measurement suffix (e.g. 500 GM) -> defer to Priority 3
+        }
+        return true;
+      });
+      if (laterWordPrefixIdx !== -1) {
+        return { rank: 40 + Math.min(laterWordPrefixIdx + 1, 9), name: normPrimary };
+      }
+
+      // Priority 3: Token occurs as a suffix or substring later in the product name (e.g., ... 500 GM)
+      return { rank: 60, name: normPrimary };
+    } else {
+      // MULTI-WORD SEARCH RANKING
+      const startsWithExactPhrase = normPrimary.startsWith(normQuery);
+      const hasExactPhrase = normPrimary.includes(normQuery);
+
+      // 1. Starts with exact phrase
+      if (startsWithExactPhrase) {
+        return { rank: 15, name: normPrimary };
+      }
+
+      const firstWordIsFirstToken = primaryWords[0] === firstQueryToken;
+      const firstWordStartsWithFirstToken = primaryWords[0] && primaryWords[0].startsWith(firstQueryToken);
+      const allTokensAreWords = queryTokens.every(qTok => primaryWords.includes(qTok));
+
+      // 2. First query token appears at the beginning of the product name + remaining tokens match as whole words
+      if (firstWordIsFirstToken && allTokensAreWords) {
+        const sumWordIdx = queryTokens.reduce((acc, t) => acc + primaryWords.indexOf(t), 0);
+        return { rank: 20 + Math.min(sumWordIdx, 9), name: normPrimary };
+      }
+      if (firstWordStartsWithFirstToken && allTokensAreWords) {
+        return { rank: 22, name: normPrimary };
+      }
+
+      // 3. Exact phrase appears anywhere else in product name
+      if (hasExactPhrase) {
+        return { rank: 25, name: normPrimary };
+      }
+
+      // 4. First query token appears at beginning of name + remaining tokens match anywhere
+      if (firstWordIsFirstToken || firstWordStartsWithFirstToken) {
+        return { rank: 28, name: normPrimary };
+      }
+
+      // 5. Query tokens appear as whole words anywhere in the product name
+      if (allTokensAreWords) {
+        const tokenIndices = queryTokens.map(t => primaryWords.indexOf(t));
+        const earliestIdx = Math.min(...tokenIndices);
+        const maxIdx = Math.max(...tokenIndices);
+        const span = maxIdx - earliestIdx;
+        return { rank: 35 + earliestIdx * 3 + span * 2, name: normPrimary };
+      }
+
+      // 6. Query tokens appear as word prefixes anywhere
+      const allTokensPrefixes = queryTokens.every(qTok => primaryWords.some(w => w.startsWith(qTok)));
+      if (allTokensPrefixes) {
+        return { rank: 55, name: normPrimary };
+      }
+
+      // 7. Query tokens only appear as partial substrings
+      return { rank: 70, name: normPrimary };
+    }
   }
 
   function runMasterSearch() {
@@ -659,7 +732,7 @@
       masterSearchResultsList.style.display = 'block';
       masterSearchResultsList.innerHTML = '';
 
-      const displayResults = results.slice(0, 50).map(r => r.item);
+      const displayResults = results.slice(0, 100).map(r => r.item);
 
       displayResults.forEach(item => {
         const itemRow = document.createElement('div');
