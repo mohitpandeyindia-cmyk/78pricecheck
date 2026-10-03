@@ -66,6 +66,7 @@ function parseSaleReport(filePath, sheetSelector = null) {
 
   // For 78 Supermaart: Price/Unit or UnitPrice in Vyapar Sale Report = MRP
   const optionalColMap = mapColumns(headerRow, {
+    itemCode: ['item code', 'itemcode', 'barcode', 'code'],
     pricePerUnit: ['price/unit', 'price per unit', 'unitprice', 'unit price'],
     mrp: ['mrp', 'm.r.p', 'max retail price', 'maximum retail price'],
   });
@@ -89,6 +90,7 @@ function parseSaleReport(filePath, sheetSelector = null) {
     const itemName = normalizeItemName(rawItemName);
     const quantity = parseNumberCell(row[colMap.quantity]);
     const date = parseDateCell(row[colMap.date]);
+    const itemCode = optionalColMap.itemCode !== -1 && row[optionalColMap.itemCode] ? String(row[optionalColMap.itemCode]).trim() : null;
     const priceUnitVal = optionalColMap.pricePerUnit !== -1 ? parseNumberCell(row[optionalColMap.pricePerUnit]) : null;
     const explicitMrp = optionalColMap.mrp !== -1 ? parseNumberCell(row[optionalColMap.mrp]) : null;
     // Authoritative rule: Sale Report Price/Unit or UnitPrice is MRP
@@ -101,7 +103,7 @@ function parseSaleReport(filePath, sheetSelector = null) {
     if (quantity < 0) { flagged.push({ rowNumber: i + 1, reason: 'negative quantity', raw: row }); continue; }
     if (!date) { flagged.push({ rowNumber: i + 1, reason: 'unparseable date', raw: row }); continue; }
 
-    records.push({ itemName, rawItemName, quantity, date, mrp, pricePerUnit, mrpSource });
+    records.push({ itemName, rawItemName, quantity, date, mrp, pricePerUnit, mrpSource, itemCode });
   }
 
   return { records, flagged };
@@ -189,6 +191,7 @@ function parseStockDetailReport(filePath, sheetSelector = null) {
   const headerRow = rows[headerIdx];
   const colMap = mapColumns(headerRow, {
     itemName: ['item name', 'item'],
+    itemCode: ['item code', 'itemcode', 'barcode', 'code'],
     openingQty: ['opening quantity', 'begining quantity', 'beginning quantity', 'opening', 'begining', 'beginning'],
     quantityIn: ['quantity in', 'qty in', 'in'],
     quantityOut: ['quantity out', 'qty out', 'out'],
@@ -222,6 +225,7 @@ function parseStockDetailReport(filePath, sheetSelector = null) {
     }
 
     const itemName = normalizeItemName(rawItemName);
+    const itemCode = colMap.itemCode !== -1 && row[colMap.itemCode] ? String(row[colMap.itemCode]).trim() : null;
     const openingQty = colMap.openingQty !== -1 ? parseNumberCell(row[colMap.openingQty]) : null;
     const rawClosingQty = parseNumberCell(row[colMap.closingQty]);
     const quantityIn = colMap.quantityIn !== -1 ? parseNumberCell(row[colMap.quantityIn]) : null;
@@ -242,7 +246,7 @@ function parseStockDetailReport(filePath, sheetSelector = null) {
       closingQty = 0;
     }
 
-    records.push({ itemName, rawItemName, openingQty, quantityIn, quantityOut, closingQty, date: generationDate, mrp });
+    records.push({ itemName, rawItemName, openingQty, quantityIn, quantityOut, closingQty, date: generationDate, mrp, itemCode });
   }
 
   return { records, flagged, generationDate, snapshotDateSource, negativeStockItems };

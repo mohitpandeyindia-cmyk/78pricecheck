@@ -9,6 +9,7 @@ const {
 const { analyzeSalesPatterns } = require('./salesAnalysis');
 const { generatePurchaseSuggestions, validateConfig } = require('./purchaseSuggestions');
 const { resolveCatalogIdentity, CatalogLedger } = require('./nameResolver');
+const { loadMrpMaster, getMasterMrp } = require('./mrpMaster');
 
 /**
  * Full V1.1 pipeline: Sale Report + Stock Detail Report -> Name Resolution -> purchase suggestions & classifications.
@@ -57,8 +58,9 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
   const saleParsed = parseSaleReport(saleReportPath);
   const stockParsed = parseStockDetailReport(stockDetailPath);
 
-  // 3. V1.1 Cross-Report Name Resolution
+  // 3. V1.1 Cross-Report Name Resolution with Authoritative MRP Master
   const ledger = new CatalogLedger();
+  const mrpMasterData = loadMrpMaster({ customPath: config.mrpMasterPath });
   const identityResolution = resolveCatalogIdentity({
     saleRecords: saleParsed.records,
     stockRecords: stockParsed.records,
@@ -66,6 +68,7 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
     runtimeManualMappings: config.manualNameMappings || [],
     runtimeRejectedMerges: config.rejectedMerges || [],
     masterCatalogMap: config.masterCatalogMap || null,
+    mrpMaster: mrpMasterData,
   });
 
   const unresolvedCanonicalSet = new Set(
@@ -144,9 +147,111 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
 
   const totalItems = Object.keys(currentStock).length + result.dataQualityNotes.length + matchRequiredCount;
 
+  // 7. Authoritative Reference Default MRP attachment from master catalog
+  if (!mrpMasterData || !mrpMasterData.loaded) {
+    // If not loaded earlier, attempt to reload
+  }
+
+  // Map item codes and aliases by canonical SKU
+  const itemCodesByCanonical = new Map();
+  for (const r of [...resolvedStockRecords, ...resolvedSaleRecords]) {
+    if (r.itemCode && r.itemName) {
+      if (!itemCodesByCanonical.has(r.itemName)) itemCodesByCanonical.set(r.itemName, new Set());
+      itemCodesByCanonical.get(r.itemName).add(r.itemCode);
+    }
+  }
+
+  const aliasesByCanonical = new Map();
+  if (Array.isArray(identityResolution.validationReport)) {
+    for (const v of identityResolution.validationReport) {
+      const aliasSet = new Set();
+      (v.salesVariants || []).forEach((sv) => sv.rawName && aliasSet.add(sv.rawName));
+      (v.stockVariants || []).forEach((sv) => sv.rawName && aliasSet.add(sv.rawName));
+      aliasesByCanonical.set(v.canonicalName, [...aliasSet]);
+    }
+  }
+
+  // Attach reference Default MRP to suggestions
+  result.suggestions.forEach((item) => {
+    const codes = itemCodesByCanonical.get(item.itemName);
+    const primaryCode = codes && codes.size > 0 ? [...codes][0] : null;
+    const aliases = aliasesByCanonical.get(item.itemName) || [];
+    const resolvedMrp = getMasterMrp({
+      itemCode: primaryCode,
+      canonicalName: item.itemName,
+      itemName: item.itemName,
+      aliases,
+      fallbackMrp: avgMrpByItem[item.itemName] ?? null,
+    }, mrpMasterData);
+    item.mrp = resolvedMrp;
+    item.itemCode = primaryCode;
+  });
+
+  // Attach reference Default MRP to review items
+  deadStockCandidates.forEach((d) => {
+    const codes = itemCodesByCanonical.get(d.itemName);
+    const primaryCode = codes && codes.size > 0 ? [...codes][0] : null;
+    d.mrp = getMasterMrp({
+      itemCode: primaryCode,
+      canonicalName: d.itemName,
+      itemName: d.itemName,
+      aliases: aliasesByCanonical.get(d.itemName) || [],
+      fallbackMrp: avgMrpByItem[d.itemName] ?? null,
+    }, mrpMasterData);
+    d.itemCode = primaryCode;
+  });
+
+  zeroStockNeverSold.forEach((z) => {
+    const codes = itemCodesByCanonical.get(z.itemName);
+    const primaryCode = codes && codes.size > 0 ? [...codes][0] : null;
+    z.mrp = getMasterMrp({
+      itemCode: primaryCode,
+      canonicalName: z.itemName,
+      itemName: z.itemName,
+      fallbackMrp: avgMrpByItem[z.itemName] ?? null,
+    }, mrpMasterData);
+    z.itemCode = primaryCode;
+  });
+
+  stockParsed.negativeStockItems.forEach((n) => {
+    n.mrp = getMasterMrp({
+      itemCode: n.itemCode || null,
+      canonicalName: n.itemName,
+      itemName: n.itemName,
+      fallbackMrp: avgMrpByItem[n.itemName] ?? null,
+    }, mrpMasterData);
+  });
+
+  identityResolution.unresolvedItems.forEach((u) => {
+    u.mrp = getMasterMrp({
+      canonicalName: u.canonicalName,
+      itemName: u.canonicalName,
+      fallbackMrp: avgMrpByItem[u.canonicalName] ?? null,
+    }, mrpMasterData);
+  });
+
+  result.dataQualityNotes.forEach((q) => {
+    q.mrp = getMasterMrp({
+      canonicalName: q.itemName,
+      itemName: q.itemName,
+      fallbackMrp: avgMrpByItem[q.itemName] ?? null,
+    }, mrpMasterData);
+  });
+
+  if (Array.isArray(identityResolution.validationReport)) {
+    identityResolution.validationReport.forEach((rep) => {
+      rep.mrp = getMasterMrp({
+        canonicalName: rep.canonicalName,
+        itemName: rep.canonicalName,
+        aliases: (rep.salesVariants || []).map((v) => v.rawName),
+        fallbackMrp: avgMrpByItem[rep.canonicalName] ?? null,
+      }, mrpMasterData);
+    });
+  }
+
   const analysisGeneratedAt = new Date().toISOString();
 
-  // 7. Structured V1.1 Analysis Result
+  // 8. Structured V1.1 Analysis Result
   return {
     analysisGeneratedAt,
 
@@ -191,6 +296,11 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
       stockSnapshotDate: stockParsed.generationDate,
       stockSnapshotDateSource: stockParsed.snapshotDateSource || (stockParsed.generationDate ? 'title' : 'not provided by export'),
       trendWindowDays: salesAnalysis.trendWindowDays,
+      mrpMaster: {
+        loaded: mrpMasterData.loaded,
+        sourceFile: mrpMasterData.sourceFile,
+        count: mrpMasterData.count,
+      },
       flaggedRows: {
         sale: saleParsed.flagged,
         stockDetail: stockParsed.flagged,

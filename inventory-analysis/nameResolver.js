@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { loadMrpMaster, getMasterMrpDetail } = require('./mrpMaster');
 
 // Default ledger path
 const DATA_DIR = path.resolve(__dirname, 'data');
@@ -191,6 +192,67 @@ function isConsonantalAbbr(shortToken, fullToken) {
 }
 
 /**
+ * Evaluate MRP cross-check evidence between two items.
+ *
+ * @param {Object} mrpInfoA - { mrp, source, itemCode, matchedMasterName }
+ * @param {Object} mrpInfoB - { mrp, source, itemCode, matchedMasterName }
+ * @returns {Object} mrpCheck object
+ */
+function computeMrpCheck(mrpInfoA, mrpInfoB) {
+  const hasValidA = mrpInfoA && mrpInfoA.mrp !== null && mrpInfoA.mrp !== undefined && !isNaN(mrpInfoA.mrp) && Number(mrpInfoA.mrp) > 0;
+  const hasValidB = mrpInfoB && mrpInfoB.mrp !== null && mrpInfoB.mrp !== undefined && !isNaN(mrpInfoB.mrp) && Number(mrpInfoB.mrp) > 0;
+
+  let status;
+  let statusLabel;
+  let badgeText;
+  let summary;
+
+  if (hasValidA && hasValidB) {
+    const numA = Number(mrpInfoA.mrp);
+    const numB = Number(mrpInfoB.mrp);
+    if (numA === numB) {
+      status = 'MRP_CONSISTENT';
+      statusLabel = 'MRP CONSISTENT';
+      badgeText = `✓ ₹${numA} = ₹${numB}`;
+      summary = `MRP CONSISTENT ✓ ₹${numA} / ₹${numB}`;
+    } else {
+      status = 'MRP_CONFLICT';
+      statusLabel = 'MRP CONFLICT';
+      badgeText = `⚠ ₹${numA} ≠ ₹${numB}`;
+      summary = `MRP CONFLICT ⚠ ₹${numA} / ₹${numB}`;
+    }
+  } else {
+    status = 'MRP_UNKNOWN';
+    statusLabel = 'MRP UNKNOWN';
+    if (hasValidA) {
+      badgeText = `— ₹${mrpInfoA.mrp} / —`;
+      summary = `MRP UNKNOWN — ₹${mrpInfoA.mrp} / Not available`;
+    } else if (hasValidB) {
+      badgeText = `— — / ₹${mrpInfoB.mrp}`;
+      summary = `MRP UNKNOWN — Not available / ₹${mrpInfoB.mrp}`;
+    } else {
+      badgeText = '— Not available';
+      summary = 'MRP UNKNOWN — Not available';
+    }
+  }
+
+  return {
+    status,
+    statusLabel,
+    badgeText,
+    summary,
+    mrpA: mrpInfoA ? mrpInfoA.mrp : null,
+    mrpB: mrpInfoB ? mrpInfoB.mrp : null,
+    itemCodeA: (mrpInfoA && mrpInfoA.itemCode) || null,
+    itemCodeB: (mrpInfoB && mrpInfoB.itemCode) || null,
+    matchedNameA: (mrpInfoA && mrpInfoA.matchedMasterName) || null,
+    matchedNameB: (mrpInfoB && mrpInfoB.matchedMasterName) || null,
+    sourceA: mrpInfoA ? mrpInfoA.source : 'Not available',
+    sourceB: mrpInfoB ? mrpInfoB.source : 'Not available',
+  };
+}
+
+/**
  * Level 2 — Semantic / Candidate Matching
  * Evaluates whether two distinct items share the same physical product identity.
  * Strictly enforces:
@@ -202,9 +264,19 @@ function isConsonantalAbbr(shortToken, fullToken) {
  * - Same Product Identity (direct, dictionary, or consonantal abbreviation)
  * - Non-conflicting Variant/Flavour tokens
  */
-function evaluateCandidateMatch(rawNameA, rawNameB, precomputedIdA = null, precomputedIdB = null) {
-  const idA = precomputedIdA || extractProductIdentity(rawNameA);
-  const idB = precomputedIdB || extractProductIdentity(rawNameB);
+function evaluateCandidateMatch(rawNameA, rawNameB, precomputedIdA = null, precomputedIdB = null, options = {}) {
+  // Allow passing options as 3rd argument if precomputed IDs omitted: evaluateCandidateMatch(a, b, { mrpMaster })
+  let opts = options;
+  let idAObj = precomputedIdA;
+  let idBObj = precomputedIdB;
+  if (precomputedIdA && typeof precomputedIdA === 'object' && !precomputedIdA.rawName && !precomputedIdA.brand && !precomputedIdA.normalized) {
+    opts = precomputedIdA;
+    idAObj = null;
+    idBObj = null;
+  }
+
+  const idA = idAObj || extractProductIdentity(rawNameA);
+  const idB = idBObj || extractProductIdentity(rawNameB);
 
   // Exact normalized match -> Level 1 already handled or trivial match
   if (idA.normalized === idB.normalized) {
@@ -298,10 +370,55 @@ function evaluateCandidateMatch(rawNameA, rawNameB, precomputedIdA = null, preco
       reason = `Brand (${idA.brand}) and pack size (${idA.sizeWeightFormatted || 'none'}) agree with high token correspondence`;
     }
 
-    return {
+    let confidence = numericWarning ? 0.65 : 0.85;
+    let hasWarning = numericWarning;
+    let matchStatus = numericWarning ? 'HUMAN_REVIEW_REQUIRED' : 'IDENTITY_SUPPORTED';
+
+    let mrpCheck = null;
+    let mrpEvidence = {
+      match: true,
+      warning: false,
+      label: '—',
+      valA: '—',
+      valB: '—',
+    };
+
+    if (opts && (opts.mrpMaster || opts.mrpInfoA || opts.mrpInfoB)) {
+      let infoA = opts.mrpInfoA;
+      let infoB = opts.mrpInfoB;
+      if (!infoA && opts.mrpMaster) {
+        infoA = getMasterMrpDetail({ itemName: rawNameA, canonicalName: rawNameA }, opts.mrpMaster);
+      }
+      if (!infoB && opts.mrpMaster) {
+        infoB = getMasterMrpDetail({ itemName: rawNameB, canonicalName: rawNameB }, opts.mrpMaster);
+      }
+      mrpCheck = computeMrpCheck(infoA, infoB);
+      if (mrpCheck.status === 'MRP_CONSISTENT') {
+        confidence = Math.min(1.0, confidence + 0.05);
+        reason += ` (${mrpCheck.summary})`;
+      } else if (mrpCheck.status === 'MRP_CONFLICT') {
+        hasWarning = true;
+        confidence = Math.min(confidence, 0.60);
+        matchStatus = 'HUMAN_REVIEW_REQUIRED';
+        reason += ` (${mrpCheck.summary} — manual review required)`;
+      }
+
+      mrpEvidence = {
+        match: mrpCheck.status === 'MRP_CONSISTENT',
+        warning: mrpCheck.status === 'MRP_CONFLICT',
+        label: (mrpCheck.mrpA !== null || mrpCheck.mrpB !== null)
+          ? `${mrpCheck.mrpA !== null ? '₹' + mrpCheck.mrpA : '—'} vs ${mrpCheck.mrpB !== null ? '₹' + mrpCheck.mrpB : '—'}`
+          : '—',
+        valA: mrpCheck.mrpA !== null ? `₹${mrpCheck.mrpA}` : '—',
+        valB: mrpCheck.mrpB !== null ? `₹${mrpCheck.mrpB}` : '—',
+      };
+    }
+
+    const resObj = {
       isMatch: true,
-      confidence: numericWarning ? 0.65 : 0.85,
-      hasWarning: numericWarning,
+      confidence,
+      hasWarning,
+      matchStatus,
       reason,
       packCountCheck: {
         match: !numericWarning,
@@ -309,8 +426,26 @@ function evaluateCandidateMatch(rawNameA, rawNameB, precomputedIdA = null, preco
         label: numericWarning ? numericLabel : (idA.sizeWeightFormatted || idA.numericToken || '—'),
         valA: idA.sizeWeightFormatted || idA.numericToken || 'none',
         valB: idB.sizeWeightFormatted || idB.numericToken || 'none',
+      },
+      identityCheck: {
+        brand: { match: idA.brand === idB.brand, valA: idA.brand, valB: idB.brand, label: idA.brand || '—' },
+        packSize: { match: idA.size === idB.size, valA: idA.sizeWeightFormatted || 'none', valB: idB.sizeWeightFormatted || 'none', label: idA.sizeWeightFormatted || '—' },
+        packCount: {
+          match: !numericWarning,
+          warning: numericWarning,
+          label: numericWarning ? numericLabel : (idA.sizeWeightFormatted || idA.numericToken || '—'),
+          valA: idA.sizeWeightFormatted || idA.numericToken || 'none',
+          valB: idB.sizeWeightFormatted || idB.numericToken || 'none',
+        },
+        mrp: mrpEvidence,
       }
     };
+
+    if (mrpCheck) {
+      resObj.mrpCheck = mrpCheck;
+    }
+
+    return resObj;
   }
 
   return { isMatch: false, reason: 'Product tokens do not match' };
@@ -516,8 +651,25 @@ function resolveCatalogIdentity({
   runtimeManualMappings = [],
   runtimeRejectedMerges = [],
   masterCatalogMap = null,
+  mrpMaster = null,
 }) {
   const activeLedger = ledger || new CatalogLedger();
+  const activeMrpMaster = mrpMaster !== null && mrpMaster !== undefined
+    ? mrpMaster
+    : (masterCatalogMap ? null : loadMrpMaster());
+
+  // Index Item Codes from stock and sales reports where available
+  const rawItemCodeMap = new Map();
+  for (const r of stockRecords) {
+    const raw = String(r.rawItemName || r.itemName || '').trim();
+    const code = String(r.itemCode || r['Item Code'] || r['Item code'] || '').trim();
+    if (raw && code && !rawItemCodeMap.has(raw)) rawItemCodeMap.set(raw, code);
+  }
+  for (const r of saleRecords) {
+    const raw = String(r.rawItemName || r.itemName || '').trim();
+    const code = String(r.itemCode || r['Item Code'] || r['Item code'] || '').trim();
+    if (raw && code && !rawItemCodeMap.has(raw)) rawItemCodeMap.set(raw, code);
+  }
 
   // Incorporate runtime mappings/rejections into active ledger if provided
   for (const { from, to } of runtimeManualMappings) {
@@ -570,31 +722,88 @@ function resolveCatalogIdentity({
   }
 
   function getItemMrpInfo(itemName) {
-    if (!itemName) return { mrp: null, source: 'Not available' };
+    if (!itemName) return { mrp: null, source: 'Not available', itemCode: null, matchedMasterName: null };
 
-    // 1. Sale Report (Price/Unit is MRP)
-    const fromReports = rawMrpMap.get(itemName);
-    if (fromReports && fromReports.mrp !== null) return fromReports;
+    const itemCode = rawItemCodeMap.get(itemName) || rawItemCodeMap.get(normalizeDeterministic(itemName)) || null;
 
-    const norm = normalizeDeterministic(itemName);
-    const fromNorm = rawMrpMap.get(norm);
-    if (fromNorm && fromNorm.mrp !== null) return fromNorm;
+    // Check Sale Report fallback
+    let saleReportFallback = null;
+    const fromReports = rawMrpMap.get(itemName) || rawMrpMap.get(normalizeDeterministic(itemName));
+    if (fromReports && fromReports.mrp !== null && Number(fromReports.mrp) > 0) {
+      saleReportFallback = Number(fromReports.mrp);
+    }
 
-    // 2. Master Catalog MRP
+    // Prioritize masterCatalogMap if explicitly passed into resolveCatalogIdentity (e.g. SQLite catalog or mock)
     if (masterCatalogMap) {
       const key = normalizeKey(itemName);
-      const normKey = normalizeKey(norm);
+      const normKey = normalizeKey(normalizeDeterministic(itemName));
       let catMrp = null;
       if (masterCatalogMap instanceof Map) {
         catMrp = masterCatalogMap.get(key) ?? masterCatalogMap.get(normKey) ?? null;
       } else if (typeof masterCatalogMap === 'object') {
         catMrp = masterCatalogMap[key] ?? masterCatalogMap[normKey] ?? null;
       }
-      if (catMrp !== null && catMrp !== undefined) {
-        return { mrp: catMrp, source: 'Master Catalog' };
+      if (catMrp !== null && catMrp !== undefined && Number(catMrp) > 0) {
+        return {
+          mrp: Number(catMrp),
+          source: 'Master Catalog',
+          itemCode: itemCode || null,
+          matchedMasterName: null,
+        };
       }
     }
-    return { mrp: null, source: 'Not available' };
+
+    // 1. Authoritative MRP Master (hierarchy: Item Code -> Canonical Name -> Normalized Name -> Aliases -> Fallback)
+    if (activeMrpMaster && activeMrpMaster.loaded) {
+      const aliases = [];
+      const ledgerCanonical = activeLedger.getCanonical(itemName);
+      if (ledgerCanonical && ledgerCanonical !== itemName) {
+        aliases.push(ledgerCanonical);
+      }
+      const detail = getMasterMrpDetail({
+        itemCode,
+        canonicalName: itemName,
+        itemName,
+        aliases,
+        fallbackMrp: saleReportFallback,
+      }, activeMrpMaster);
+
+      if (detail && detail.mrp !== null && Number(detail.mrp) > 0) {
+        return detail;
+      }
+    }
+
+    // 2. Sale Report (Price/Unit is MRP) fallback
+    if (saleReportFallback !== null) {
+      return {
+        mrp: saleReportFallback,
+        source: fromReports?.source || 'Sale Report',
+        itemCode: itemCode || null,
+        matchedMasterName: null,
+      };
+    }
+
+    // 3. Master Catalog MRP (SQLite)
+    if (masterCatalogMap) {
+      const key = normalizeKey(itemName);
+      const normKey = normalizeKey(normalizeDeterministic(itemName));
+      let catMrp = null;
+      if (masterCatalogMap instanceof Map) {
+        catMrp = masterCatalogMap.get(key) ?? masterCatalogMap.get(normKey) ?? null;
+      } else if (typeof masterCatalogMap === 'object') {
+        catMrp = masterCatalogMap[key] ?? masterCatalogMap[normKey] ?? null;
+      }
+      if (catMrp !== null && catMrp !== undefined && Number(catMrp) > 0) {
+        return {
+          mrp: Number(catMrp),
+          source: 'Master Catalog',
+          itemCode: itemCode || null,
+          matchedMasterName: null,
+        };
+      }
+    }
+
+    return { mrp: null, source: 'Not available', itemCode: itemCode || null, matchedMasterName: null };
   }
 
   const allRawNames = Array.from(new Set([...rawSalesMap.keys(), ...rawStockMap.keys()]));
@@ -690,6 +899,20 @@ function resolveCatalogIdentity({
             valB: idB.sizeWeightFormatted || idB.numericToken || 'none',
           };
 
+          const mrpCheck = computeMrpCheck(mrpInfoA, mrpInfoB);
+          let candidateWarning = Boolean(evalResult.hasWarning);
+          let candidateConfidence = evalResult.confidence;
+          let candidateReason = evalResult.reason;
+
+          if (mrpCheck.status === 'MRP_CONSISTENT') {
+            candidateConfidence = Math.min(1.0, candidateConfidence + 0.05);
+            candidateReason += ` (${mrpCheck.summary})`;
+          } else if (mrpCheck.status === 'MRP_CONFLICT') {
+            candidateWarning = true;
+            candidateConfidence = Math.min(candidateConfidence, 0.60);
+            candidateReason += ` (${mrpCheck.summary} — manual review required)`;
+          }
+
           const mrpLabel = (mrpInfoA.mrp !== null || mrpInfoB.mrp !== null)
             ? `${mrpInfoA.mrp !== null ? '₹' + mrpInfoA.mrp : '—'} vs ${mrpInfoB.mrp !== null ? '₹' + mrpInfoB.mrp : '—'}`
             : '—';
@@ -697,15 +920,18 @@ function resolveCatalogIdentity({
           pendingCandidates.push({
             itemA: targetA,
             itemB: targetB,
-            confidence: evalResult.confidence,
-            hasWarning: Boolean(evalResult.hasWarning),
-            matchStatus: evalResult.hasWarning ? 'HUMAN_REVIEW_REQUIRED' : 'IDENTITY_SUPPORTED',
-            reason: evalResult.reason,
+            confidence: candidateConfidence,
+            hasWarning: candidateWarning,
+            matchStatus: candidateWarning ? 'HUMAN_REVIEW_REQUIRED' : 'IDENTITY_SUPPORTED',
+            reason: candidateReason,
             suggestedCanonical,
+            mrpCheck,
             variantA: {
               name: targetA,
               mrp: mrpInfoA.mrp,
               mrpSource: mrpInfoA.source,
+              itemCode: mrpInfoA.itemCode || null,
+              matchedMasterName: mrpInfoA.matchedMasterName || null,
               avgMrp: avgPriceA,
               avgPrice: avgPriceA,
               salesQty: salesInfoA ? salesInfoA.totalQty : 0,
@@ -715,6 +941,8 @@ function resolveCatalogIdentity({
               name: targetB,
               mrp: mrpInfoB.mrp,
               mrpSource: mrpInfoB.source,
+              itemCode: mrpInfoB.itemCode || null,
+              matchedMasterName: mrpInfoB.matchedMasterName || null,
               avgMrp: avgPriceB,
               avgPrice: avgPriceB,
               salesQty: salesInfoB ? salesInfoB.totalQty : 0,
@@ -733,9 +961,15 @@ function resolveCatalogIdentity({
               },
               packCount: packCheck,
               mrp: {
+                match: mrpCheck.status === 'MRP_CONSISTENT',
+                warning: mrpCheck.status === 'MRP_CONFLICT',
                 valA: mrpInfoA.mrp !== null ? `₹${mrpInfoA.mrp}` : '—',
                 valB: mrpInfoB.mrp !== null ? `₹${mrpInfoB.mrp}` : '—',
                 label: mrpLabel,
+                status: mrpCheck.status,
+                statusLabel: mrpCheck.statusLabel,
+                badgeText: mrpCheck.badgeText,
+                summary: mrpCheck.summary,
               },
             },
           });
@@ -851,6 +1085,25 @@ function resolveCatalogIdentity({
       v.resolutionSource = v.status === 'MANUAL' ? 'MANUAL_MERGE' : (v.status === 'AUTO' ? 'AUTO_NORMALIZED' : 'AUTO_MATCHED');
     });
 
+    // Evaluate MRP consistency across variants in this canonical group
+    const variantMrps = new Set();
+    for (const v of variantsList) {
+      const vInfo = getItemMrpInfo(v);
+      if (vInfo && vInfo.mrp !== null && Number(vInfo.mrp) > 0) {
+        variantMrps.add(Number(vInfo.mrp));
+      }
+    }
+
+    let groupMrpStatus = 'MRP_UNKNOWN';
+    let groupMrpStatusLabel = 'MRP UNKNOWN';
+    if (variantMrps.size === 1 && variantsList.length > 1) {
+      groupMrpStatus = 'MRP_CONSISTENT';
+      groupMrpStatusLabel = 'MRP CONSISTENT';
+    } else if (variantMrps.size > 1) {
+      groupMrpStatus = 'MRP_CONFLICT';
+      groupMrpStatusLabel = 'MRP CONFLICT';
+    }
+
     const reportEntry = {
       canonicalName,
       resolutionStatus,
@@ -864,6 +1117,11 @@ function resolveCatalogIdentity({
       totalStockQuantity: totalStockQty,
       stockAsOfDate,
       hasPendingCandidate,
+      mrpCheck: {
+        status: groupMrpStatus,
+        statusLabel: groupMrpStatusLabel,
+        distinctMrps: Array.from(variantMrps),
+      },
     };
 
     validationReport.push(reportEntry);
@@ -928,4 +1186,5 @@ module.exports = {
   CatalogLedger,
   resolveCatalogIdentity,
   normalizeKey,
+  computeMrpCheck,
 };

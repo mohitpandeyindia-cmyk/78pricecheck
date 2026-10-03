@@ -39,6 +39,10 @@
   const stockBox = document.getElementById('stock-box');
   const saleFileName = document.getElementById('sale-file-name');
   const stockFileName = document.getElementById('stock-file-name');
+  const mrpInput = document.getElementById('mrp-master-input');
+  const mrpBrowseBtn = document.getElementById('mrp-browse-btn');
+  const mrpBox = document.getElementById('mrp-box');
+  const mrpFileName = document.getElementById('mrp-file-name');
   const analyzeBtn = document.getElementById('analyze-btn');
   const loadingIndicator = document.getElementById('loading-indicator');
   const errorAlert = document.getElementById('error-alert');
@@ -59,6 +63,23 @@
   const assumpServiceLevel = document.getElementById('assump-service-level');
   const assumpWatchBuffer = document.getElementById('assump-watch-buffer');
   const assumpTrendWindow = document.getElementById('assump-trend-window');
+
+  // Master Search Elements
+  const masterSearchInput = document.getElementById('master-search-input');
+  const masterSearchClearBtn = document.getElementById('master-search-clear-btn');
+  const masterSearchEmptyState = document.getElementById('master-search-empty-state');
+  const masterSearchResultsList = document.getElementById('master-search-results-list');
+  const masterSearchNoMatch = document.getElementById('master-search-no-match');
+
+  // Status Accordion Elements
+  const statusExpandedPanel = document.getElementById('status-expanded-panel');
+  const collapseStatusBtn = document.getElementById('collapse-status-btn');
+  const expandedActiveBadge = document.getElementById('expanded-active-badge');
+  const expandedItemsCount = document.getElementById('expanded-items-count');
+  const chevronBuyNow = document.getElementById('chevron-buy-now');
+  const chevronWatch = document.getElementById('chevron-watch');
+  const chevronOk = document.getElementById('chevron-ok');
+  const chevronReview = document.getElementById('chevron-review');
 
   // Tab Elements
   const tabBtns = document.querySelectorAll('.tab-btn');
@@ -142,6 +163,7 @@
   const drawerItemName = document.getElementById('drawer-item-name');
   const drawerClassBadge = document.getElementById('drawer-class-badge');
   const drawerUrgencyBadge = document.getElementById('drawer-urgency-badge');
+  const drawerItemMrp = document.getElementById('drawer-item-mrp');
   const drawerWhyBox = document.getElementById('drawer-why-box');
   const drawerReason = document.getElementById('drawer-reason');
   const drawerMetricStock = document.getElementById('drawer-metric-stock');
@@ -186,6 +208,82 @@
     updateSubmitButtonState();
   });
 
+  // MRP Master File Picker Wiring
+  if (mrpBrowseBtn && mrpInput) {
+    mrpBrowseBtn.addEventListener('click', () => mrpInput.click());
+
+    mrpInput.addEventListener('change', async () => {
+      if (mrpInput.files && mrpInput.files[0]) {
+        const file = mrpInput.files[0];
+        mrpFileName.textContent = `Uploading ${file.name}...`;
+        mrpFileName.style.color = 'var(--admin-warning)';
+
+        const formData = new FormData();
+        formData.append('mrpMaster', file);
+
+        try {
+          const res = await (typeof authenticatedFetch === 'function'
+            ? authenticatedFetch('/api/admin/inventory/mrp-master', { method: 'POST', body: formData })
+            : fetch('/api/admin/inventory/mrp-master', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+              }));
+
+          const data = await res.json();
+          if (res && res.ok && data.success) {
+            const countStr = Number(data.count).toLocaleString();
+            mrpFileName.textContent = `MRP Master ✓ ${countStr} products`;
+            mrpFileName.style.color = 'var(--primary-color)';
+            if (mrpBox) mrpBox.classList.add('has-file');
+
+            // If analysis was already executed on screen, trigger background re-analysis or re-render
+            if (analysisData) {
+              triggerBackgroundAnalysis();
+            }
+          } else {
+            throw new Error(data.error || 'Failed to upload MRP Master.');
+          }
+        } catch (err) {
+          mrpFileName.textContent = 'Upload failed';
+          mrpFileName.style.color = 'var(--admin-danger)';
+          if (errorAlert && errorMsg) {
+            errorMsg.textContent = `MRP Master error: ${err.message}`;
+            errorAlert.style.display = 'block';
+          }
+        }
+      }
+    });
+  }
+
+  // Check initial MRP master status on load
+  async function refreshMrpMasterStatus() {
+    if (!mrpFileName) return;
+    try {
+      const res = await (typeof authenticatedFetch === 'function'
+        ? authenticatedFetch('/api/admin/inventory/mrp-master/status')
+        : fetch('/api/admin/inventory/mrp-master/status', { headers: { 'Authorization': `Bearer ${token}` } }));
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.loaded && data.count > 0) {
+          const countStr = Number(data.count).toLocaleString();
+          mrpFileName.textContent = `MRP Master ✓ ${countStr} products`;
+          mrpFileName.style.color = 'var(--primary-color)';
+          if (mrpBox) mrpBox.classList.add('has-file');
+        } else {
+          mrpFileName.textContent = 'MRP Master: Not loaded';
+          mrpFileName.style.color = 'inherit';
+          if (mrpBox) mrpBox.classList.remove('has-file');
+        }
+      } else {
+        mrpFileName.textContent = 'MRP Master: Not loaded';
+      }
+    } catch (e) {
+      mrpFileName.textContent = 'MRP Master: Not loaded';
+    }
+  }
+  refreshMrpMasterStatus();
+
   function updateSubmitButtonState() {
     const hasSale = saleInput.files && saleInput.files[0];
     const hasStock = stockInput.files && stockInput.files[0];
@@ -197,6 +295,294 @@
     const isOpen = advancedPanel.classList.toggle('open');
     advancedArrow.classList.toggle('open', isOpen);
   });
+
+  // Master Search Controller
+  function initMasterSearch() {
+    if (!masterSearchInput) return;
+
+    masterSearchInput.addEventListener('input', () => {
+      runMasterSearch();
+    });
+
+    if (masterSearchClearBtn) {
+      masterSearchClearBtn.addEventListener('click', () => {
+        masterSearchInput.value = '';
+        runMasterSearch();
+        masterSearchInput.focus();
+      });
+    }
+  }
+
+  function runMasterSearch() {
+    if (!masterSearchInput) return;
+    const query = masterSearchInput.value.trim().toLowerCase();
+
+    if (!analysisData) {
+      if (masterSearchClearBtn) masterSearchClearBtn.style.display = query ? 'block' : 'none';
+      if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'block';
+      if (masterSearchResultsList) masterSearchResultsList.style.display = 'none';
+      if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'none';
+      return;
+    }
+
+    if (!query) {
+      if (masterSearchClearBtn) masterSearchClearBtn.style.display = 'none';
+      if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'block';
+      if (masterSearchResultsList) masterSearchResultsList.style.display = 'none';
+      if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'none';
+      return;
+    }
+
+    if (masterSearchClearBtn) masterSearchClearBtn.style.display = 'block';
+
+    const results = [];
+    const seenNames = new Set();
+
+    // 1. Search in suggestions (BUY_NOW, WATCH, OK)
+    if (analysisData.suggestions && Array.isArray(analysisData.suggestions)) {
+      for (const item of analysisData.suggestions) {
+        if (item.itemName && item.itemName.toLowerCase().includes(query)) {
+          results.push(item);
+          seenNames.add(item.itemName.toLowerCase());
+        }
+      }
+    }
+
+    // 2. Search in review exceptions (REVIEW)
+    if (analysisData.review) {
+      const {
+        matchRequiredItems,
+        negativeStockItems,
+        deadStockCandidates,
+        zeroStockNeverSold,
+        suggestedMerges,
+        dataQualityNotes
+      } = analysisData.review;
+
+      if (Array.isArray(matchRequiredItems)) {
+        for (const item of matchRequiredItems) {
+          const name = item.canonicalName || '';
+          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            results.push({
+              itemName: name,
+              mrp: item.mrp ?? null,
+              classification: 'REVIEW',
+              urgency: 'CRITICAL',
+              currentStock: item.totalStockQuantity ?? 0,
+              daysOfCover: null,
+              effectiveDailyDemand: null,
+              suggestedOrderQty: 0,
+              reason: 'Unresolved candidate items. Reorder calculations are withheld to prevent false purchase orders.',
+              isReviewOnly: true,
+              reviewCategory: 'matchRequired',
+              exceptionBadge: '⚠️ Match Required'
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(negativeStockItems)) {
+        for (const item of negativeStockItems) {
+          const name = item.itemName || '';
+          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            results.push({
+              itemName: name,
+              mrp: item.mrp ?? null,
+              classification: 'REVIEW',
+              urgency: 'CRITICAL',
+              currentStock: item.recordedClosingQty,
+              daysOfCover: null,
+              effectiveDailyDemand: null,
+              suggestedOrderQty: 0,
+              reason: 'Recorded stock in system is less than zero (unlogged purchase or barcode mix-up). Physical stock clamped to 0; audit required.',
+              isReviewOnly: true,
+              reviewCategory: 'negativeStock',
+              exceptionBadge: '⚠️ Negative Stock'
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(deadStockCandidates)) {
+        for (const item of deadStockCandidates) {
+          const name = item.itemName || '';
+          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            results.push({
+              itemName: name,
+              mrp: item.mrp ?? null,
+              classification: 'REVIEW',
+              urgency: 'WATCH',
+              currentStock: item.currentStock,
+              daysOfCover: null,
+              effectiveDailyDemand: 0,
+              suggestedOrderQty: 0,
+              reason: 'Physical stock is on hand (> 0) but recorded zero sales across observation period. Review for deactivation.',
+              isReviewOnly: true,
+              reviewCategory: 'deadStock',
+              exceptionBadge: '📦 Dead Stock'
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(zeroStockNeverSold)) {
+        for (const item of zeroStockNeverSold) {
+          const name = item.itemName || '';
+          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            results.push({
+              itemName: name,
+              mrp: item.mrp ?? null,
+              classification: 'REVIEW',
+              urgency: null,
+              currentStock: item.currentStock ?? 0,
+              daysOfCover: null,
+              effectiveDailyDemand: 0,
+              suggestedOrderQty: 0,
+              reason: 'Zero recorded stock and zero sales over observation period. Obsolete vs out-of-stock.',
+              isReviewOnly: true,
+              reviewCategory: 'zeroStock',
+              exceptionBadge: '⏳ Zero Stock'
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(suggestedMerges)) {
+        for (const item of suggestedMerges) {
+          const nameA = item.itemA || '';
+          const nameB = item.itemB || '';
+          if ((nameA.toLowerCase().includes(query) || nameB.toLowerCase().includes(query))) {
+            const pairName = `${nameA} ↔ ${nameB}`;
+            if (!seenNames.has(pairName.toLowerCase())) {
+              seenNames.add(pairName.toLowerCase());
+              results.push({
+                itemName: pairName,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: null,
+                currentStock: 0,
+                daysOfCover: null,
+                effectiveDailyDemand: null,
+                suggestedOrderQty: 0,
+                reason: 'Suggested merge candidate pair pending review in Name Resolution tab.',
+                isReviewOnly: true,
+                reviewCategory: 'nameVariants',
+                exceptionBadge: '🔀 Name Variant'
+              });
+            }
+          }
+        }
+      }
+
+      if (Array.isArray(dataQualityNotes)) {
+        for (const item of dataQualityNotes) {
+          const name = item.itemName || '';
+          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
+            seenNames.add(name.toLowerCase());
+            results.push({
+              itemName: name,
+              mrp: item.mrp ?? null,
+              classification: 'REVIEW',
+              urgency: null,
+              currentStock: 0,
+              daysOfCover: null,
+              effectiveDailyDemand: null,
+              suggestedOrderQty: 0,
+              reason: item.note || 'Sold historically in Sale Report but missing from Stock Detail snapshot.',
+              isReviewOnly: true,
+              reviewCategory: 'dataQuality',
+              exceptionBadge: '📋 Data Quality'
+            });
+          }
+        }
+      }
+    }
+
+    if (results.length === 0) {
+      if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'none';
+      if (masterSearchResultsList) masterSearchResultsList.style.display = 'none';
+      if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'block';
+      return;
+    }
+
+    if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'none';
+    if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'none';
+    if (masterSearchResultsList) {
+      masterSearchResultsList.style.display = 'block';
+      masterSearchResultsList.innerHTML = '';
+
+      const displayResults = results.slice(0, 50);
+
+      displayResults.forEach(item => {
+        const itemRow = document.createElement('div');
+        itemRow.className = 'master-search-item';
+        itemRow.setAttribute('tabindex', '0');
+
+        let pillHtml = '';
+        let metaHtml = '';
+
+        if (item.classification === 'BUY_NOW') {
+          pillHtml = `<div class="search-item-status-pill badge-buy-now"><span class="status-dot dot-buy-now"></span> BUY NOW</div>`;
+          metaHtml = `
+            <span class="meta-tag">Stock: <strong>${item.currentStock}</strong></span>
+            <span class="meta-tag">Suggested: <strong style="color: var(--color-buy-now);">${item.suggestedOrderQty} units</strong></span>
+            <span class="meta-tag">Demand: <strong>${item.effectiveDailyDemand}/day</strong></span>
+            ${item.urgency ? `<span class="meta-tag">${getUrgencyTag(item.urgency)}</span>` : ''}
+          `;
+        } else if (item.classification === 'WATCH') {
+          pillHtml = `<div class="search-item-status-pill badge-watch"><span class="status-dot dot-watch"></span> WATCH</div>`;
+          metaHtml = `
+            <span class="meta-tag">Stock: <strong>${item.currentStock}</strong></span>
+            <span class="meta-tag">Cover: <strong>${item.daysOfCover !== null && item.daysOfCover !== undefined ? `${item.daysOfCover}d` : '—'}</strong></span>
+            <span class="meta-tag">Demand: <strong>${item.effectiveDailyDemand}/day</strong></span>
+          `;
+        } else if (item.classification === 'OK') {
+          pillHtml = `<div class="search-item-status-pill badge-ok"><span class="status-dot dot-ok"></span> OK</div>`;
+          metaHtml = `
+            <span class="meta-tag">Stock: <strong>${item.currentStock}</strong></span>
+            <span class="meta-tag">Cover: <strong>${item.daysOfCover !== null && item.daysOfCover !== undefined ? `${item.daysOfCover}d` : '—'}</strong></span>
+            <span class="meta-tag">Demand: <strong>${item.effectiveDailyDemand}/day</strong></span>
+          `;
+        } else {
+          pillHtml = `<div class="search-item-status-pill badge-review"><span class="status-dot dot-review"></span> REVIEW</div>`;
+          metaHtml = `
+            <span class="meta-tag">${escapeHtml(item.exceptionBadge || 'Review Exception')}</span>
+            <span class="meta-tag">Stock: <strong>${item.currentStock ?? 0}</strong></span>
+            <span class="meta-tag" style="color: var(--admin-text-muted);">${escapeHtml(item.reason || '')}</span>
+          `;
+        }
+
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
+
+        itemRow.innerHTML = `
+          <div class="search-item-info">
+            <div class="search-item-name">${escapeHtml(item.itemName)}${mrpTag}</div>
+            <div class="search-item-meta">${metaHtml}</div>
+          </div>
+          ${pillHtml}
+        `;
+
+        itemRow.addEventListener('click', () => {
+          openProductDrawer(item);
+        });
+        itemRow.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openProductDrawer(item);
+          }
+        });
+
+        masterSearchResultsList.appendChild(itemRow);
+      });
+    }
+  }
+
+  // Initialize Master Search on page load
+  initMasterSearch();
 
   // 3. Form Submission
   form.addEventListener('submit', async (e) => {
@@ -210,6 +596,9 @@
     const formData = new FormData();
     formData.append('saleReport', saleInput.files[0]);
     formData.append('stockDetail', stockInput.files[0]);
+    if (mrpInput && mrpInput.files && mrpInput.files[0]) {
+      formData.append('mrpMaster', mrpInput.files[0]);
+    }
 
     // Optional overrides
     const leadTimeVal = document.getElementById('lead-time-input').value;
@@ -263,6 +652,7 @@
         statusLastUpload.textContent = `${saleInput.files[0].name} + ${stockInput.files[0].name}`;
       }
       refreshLedgerStatus();
+      refreshMrpMasterStatus();
     } catch (err) {
       if (err.name === 'TypeError' && String(err.message).toLowerCase().includes('fetch')) {
         errorMsg.textContent = 'Connection failed ("Failed to fetch"). Please verify you are using HTTPS (https://pricecheck.78supermaart.in/admin/inventory) and that your internet connection supports transferring 16.8 MB without interruption.';
@@ -357,8 +747,9 @@
       resPendingCount.textContent = nameResolution.summary.pendingCandidatesCount;
     }
 
-    // Render active tab
-    renderActiveTab();
+    // Collapse status section by default and refresh master search
+    collapseStatusSection();
+    runMasterSearch();
   }
 
   function getZScoreFor(serviceLevel) {
@@ -369,22 +760,102 @@
     return '1.65';
   }
 
-  // 5. Main Tab Switching
-  tabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      tabBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeTab = btn.getAttribute('data-tab');
+  let isPanelExpanded = false;
 
-      // Reset search & urgency filter
-      tabSearchInput.value = '';
-      productSearchTerm = '';
+  function toggleStatusSection(tabName) {
+    if (isPanelExpanded && activeTab === tabName) {
+      collapseStatusSection();
+    } else {
+      expandStatusSection(tabName);
+    }
+  }
+
+  function expandStatusSection(tabName) {
+    activeTab = tabName;
+    isPanelExpanded = true;
+
+    if (statusExpandedPanel) {
+      statusExpandedPanel.style.display = 'block';
+    }
+
+    // Reset urgency filter when entering BUY NOW
+    if (activeTab === 'BUY_NOW') {
       activeUrgency = 'ALL';
       urgencyFilterBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-urgency') === 'ALL'));
+    }
 
-      renderActiveTab();
+    // Update active classes on cards
+    tabBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-tab') === activeTab);
+    });
+
+    // Update chevrons
+    if (chevronBuyNow) chevronBuyNow.textContent = (activeTab === 'BUY_NOW') ? '▾' : '▸';
+    if (chevronWatch) chevronWatch.textContent = (activeTab === 'WATCH') ? '▾' : '▸';
+    if (chevronOk) chevronOk.textContent = (activeTab === 'OK') ? '▾' : '▸';
+    if (chevronReview) chevronReview.textContent = (activeTab === 'REVIEW') ? '▾' : '▸';
+
+    // Update active badge and item count in expanded toolbar
+    if (expandedActiveBadge) {
+      expandedActiveBadge.className = `expanded-active-badge tab-badge badge-${activeTab.toLowerCase().replace('_', '-')}`;
+      if (activeTab === 'BUY_NOW') expandedActiveBadge.textContent = 'BUY NOW';
+      else if (activeTab === 'WATCH') expandedActiveBadge.textContent = 'WATCH';
+      else if (activeTab === 'OK') expandedActiveBadge.textContent = 'OK';
+      else if (activeTab === 'REVIEW') expandedActiveBadge.textContent = 'REVIEW';
+      else if (activeTab === 'RESOLUTION') expandedActiveBadge.textContent = 'NAME RESOLUTION';
+    }
+
+    updateExpandedItemsCount();
+    renderActiveTab();
+  }
+
+  function collapseStatusSection() {
+    isPanelExpanded = false;
+    if (statusExpandedPanel) {
+      statusExpandedPanel.style.display = 'none';
+    }
+
+    tabBtns.forEach(btn => btn.classList.remove('active'));
+
+    if (chevronBuyNow) chevronBuyNow.textContent = '▸';
+    if (chevronWatch) chevronWatch.textContent = '▸';
+    if (chevronOk) chevronOk.textContent = '▸';
+    if (chevronReview) chevronReview.textContent = '▸';
+  }
+
+  function updateExpandedItemsCount() {
+    if (!expandedItemsCount || !analysisData) return;
+    let count = 0;
+    if (activeTab === 'BUY_NOW' || activeTab === 'WATCH' || activeTab === 'OK') {
+      const items = (analysisData.suggestions || []).filter(s => s.classification === activeTab);
+      count = items.length;
+    } else if (activeTab === 'REVIEW') {
+      const r = analysisData.review || {};
+      count = (r.negativeStockItems?.length || 0) +
+        (r.deadStockCandidates?.length || 0) +
+        (r.zeroStockNeverSold?.length || 0) +
+        (r.suggestedMerges?.length || 0) +
+        (r.dataQualityNotes?.length || 0) +
+        (r.matchRequiredItems?.length || 0);
+    } else if (activeTab === 'RESOLUTION') {
+      count = analysisData.nameResolution?.summary?.pendingCandidatesCount || 0;
+    }
+    expandedItemsCount.textContent = `${count} items`;
+  }
+
+  // 5. Main Tab Switching & Accordion Triggers
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.getAttribute('data-tab');
+      toggleStatusSection(tab);
     });
   });
+
+  if (collapseStatusBtn) {
+    collapseStatusBtn.addEventListener('click', () => {
+      collapseStatusSection();
+    });
+  }
 
   function renderActiveTab() {
     tabBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === activeTab));
@@ -421,11 +892,13 @@
     });
   });
 
-  // Search in Product Table
-  tabSearchInput.addEventListener('input', (e) => {
-    productSearchTerm = e.target.value.trim().toLowerCase();
-    renderProductTable();
-  });
+  // Search in Product Table (if present)
+  if (tabSearchInput) {
+    tabSearchInput.addEventListener('input', (e) => {
+      productSearchTerm = e.target.value.trim().toLowerCase();
+      renderProductTable();
+    });
+  }
 
   // Sorting in Product Table
   mainProductTable.querySelectorAll('th[data-col]').forEach(th => {
@@ -499,7 +972,10 @@
 
       tr.innerHTML = `
         <td>
-          <div style="font-weight: 600; color: var(--text-color);">${escapeHtml(item.itemName)}</div>
+          <div style="font-weight: 600; color: var(--text-color);">
+            ${escapeHtml(item.itemName)}
+            ${item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : ''}
+          </div>
           ${getUrgencyTag(item.urgency)}
         </td>
         <td class="text-right" style="font-weight: 600;">${item.currentStock}</td>
@@ -543,16 +1019,18 @@
       reviewSelectors.forEach(c => c.classList.remove('active'));
       card.classList.add('active');
       activeReviewCategory = card.getAttribute('data-category');
-      reviewSearchInput.value = '';
+      if (reviewSearchInput) reviewSearchInput.value = '';
       reviewSearchTerm = '';
       renderReviewCategory();
     });
   });
 
-  reviewSearchInput.addEventListener('input', (e) => {
-    reviewSearchTerm = e.target.value.trim().toLowerCase();
-    renderReviewCategory();
-  });
+  if (reviewSearchInput) {
+    reviewSearchInput.addEventListener('input', (e) => {
+      reviewSearchTerm = e.target.value.trim().toLowerCase();
+      renderReviewCategory();
+    });
+  }
 
   function renderReviewCategory() {
     if (!analysisData?.review) return;
@@ -588,8 +1066,9 @@
 
       items.forEach(item => {
         const tr = document.createElement('tr');
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
         tr.innerHTML = `
-          <td><strong>${escapeHtml(item.canonicalName)}</strong></td>
+          <td><strong>${escapeHtml(item.canonicalName)}</strong>${mrpTag}</td>
           <td class="text-right">${item.totalSalesQuantity}</td>
           <td class="text-right">${item.totalStockQuantity}</td>
           <td><span class="urgency-pill urgency-critical">MATCH REQUIRED</span></td>
@@ -630,10 +1109,11 @@
         return;
       }
 
-        items.forEach(item => {
+      items.forEach(item => {
         const tr = document.createElement('tr');
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
         tr.innerHTML = `
-          <td style="font-weight: 600;">${escapeHtml(item.itemName)}</td>
+          <td style="font-weight: 600;">${escapeHtml(item.itemName)}${mrpTag}</td>
           <td class="text-right" style="color: var(--admin-danger); font-weight: 700;">${item.recordedClosingQty}</td>
           <td><span class="urgency-pill urgency-critical">Perform Physical Audit</span></td>
         `;
@@ -664,8 +1144,9 @@
 
       items.forEach(item => {
         const tr = document.createElement('tr');
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
         tr.innerHTML = `
-          <td style="font-weight: 600;">${escapeHtml(item.itemName)}</td>
+          <td style="font-weight: 600;">${escapeHtml(item.itemName)}${mrpTag}</td>
           <td class="text-right" style="font-weight: 700; color: var(--admin-warning);">${item.currentStock}</td>
           <td class="text-right">0</td>
           <td><span class="urgency-pill urgency-watch">Review for Deactivation</span></td>
@@ -697,8 +1178,9 @@
 
       items.forEach(item => {
         const tr = document.createElement('tr');
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
         tr.innerHTML = `
-          <td style="font-weight: 600;">${escapeHtml(item.itemName)}</td>
+          <td style="font-weight: 600;">${escapeHtml(item.itemName)}${mrpTag}</td>
           <td class="text-right">0</td>
           <td class="text-right">0</td>
           <td style="color: var(--text-muted); font-size: 0.82rem;">Check supplier purchase history to distinguish obsolete vs out-of-stock.</td>
@@ -769,8 +1251,9 @@
 
       items.forEach(item => {
         const tr = document.createElement('tr');
+        const mrpTag = item.mrp ? `<span class="inline-mrp-tag">₹${item.mrp} MRP</span>` : '';
         tr.innerHTML = `
-          <td style="font-weight: 600;">${escapeHtml(item.itemName)}</td>
+          <td style="font-weight: 600;">${escapeHtml(item.itemName)}${mrpTag}</td>
           <td style="color: var(--admin-danger);">${escapeHtml(item.issue)}</td>
         `;
         reviewTbody.appendChild(tr);
@@ -836,6 +1319,12 @@
 
       const packCheck = idCheck.packCount || { warning: false, label: 'Agreed' };
 
+      // MRP Cross-Check Evidence representation
+      const mrpCheck = cand.mrpCheck || idCheck.mrp || {};
+      const mrpEvidenceStatus = mrpCheck.status || (varA.mrp != null && varB.mrp != null ? (varA.mrp === varB.mrp ? 'MRP_CONSISTENT' : 'MRP_CONFLICT') : 'MRP_UNKNOWN');
+      const mrpEvidencePillClass = mrpEvidenceStatus === 'MRP_CONSISTENT' ? 'id-check-pass' : (mrpEvidenceStatus === 'MRP_CONFLICT' ? 'id-check-warn' : 'id-check-muted');
+      const mrpEvidenceText = mrpCheck.badgeText || (mrpEvidenceStatus === 'MRP_CONSISTENT' ? `✓ ₹${varA.mrp} = ₹${varB.mrp}` : (mrpEvidenceStatus === 'MRP_CONFLICT' ? `⚠ ₹${varA.mrp} ≠ ₹${varB.mrp}` : (varA.mrp != null ? `— ₹${varA.mrp} / —` : (varB.mrp != null ? `— — / ₹${varB.mrp}` : '— Not available'))));
+
       const badgeHtml = cand.hasWarning
         ? `<span class="candidate-status-badge badge-warning">⚠ HUMAN REVIEW REQUIRED</span>`
         : `<span class="candidate-status-badge badge-supported">✔ IDENTITY SUPPORTED</span>`;
@@ -877,6 +1366,10 @@
           <div class="candidate-title-group">
             <span class="candidate-label">Suggested Canonical</span>
             <span class="candidate-canonical-name">${escapeHtml(cand.suggestedCanonical)}</span>
+            <div class="candidate-mrp-evidence-row" style="font-size: 0.8rem; margin-top: 4px; display: inline-flex; align-items: center; gap: 6px;">
+              <span style="color: var(--admin-text-muted); font-weight: 600;">MRP:</span>
+              <span class="${mrpEvidencePillClass}" style="font-weight: 700;">${escapeHtml(mrpEvidenceText)}</span>
+            </div>
           </div>
           <div class="candidate-badge-group">
             ${badgeHtml}
@@ -980,7 +1473,11 @@
                 <td><strong>MRP Evidence</strong></td>
                 <td>${escapeHtml(idCheck.mrp?.valA || mrpADisplay)}</td>
                 <td>${escapeHtml(idCheck.mrp?.valB || mrpBDisplay)}</td>
-                <td><span class="id-check-info">${escapeHtml(idCheck.mrp?.label || '—')}</span></td>
+                <td>
+                  <span class="${mrpEvidencePillClass}">
+                    ${mrpEvidenceStatus === 'MRP_CONSISTENT' ? '✔ MRP CONSISTENT' : (mrpEvidenceStatus === 'MRP_CONFLICT' ? '⚠ MRP CONFLICT' : '— MRP UNKNOWN')}
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -1179,9 +1676,18 @@
       }
       const sourceBadge = rep.resolutionSource ? `<div style="font-size: 0.68rem; color: var(--admin-text-muted); margin-top: 4px; font-family: monospace;">[${escapeHtml(rep.resolutionSource)}]</div>` : '';
 
+      const mrpCheckBadge = rep.mrpCheck ? (
+        rep.mrpCheck.status === 'MRP_CONSISTENT'
+          ? `<div style="font-size: 0.68rem; color: var(--admin-success); font-weight: 600; margin-top: 3px;">✔ MRP CONSISTENT</div>`
+          : (rep.mrpCheck.status === 'MRP_CONFLICT'
+              ? `<div style="font-size: 0.68rem; color: var(--admin-warning); font-weight: 700; margin-top: 3px;">⚠ MRP CONFLICT</div>`
+              : `<div style="font-size: 0.68rem; color: var(--admin-text-muted); margin-top: 3px;">— MRP UNKNOWN</div>`)
+      ) : '';
+
+      const mrpTag = rep.mrp ? `<span class="inline-mrp-tag">₹${rep.mrp} MRP</span>` : '';
       tr.innerHTML = `
         <td>
-          <div style="font-weight: 700; color: var(--admin-text);">${escapeHtml(rep.canonicalName)}</div>
+          <div style="font-weight: 700; color: var(--admin-text);">${escapeHtml(rep.canonicalName)}${mrpTag}</div>
           <div style="font-size: 0.74rem; color: var(--admin-text-secondary);">${escapeHtml(rep.resolutionDetail)}</div>
         </td>
         <td style="font-size: 0.82rem;">${salesChips}</td>
@@ -1191,6 +1697,7 @@
         <td style="text-align: center;">
           ${statusPill}
           ${sourceBadge}
+          ${mrpCheckBadge}
         </td>
       `;
 
@@ -1341,6 +1848,9 @@
       const formData = new FormData();
       formData.append('saleReport', saleInput.files[0]);
       formData.append('stockDetail', stockInput.files[0]);
+      if (mrpInput?.files?.[0]) {
+        formData.append('mrpMaster', mrpInput.files[0]);
+      }
 
       const leadTimeVal = document.getElementById('lead-time-input')?.value;
       if (leadTimeVal) formData.append('leadTimeDays', leadTimeVal);
@@ -1387,6 +1897,53 @@
   // 9. Slide-Over Product Detail Drawer (Mathematical Audit Trail)
   function openProductDrawer(item) {
     drawerItemName.textContent = item.itemName;
+
+    if (drawerItemMrp) {
+      if (item.mrp) {
+        drawerItemMrp.textContent = `₹${item.mrp} MRP`;
+        drawerItemMrp.style.display = 'inline-flex';
+      } else {
+        drawerItemMrp.style.display = 'none';
+      }
+    }
+
+    if (item.isReviewOnly) {
+      drawerClassBadge.textContent = 'REVIEW';
+      drawerClassBadge.className = 'tab-badge badge-review';
+
+      if (item.urgency) {
+        drawerUrgencyBadge.style.display = 'inline-block';
+        drawerUrgencyBadge.textContent = item.urgency;
+        drawerUrgencyBadge.className = `urgency-pill urgency-${item.urgency.toLowerCase()}`;
+      } else {
+        drawerUrgencyBadge.style.display = 'none';
+      }
+
+      drawerWhyBox.className = 'why-box';
+      drawerReason.textContent = item.reason || 'Item identity or data exception pending review';
+      drawerMetricStock.textContent = `${item.currentStock ?? 0} units`;
+      drawerMetricCover.textContent = item.daysOfCover !== null && item.daysOfCover !== undefined ? `${item.daysOfCover} days` : 'None';
+      drawerMetricDemand.textContent = item.effectiveDailyDemand !== null && item.effectiveDailyDemand !== undefined ? `${item.effectiveDailyDemand} /day` : 'N/A';
+
+      const withheldNotice = `
+        <div style="padding: 10px; color: var(--admin-text-secondary); font-size: 0.85rem; font-style: italic;">
+          Calculation withheld: Item identity or data exception pending review.
+        </div>
+      `;
+      auditDemandBox.innerHTML = withheldNotice;
+      auditSafetyStockBox.innerHTML = withheldNotice;
+      auditRopBox.innerHTML = withheldNotice;
+      auditTargetStockBox.innerHTML = withheldNotice;
+      auditOrderQtyBox.innerHTML = withheldNotice;
+
+      drawerActionBanner.className = 'recommendation-action-banner';
+      drawerActionValue.textContent = 'REVIEW REQUIRED';
+
+      drawerBackdrop.classList.add('open');
+      drawerPanel.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      return;
+    }
 
     // Badges
     drawerClassBadge.textContent = item.classification.replace('_', ' ');

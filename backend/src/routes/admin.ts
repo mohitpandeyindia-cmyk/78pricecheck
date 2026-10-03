@@ -563,8 +563,24 @@ const uploadInventoryFiles = multer({
   }
 }).fields([
   { name: 'saleReport', maxCount: 1 },
-  { name: 'stockDetail', maxCount: 1 }
+  { name: 'stockDetail', maxCount: 1 },
+  { name: 'mrpMaster', maxCount: 1 }
 ]);
+
+const uploadSingleMrpMaster = multer({
+  storage: inventoryStorage,
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext !== '.xls' && ext !== '.xlsx') {
+      cb(new Error(`Invalid file type "${file.originalname}". Only .xls and .xlsx spreadsheet files are allowed.`));
+      return;
+    }
+    cb(null, true);
+  }
+}).single('mrpMaster');
 
 // POST /api/admin/inventory/analyze - Run inventory reorder analysis
 router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: Response, next) => {
@@ -593,8 +609,23 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
 
   const saleReportPath = saleReportFile.path;
   const stockDetailPath = stockDetailFile.path;
+  const mrpMasterFile = files?.['mrpMaster']?.[0];
 
   try {
+    // If an accompanying MRP Master was uploaded, save and register it immediately
+    if (mrpMasterFile?.path && fs.existsSync(mrpMasterFile.path)) {
+      try {
+        const mrpMasterModule = path.resolve(__dirname, '../../../inventory-analysis/mrpMaster');
+        const { saveUploadedMrpMaster } = require(mrpMasterModule);
+        saveUploadedMrpMaster({
+          tempFilePath: mrpMasterFile.path,
+          originalFilename: mrpMasterFile.originalname
+        });
+      } catch (mrpErr) {
+        console.warn('Failed to parse accompanying mrpMaster file during analysis:', mrpErr);
+      }
+    }
+
     const config: any = {};
     if (req.body.leadTimeDays !== undefined && req.body.leadTimeDays !== '') {
       const val = Number(req.body.leadTimeDays);
@@ -650,6 +681,54 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
     }
     if (stockDetailPath && fs.existsSync(stockDetailPath)) {
       try { fs.unlinkSync(stockDetailPath); } catch (e) { /* ignore */ }
+    }
+    if (mrpMasterFile?.path && fs.existsSync(mrpMasterFile.path)) {
+      try { fs.unlinkSync(mrpMasterFile.path); } catch (e) { /* ignore */ }
+    }
+  }
+});
+
+// GET /api/admin/inventory/mrp-master/status - Retrieve current MRP Master status
+router.get('/admin/inventory/mrp-master/status', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const mrpMasterModule = path.resolve(__dirname, '../../../inventory-analysis/mrpMaster');
+    const { getMrpMasterStatus } = require(mrpMasterModule);
+    const status = getMrpMasterStatus();
+    res.json({ success: true, ...status });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to retrieve MRP Master status.' });
+  }
+});
+
+// POST /api/admin/inventory/mrp-master - Upload, parse, and persist MRP Master file
+router.post('/admin/inventory/mrp-master', authenticateToken, (req: Request, res: Response, next) => {
+  uploadSingleMrpMaster(req, res, (err: any) => {
+    if (err) {
+      res.status(400).json({ success: false, error: err.message || 'File upload failed.' });
+      return;
+    }
+    next();
+  });
+}, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const file = req.file;
+  if (!file) {
+    res.status(400).json({ success: false, error: 'No MRP Master file uploaded.' });
+    return;
+  }
+
+  try {
+    const mrpMasterModule = path.resolve(__dirname, '../../../inventory-analysis/mrpMaster');
+    const { saveUploadedMrpMaster } = require(mrpMasterModule);
+    const result = saveUploadedMrpMaster({
+      tempFilePath: file.path,
+      originalFilename: file.originalname
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message || 'Failed to parse MRP Master file.' });
+  } finally {
+    if (file?.path && fs.existsSync(file.path)) {
+      try { fs.unlinkSync(file.path); } catch (e) { /* ignore */ }
     }
   }
 });
