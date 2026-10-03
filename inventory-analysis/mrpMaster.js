@@ -30,11 +30,13 @@ function getCandidateMasterPaths(customPath = null) {
   paths.push(path.join(DATA_DIR, 'mrp_master_current.xls'));
 
   // 3. Current authoritative master files & fallbacks
+  paths.push('C:/Users/Admin/Downloads/Export Items (4).xlsx');
+  paths.push('C:/price check/Export Items (4).xlsx');
+  paths.push(path.join(DATA_DIR, 'Export Items (4).xlsx'));
   paths.push('C:/Users/Admin/Downloads/Export Items (2).xlsx');
   paths.push('C:/price check/Export Items (2).xlsx');
-  paths.push(path.join(DATA_DIR, 'Export Items (2).xlsx'));
-  paths.push(path.join(__dirname, 'data/Export Items (2).xlsx'));
-  paths.push(path.join(__dirname, '../data/Export Items (2).xlsx'));
+  paths.push('C:/Users/Admin/Downloads/Export Items.xlsx');
+  paths.push('C:/price check/Export Items.xlsx');
   return paths;
 }
 
