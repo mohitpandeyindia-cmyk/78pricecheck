@@ -313,19 +313,82 @@
     }
   }
 
+  // Master Search Helper Functions (Order-Independent Token Search & Ranking)
+  function normalizeSearchText(text) {
+    if (!text && text !== 0) return '';
+    return String(text)
+      .toLowerCase()
+      .trim()
+      .replace(/(?:\s+n+)+$/i, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  function tokenizeSearchQuery(query) {
+    const norm = normalizeSearchText(query);
+    if (!norm) return [];
+    return norm.split(' ').filter(Boolean);
+  }
+
+  function evaluateSearchMatch(queryTokens, rawQuery, primaryName, searchableTexts = []) {
+    if (!queryTokens || queryTokens.length === 0) return null;
+
+    const normPrimary = normalizeSearchText(primaryName);
+    const normalizedTexts = [normPrimary, ...searchableTexts.map(t => normalizeSearchText(t))].filter(Boolean);
+    const combinedSearchable = normalizedTexts.join(' ');
+
+    // Core rule: Every query token must exist somewhere in the product's searchable text
+    for (const qTok of queryTokens) {
+      if (!combinedSearchable.includes(qTok)) {
+        return null; // Token missing -> no match
+      }
+    }
+
+    const normQuery = normalizeSearchText(rawQuery);
+
+    // Rank Tier 1: Exact full-name match
+    if (normPrimary === normQuery) {
+      return { rank: 1, name: normPrimary };
+    }
+
+    // Rank Tier 2: Exact phrase match
+    if (normPrimary.includes(normQuery)) {
+      return { rank: 2, name: normPrimary };
+    }
+    if (normalizedTexts.some(t => t.includes(normQuery))) {
+      return { rank: 2.5, name: normPrimary };
+    }
+
+    // Rank Tier 3: All query tokens match as whole words
+    const primaryWords = new Set(normPrimary.split(' ').filter(Boolean));
+    const allWordsInPrimary = queryTokens.every(qTok => primaryWords.has(qTok));
+    if (allWordsInPrimary) {
+      return { rank: 3, name: normPrimary };
+    }
+
+    const combinedWords = new Set(combinedSearchable.split(' ').filter(Boolean));
+    const allWordsInCombined = queryTokens.every(qTok => combinedWords.has(qTok));
+    if (allWordsInCombined) {
+      return { rank: 3.5, name: normPrimary };
+    }
+
+    // Rank Tier 4: All query tokens match as partial substrings
+    return { rank: 4, name: normPrimary };
+  }
+
   function runMasterSearch() {
     if (!masterSearchInput) return;
-    const query = masterSearchInput.value.trim().toLowerCase();
+    const rawQuery = masterSearchInput.value.trim();
+    const queryTokens = tokenizeSearchQuery(rawQuery);
 
     if (!analysisData) {
-      if (masterSearchClearBtn) masterSearchClearBtn.style.display = query ? 'block' : 'none';
+      if (masterSearchClearBtn) masterSearchClearBtn.style.display = rawQuery ? 'block' : 'none';
       if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'block';
       if (masterSearchResultsList) masterSearchResultsList.style.display = 'none';
       if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'none';
       return;
     }
 
-    if (!query) {
+    if (!rawQuery || queryTokens.length === 0) {
       if (masterSearchClearBtn) masterSearchClearBtn.style.display = 'none';
       if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'block';
       if (masterSearchResultsList) masterSearchResultsList.style.display = 'none';
@@ -338,12 +401,36 @@
     const results = [];
     const seenNames = new Set();
 
+    // Map canonical aliases from validationReport if available
+    const aliasesByCanonical = new Map();
+    if (analysisData.nameResolution && Array.isArray(analysisData.nameResolution.validationReport)) {
+      for (const rep of analysisData.nameResolution.validationReport) {
+        if (!rep || !rep.canonicalName) continue;
+        const variants = [];
+        if (Array.isArray(rep.salesVariants)) {
+          variants.push(...rep.salesVariants.map(v => v.rawName || ''));
+        }
+        if (Array.isArray(rep.stockVariants)) {
+          variants.push(...rep.stockVariants.map(v => v.rawName || ''));
+        }
+        aliasesByCanonical.set(rep.canonicalName.toLowerCase(), variants.filter(Boolean));
+      }
+    }
+
     // 1. Search in suggestions (BUY_NOW, WATCH, OK)
     if (analysisData.suggestions && Array.isArray(analysisData.suggestions)) {
       for (const item of analysisData.suggestions) {
-        if (item.itemName && item.itemName.toLowerCase().includes(query)) {
-          results.push(item);
-          seenNames.add(item.itemName.toLowerCase());
+        if (!item || !item.itemName) continue;
+        const itemName = item.itemName;
+        const key = itemName.toLowerCase();
+        if (seenNames.has(key)) continue;
+
+        const aliases = aliasesByCanonical.get(key) || [];
+        const searchableTexts = [itemName, item.canonicalName, ...aliases, item.itemCode].filter(Boolean);
+        const matchEval = evaluateSearchMatch(queryTokens, rawQuery, itemName, searchableTexts);
+        if (matchEval) {
+          seenNames.add(key);
+          results.push({ item, rank: matchEval.rank });
         }
       }
     }
@@ -362,21 +449,30 @@
       if (Array.isArray(matchRequiredItems)) {
         for (const item of matchRequiredItems) {
           const name = item.canonicalName || '';
-          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase());
+          const key = name.toLowerCase();
+          if (!name || seenNames.has(key)) continue;
+
+          const aliases = (item.variants || []).map(v => v.rawName || '');
+          const searchableTexts = [name, ...aliases, item.itemCode].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, name, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
             results.push({
-              itemName: name,
-              mrp: item.mrp ?? null,
-              classification: 'REVIEW',
-              urgency: 'CRITICAL',
-              currentStock: item.totalStockQuantity ?? 0,
-              daysOfCover: null,
-              effectiveDailyDemand: null,
-              suggestedOrderQty: 0,
-              reason: 'Unresolved candidate items. Reorder calculations are withheld to prevent false purchase orders.',
-              isReviewOnly: true,
-              reviewCategory: 'matchRequired',
-              exceptionBadge: '⚠️ Match Required'
+              item: {
+                itemName: name,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: 'CRITICAL',
+                currentStock: item.totalStockQuantity ?? 0,
+                daysOfCover: null,
+                effectiveDailyDemand: null,
+                suggestedOrderQty: 0,
+                reason: 'Unresolved candidate items. Reorder calculations are withheld to prevent false purchase orders.',
+                isReviewOnly: true,
+                reviewCategory: 'matchRequired',
+                exceptionBadge: '⚠️ Match Required'
+              },
+              rank: matchEval.rank
             });
           }
         }
@@ -385,21 +481,29 @@
       if (Array.isArray(negativeStockItems)) {
         for (const item of negativeStockItems) {
           const name = item.itemName || '';
-          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase());
+          const key = name.toLowerCase();
+          if (!name || seenNames.has(key)) continue;
+
+          const searchableTexts = [name, item.itemCode].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, name, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
             results.push({
-              itemName: name,
-              mrp: item.mrp ?? null,
-              classification: 'REVIEW',
-              urgency: 'CRITICAL',
-              currentStock: item.recordedClosingQty,
-              daysOfCover: null,
-              effectiveDailyDemand: null,
-              suggestedOrderQty: 0,
-              reason: 'Recorded stock in system is less than zero (unlogged purchase or barcode mix-up). Physical stock clamped to 0; audit required.',
-              isReviewOnly: true,
-              reviewCategory: 'negativeStock',
-              exceptionBadge: '⚠️ Negative Stock'
+              item: {
+                itemName: name,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: 'CRITICAL',
+                currentStock: item.recordedClosingQty,
+                daysOfCover: null,
+                effectiveDailyDemand: null,
+                suggestedOrderQty: 0,
+                reason: 'Recorded stock in system is less than zero (unlogged purchase or barcode mix-up). Physical stock clamped to 0; audit required.',
+                isReviewOnly: true,
+                reviewCategory: 'negativeStock',
+                exceptionBadge: '⚠️ Negative Stock'
+              },
+              rank: matchEval.rank
             });
           }
         }
@@ -408,21 +512,29 @@
       if (Array.isArray(deadStockCandidates)) {
         for (const item of deadStockCandidates) {
           const name = item.itemName || '';
-          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase());
+          const key = name.toLowerCase();
+          if (!name || seenNames.has(key)) continue;
+
+          const searchableTexts = [name, item.itemCode].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, name, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
             results.push({
-              itemName: name,
-              mrp: item.mrp ?? null,
-              classification: 'REVIEW',
-              urgency: 'WATCH',
-              currentStock: item.currentStock,
-              daysOfCover: null,
-              effectiveDailyDemand: 0,
-              suggestedOrderQty: 0,
-              reason: 'Physical stock is on hand (> 0) but recorded zero sales across observation period. Review for deactivation.',
-              isReviewOnly: true,
-              reviewCategory: 'deadStock',
-              exceptionBadge: '📦 Dead Stock'
+              item: {
+                itemName: name,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: 'WATCH',
+                currentStock: item.currentStock,
+                daysOfCover: null,
+                effectiveDailyDemand: 0,
+                suggestedOrderQty: 0,
+                reason: 'Physical stock is on hand (> 0) but recorded zero sales across observation period. Review for deactivation.',
+                isReviewOnly: true,
+                reviewCategory: 'deadStock',
+                exceptionBadge: '📦 Dead Stock'
+              },
+              rank: matchEval.rank
             });
           }
         }
@@ -431,21 +543,29 @@
       if (Array.isArray(zeroStockNeverSold)) {
         for (const item of zeroStockNeverSold) {
           const name = item.itemName || '';
-          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase());
+          const key = name.toLowerCase();
+          if (!name || seenNames.has(key)) continue;
+
+          const searchableTexts = [name, item.itemCode].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, name, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
             results.push({
-              itemName: name,
-              mrp: item.mrp ?? null,
-              classification: 'REVIEW',
-              urgency: null,
-              currentStock: item.currentStock ?? 0,
-              daysOfCover: null,
-              effectiveDailyDemand: 0,
-              suggestedOrderQty: 0,
-              reason: 'Zero recorded stock and zero sales over observation period. Obsolete vs out-of-stock.',
-              isReviewOnly: true,
-              reviewCategory: 'zeroStock',
-              exceptionBadge: '⏳ Zero Stock'
+              item: {
+                itemName: name,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: null,
+                currentStock: item.currentStock ?? 0,
+                daysOfCover: null,
+                effectiveDailyDemand: 0,
+                suggestedOrderQty: 0,
+                reason: 'Zero recorded stock and zero sales over observation period. Obsolete vs out-of-stock.',
+                isReviewOnly: true,
+                reviewCategory: 'zeroStock',
+                exceptionBadge: '⏳ Zero Stock'
+              },
+              rank: matchEval.rank
             });
           }
         }
@@ -455,11 +575,16 @@
         for (const item of suggestedMerges) {
           const nameA = item.itemA || '';
           const nameB = item.itemB || '';
-          if ((nameA.toLowerCase().includes(query) || nameB.toLowerCase().includes(query))) {
-            const pairName = `${nameA} ↔ ${nameB}`;
-            if (!seenNames.has(pairName.toLowerCase())) {
-              seenNames.add(pairName.toLowerCase());
-              results.push({
+          const pairName = `${nameA} ↔ ${nameB}`;
+          const key = pairName.toLowerCase();
+          if (seenNames.has(key)) continue;
+
+          const searchableTexts = [nameA, nameB, pairName].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, pairName, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
+            results.push({
+              item: {
                 itemName: pairName,
                 mrp: item.mrp ?? null,
                 classification: 'REVIEW',
@@ -472,8 +597,9 @@
                 isReviewOnly: true,
                 reviewCategory: 'nameVariants',
                 exceptionBadge: '🔀 Name Variant'
-              });
-            }
+              },
+              rank: matchEval.rank
+            });
           }
         }
       }
@@ -481,21 +607,29 @@
       if (Array.isArray(dataQualityNotes)) {
         for (const item of dataQualityNotes) {
           const name = item.itemName || '';
-          if (name.toLowerCase().includes(query) && !seenNames.has(name.toLowerCase())) {
-            seenNames.add(name.toLowerCase());
+          const key = name.toLowerCase();
+          if (!name || seenNames.has(key)) continue;
+
+          const searchableTexts = [name, item.note].filter(Boolean);
+          const matchEval = evaluateSearchMatch(queryTokens, rawQuery, name, searchableTexts);
+          if (matchEval) {
+            seenNames.add(key);
             results.push({
-              itemName: name,
-              mrp: item.mrp ?? null,
-              classification: 'REVIEW',
-              urgency: null,
-              currentStock: 0,
-              daysOfCover: null,
-              effectiveDailyDemand: null,
-              suggestedOrderQty: 0,
-              reason: item.note || 'Sold historically in Sale Report but missing from Stock Detail snapshot.',
-              isReviewOnly: true,
-              reviewCategory: 'dataQuality',
-              exceptionBadge: '📋 Data Quality'
+              item: {
+                itemName: name,
+                mrp: item.mrp ?? null,
+                classification: 'REVIEW',
+                urgency: null,
+                currentStock: 0,
+                daysOfCover: null,
+                effectiveDailyDemand: null,
+                suggestedOrderQty: 0,
+                reason: item.note || 'Sold historically in Sale Report but missing from Stock Detail snapshot.',
+                isReviewOnly: true,
+                reviewCategory: 'dataQuality',
+                exceptionBadge: '📋 Data Quality'
+              },
+              rank: matchEval.rank
             });
           }
         }
@@ -509,13 +643,23 @@
       return;
     }
 
+    // Rank matching results sensibly:
+    // 1. Exact full-name match
+    // 2. Exact phrase match
+    // 3. All query tokens match as whole words
+    // 4. All query tokens match as partial substrings
+    results.sort((a, b) => {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.item.itemName.localeCompare(b.item.itemName);
+    });
+
     if (masterSearchEmptyState) masterSearchEmptyState.style.display = 'none';
     if (masterSearchNoMatch) masterSearchNoMatch.style.display = 'none';
     if (masterSearchResultsList) {
       masterSearchResultsList.style.display = 'block';
       masterSearchResultsList.innerHTML = '';
 
-      const displayResults = results.slice(0, 50);
+      const displayResults = results.slice(0, 50).map(r => r.item);
 
       displayResults.forEach(item => {
         const itemRow = document.createElement('div');
