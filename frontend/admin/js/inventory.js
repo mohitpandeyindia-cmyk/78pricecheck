@@ -716,13 +716,26 @@
       return;
     }
 
-    // Rank matching results sensibly:
-    // 1. Exact full-name match
-    // 2. Exact phrase match
-    // 3. All query tokens match as whole words
-    // 4. All query tokens match as partial substrings
+    // Status priority mapping: BUY_NOW = 1, WATCH = 2, OK = 3, REVIEW = 4
+    function getStatusPriority(classification) {
+      if (classification === 'BUY_NOW') return 1;
+      if (classification === 'WATCH') return 2;
+      if (classification === 'OK') return 3;
+      return 4; // REVIEW and exceptions
+    }
+
+    // PRIMARY SORT: Inventory status priority (BUY NOW -> WATCH -> OK -> REVIEW)
+    // SECONDARY SORT: Existing search relevance / positional ranking (rank)
+    // TERTIARY SORT: Existing deterministic alphabetical / name tie-break
     results.sort((a, b) => {
-      if (a.rank !== b.rank) return a.rank - b.rank;
+      const prioA = getStatusPriority(a.item.classification);
+      const prioB = getStatusPriority(b.item.classification);
+      if (prioA !== prioB) {
+        return prioA - prioB;
+      }
+      if (a.rank !== b.rank) {
+        return a.rank - b.rank;
+      }
       return a.item.itemName.localeCompare(b.item.itemName);
     });
 

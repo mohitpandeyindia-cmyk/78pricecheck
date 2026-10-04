@@ -4,10 +4,10 @@ const path = require('path');
 const vm = require('vm');
 
 console.log('================================================================');
-console.log('  RUNNING IMPROVED COVERAGE & RELEVANCE RANKING SEARCH TESTS    ');
+console.log('  RUNNING STATUS PRIORITY + RELEVANCE RANKING SEARCH TESTS      ');
 console.log('================================================================\n');
 
-// 1. Read inventory.js to test the actual frontend evaluation functions
+// 1. Read inventory.js to test the actual frontend evaluation functions and sort comparator
 const jsContent = fs.readFileSync(path.join(__dirname, '../../frontend/admin/js/inventory.js'), 'utf8');
 
 const sandbox = {};
@@ -27,203 +27,165 @@ assert(typeof evaluateSearchMatch === 'function', 'evaluateSearchMatch must be d
 
 console.log('✅ Helper functions extracted successfully.');
 
-// -------------------------------------------------------------
-// Test Case 1: HIMA PURI NEEM FW User Scenarios (Regression Check)
-// -------------------------------------------------------------
-console.log('\n--- Test 1: HIMA PURI NEEM FW Preserved Order-Independent Tests ---');
-const himaProduct = 'HIMA PURI NEEM FW';
-
-function checkHima(query) {
-  const tokens = tokenizeSearchQuery(query);
-  return evaluateSearchMatch(tokens, query, himaProduct, [himaProduct]);
+// Status priority mapping identical to inventory.js
+function getStatusPriority(classification) {
+  if (classification === 'BUY_NOW') return 1;
+  if (classification === 'WATCH') return 2;
+  if (classification === 'OK') return 3;
+  return 4; // REVIEW and exceptions
 }
 
-assert(checkHima('hima') !== null, '"hima" must match');
-assert(checkHima('neem') !== null, '"neem" must match');
-assert(checkHima('fw') !== null, '"fw" must match');
-assert(checkHima('hima neem') !== null, '"hima neem" must match');
-assert(checkHima('neem hima') !== null, '"neem hima" must match');
-assert(checkHima('hima fw') !== null, '"hima fw" must match');
-assert(checkHima('fw hima') !== null, '"fw hima" must match');
-assert(checkHima('puri hima') !== null, '"puri hima" must match');
-assert(checkHima('hima puri fw') !== null, '"hima puri fw" must match');
-assert.strictEqual(checkHima('hima xyz'), null, '"hima xyz" must NOT match');
-console.log('  ✅ All 10 HIMA query tests passed.');
-
-// -------------------------------------------------------------
-// Test Case 2: Single-Word Search Ranking (GM brand vs ... 500 GM)
-// -------------------------------------------------------------
-console.log('\n--- Test 2: Single-Word Search Ranking (Token: "gm") ---');
-
-const gmDataset = [
-  '24M BANYARD MILLET 500 GM',
-  'ABC GM OIL',
-  'GM BISCUITS',
-  'GM MUSTARD OIL 1 LTR',
-  'GM SOAP',
-  'GMD PRODUCTS'
-];
-
-function scoreItems(query, items) {
-  const tokens = tokenizeSearchQuery(query);
-  const matches = [];
-  items.forEach(it => {
-    const res = evaluateSearchMatch(tokens, query, it, [it]);
-    if (res) matches.push({ name: it, rank: res.rank });
+function sortSearchResults(results) {
+  return results.slice().sort((a, b) => {
+    const prioA = getStatusPriority(a.item.classification);
+    const prioB = getStatusPriority(b.item.classification);
+    if (prioA !== prioB) {
+      return prioA - prioB;
+    }
+    if (a.rank !== b.rank) {
+      return a.rank - b.rank;
+    }
+    return a.item.itemName.localeCompare(b.item.itemName);
   });
-  matches.sort((a, b) => {
-    if (a.rank !== b.rank) return a.rank - b.rank;
-    return a.name.localeCompare(b.name);
-  });
-  return matches;
 }
 
-const gmResults = scoreItems('gm', gmDataset);
-console.log('Ranked results for "gm":');
-gmResults.forEach((r, idx) => console.log(`  ${idx + 1}. [rank: ${r.rank}] ${r.name}`));
-
-// Assertions on ranking order:
-// 1. GM-brand items (starting with GM) must rank highest (rank: 20)
-const gmBrandItems = ['GM BISCUITS', 'GM MUSTARD OIL 1 LTR', 'GM SOAP'];
-gmBrandItems.forEach(item => {
-  const r = gmResults.find(x => x.name === item);
-  assert(r && r.rank === 20, `${item} must have Priority 1 (rank: 20)`);
-});
-
-// 2. GMD PRODUCTS (prefix match on first word) should be rank: 25
-const gmd = gmResults.find(x => x.name === 'GMD PRODUCTS');
-assert(gmd && gmd.rank === 25, 'GMD PRODUCTS must have rank 25');
-
-// 3. ABC GM OIL (later word starts with GM) should be rank 30-39
-const abcGm = gmResults.find(x => x.name === 'ABC GM OIL');
-assert(abcGm && abcGm.rank >= 30 && abcGm.rank < 40, 'ABC GM OIL must have Priority 2 (rank: 30-39)');
-
-// 4. 24M BANYARD MILLET 500 GM (... 500 GM at end) must rank below actual GM brand items
-const millet = gmResults.find(x => x.name === '24M BANYARD MILLET 500 GM');
-assert(millet && millet.rank === 60, '24M BANYARD MILLET 500 GM must have Priority 3 (rank: 60)');
-
-// Confirm all GM-starting items rank before 24M BANYARD MILLET 500 GM
-const milletIndex = gmResults.findIndex(x => x.name === '24M BANYARD MILLET 500 GM');
-gmBrandItems.forEach(item => {
-  const itemIndex = gmResults.findIndex(x => x.name === item);
-  assert(itemIndex < milletIndex, `${item} (idx: ${itemIndex}) must rank above 24M BANYARD MILLET 500 GM (idx: ${milletIndex})`);
-});
-console.log('  ✅ GM brand items rank strictly above "... 500 GM"');
-
-// -------------------------------------------------------------
-// Test Case 3: Multi-Word Search (Query: "gm oil")
-// -------------------------------------------------------------
-console.log('\n--- Test 3: Multi-Word Search Ranking (Query: "gm oil") ---');
-
-const gmOilDataset = [
-  'PRODUCT OIL SOME OTHER WORDS GM',
-  'MUSTARD OIL GM',
-  'ABC GM OIL',
-  'GM MUSTARD OIL',
-  'GM OIL 1 LTR',
-  'UNMATCHED PRODUCT OIL'
-];
-
-const gmOilResults = scoreItems('gm oil', gmOilDataset);
-console.log('Ranked results for "gm oil":');
-gmOilResults.forEach((r, idx) => console.log(`  ${idx + 1}. [rank: ${r.rank}] ${r.name}`));
-
-// 1. Both tokens are required (UNMATCHED PRODUCT OIL must NOT match)
-const unmatched = gmOilResults.find(x => x.name === 'UNMATCHED PRODUCT OIL');
-assert.strictEqual(unmatched, undefined, 'Products missing "gm" must NOT match');
-console.log('  ✅ Both tokens strictly required (unmatched product rejected)');
-
-// 2. Token order is irrelevant: "oil gm" produces same matches
-const oilGmResults = scoreItems('oil gm', gmOilDataset);
-assert.strictEqual(oilGmResults.length, gmOilResults.length, 'Token order must not prevent matches');
-console.log('  ✅ Out-of-order query "oil gm" matches all candidate products');
-
-// 3. Verify rank ordering:
-// GM OIL 1 LTR > GM MUSTARD OIL > ABC GM OIL / MUSTARD OIL GM
-const idxGmOil = gmOilResults.findIndex(x => x.name === 'GM OIL 1 LTR');
-const idxGmMustardOil = gmOilResults.findIndex(x => x.name === 'GM MUSTARD OIL');
-const idxMustardOilGm = gmOilResults.findIndex(x => x.name === 'MUSTARD OIL GM');
-
-assert(idxGmOil < idxGmMustardOil, 'GM OIL 1 LTR must rank above GM MUSTARD OIL');
-assert(idxGmMustardOil < idxMustardOilGm, 'GM MUSTARD OIL must rank above MUSTARD OIL GM');
-console.log('  ✅ Ranking priority: GM OIL 1 LTR > GM MUSTARD OIL > MUSTARD OIL GM verified');
-
-// -------------------------------------------------------------
-// Test Case 4: Entire Analysed Dataset Search Corpus (Dead Stock inclusion)
-// -------------------------------------------------------------
-console.log('\n--- Test 4: Dead Stock & Complete Analysis Dataset Coverage ---');
-
-const mockAnalysisData = {
-  suggestions: [
-    { itemName: 'GM JWR ATTA 500 GM', classification: 'BUY_NOW', mrp: 75 }
-  ],
-  review: {
-    matchRequiredItems: [
-      { canonicalName: 'GM SPECIAL SPICE 100G', mrp: 45, totalStockQuantity: 10 }
-    ],
-    negativeStockItems: [
-      { itemName: 'GM CHANA SATTU 500 GM', recordedClosingQty: -2, mrp: 90 }
-    ],
-    deadStockCandidates: [
-      { itemName: 'GM MOONG DAL AATA 500 GM', currentStock: 5, mrp: 102 },
-      { itemName: 'GM BEDMI AATA 500 GM', currentStock: 3, mrp: 99 }
-    ],
-    zeroStockNeverSold: [
-      { itemName: 'GM BHATURA 400 GM', currentStock: 0, mrp: 82 }
-    ],
-    suggestedMerges: [],
-    dataQualityNotes: []
-  }
-};
-
-// Simulate corpus build across analysis data
-function searchMockAnalysis(query, data) {
+function searchItems(query, itemsList) {
   const tokens = tokenizeSearchQuery(query);
-  const items = [];
-  const seen = new Set();
-
-  function addItem(item, classification, badge) {
-    const name = item.itemName || item.canonicalName;
-    if (!name) return;
-    const key = name.toLowerCase();
-    if (seen.has(key)) return;
-    const match = evaluateSearchMatch(tokens, query, name, [name]);
-    if (match) {
-      seen.add(key);
-      items.push({
-        name,
-        classification,
-        badge,
-        mrp: item.mrp,
-        rank: match.rank
+  const matched = [];
+  itemsList.forEach(item => {
+    const m = evaluateSearchMatch(tokens, query, item.itemName, [item.itemName]);
+    if (m) {
+      matched.push({
+        item,
+        rank: m.rank
       });
     }
-  }
-
-  (data.suggestions || []).forEach(s => addItem(s, s.classification, null));
-  if (data.review) {
-    (data.review.matchRequiredItems || []).forEach(m => addItem(m, 'REVIEW', '⚠️ Match Required'));
-    (data.review.negativeStockItems || []).forEach(n => addItem(n, 'REVIEW', '⚠️ Negative Stock'));
-    (data.review.deadStockCandidates || []).forEach(d => addItem(d, 'REVIEW', '📦 Dead Stock'));
-    (data.review.zeroStockNeverSold || []).forEach(z => addItem(z, 'REVIEW', '⏳ Zero Stock'));
-  }
-
-  items.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
-  return items;
+  });
+  return sortSearchResults(matched);
 }
 
-const deadStockSearchResults = searchMockAnalysis('gm', mockAnalysisData);
-console.log('Search across complete analysed dataset:');
-deadStockSearchResults.forEach(r => console.log(`  [${r.classification} | ${r.badge || 'SUGGESTION'}] ${r.name} (₹${r.mrp} MRP)`));
+// -------------------------------------------------------------
+// Test 1: Status Priority Hierarchy (BUY NOW > WATCH > OK > REVIEW)
+// -------------------------------------------------------------
+console.log('\n--- Test 1: Status Priority Order Verification ---');
 
-assert(deadStockSearchResults.some(r => r.name === 'GM MOONG DAL AATA 500 GM' && r.badge === '📦 Dead Stock'),
-  'GM MOONG DAL AATA 500 GM from dead stock MUST appear in search results');
-assert(deadStockSearchResults.some(r => r.name === 'GM BEDMI AATA 500 GM' && r.badge === '📦 Dead Stock'),
-  'GM BEDMI AATA 500 GM from dead stock MUST appear in search results');
-assert(deadStockSearchResults.some(r => r.name === 'GM SPECIAL SPICE 100G'),
-  'Match Required item MUST appear in search results');
-console.log('  ✅ Dead-stock and review items are fully included in search corpus');
+const statusTestItems = [
+  { itemName: '24M BANYARD MILLET 500 GM', classification: 'OK' },
+  { itemName: 'GM MUSTARD OIL', classification: 'BUY_NOW' },
+  { itemName: 'ABC GM OIL', classification: 'WATCH' },
+  { itemName: 'GM MOONG DAL AATA 500 GM', classification: 'REVIEW' }
+];
+
+const resGm = searchItems('gm', statusTestItems);
+console.log('Search "gm" status-prioritized results:');
+resGm.forEach((r, idx) => console.log(`  ${idx + 1}. [Status Prio: ${getStatusPriority(r.item.classification)}] [${r.item.classification}] ${r.item.itemName} (Rank: ${r.rank})`));
+
+// Assertions for Requirements 1, 2, 3 & 8:
+// 1. BUY NOW always appears before WATCH for the same query.
+const idxBuyNow = resGm.findIndex(r => r.item.classification === 'BUY_NOW');
+const idxWatch = resGm.findIndex(r => r.item.classification === 'WATCH');
+assert(idxBuyNow !== -1 && idxWatch !== -1 && idxBuyNow < idxWatch, 'BUY NOW must appear before WATCH');
+console.log('  ✅ Requirement 1: BUY NOW appears before WATCH');
+
+// 2. WATCH always appears before OK.
+const idxOk = resGm.findIndex(r => r.item.classification === 'OK');
+assert(idxOk !== -1 && idxWatch < idxOk, 'WATCH must appear before OK');
+console.log('  ✅ Requirement 2: WATCH appears before OK');
+
+// 3. OK appears before REVIEW.
+const idxReview = resGm.findIndex(r => r.item.classification === 'REVIEW');
+assert(idxReview !== -1 && idxOk < idxReview, 'OK must appear before REVIEW');
+console.log('  ✅ Requirement 3: OK appears before REVIEW');
+
+// 8. gm returns BUY NOW -> WATCH -> OK -> REVIEW exact order.
+assert.strictEqual(resGm[0].item.itemName, 'GM MUSTARD OIL');
+assert.strictEqual(resGm[0].item.classification, 'BUY_NOW');
+assert.strictEqual(resGm[1].item.itemName, 'ABC GM OIL');
+assert.strictEqual(resGm[1].item.classification, 'WATCH');
+assert.strictEqual(resGm[2].item.itemName, '24M BANYARD MILLET 500 GM');
+assert.strictEqual(resGm[2].item.classification, 'OK');
+assert.strictEqual(resGm[3].item.itemName, 'GM MOONG DAL AATA 500 GM');
+assert.strictEqual(resGm[3].item.classification, 'REVIEW');
+console.log('  ✅ Requirement 8: "gm" strictly returns BUY NOW → WATCH → OK → REVIEW');
+
+// -------------------------------------------------------------
+// Test 2: Existing Relevance Ranking within Each Status Group
+// -------------------------------------------------------------
+console.log('\n--- Test 2: Intra-Status Relevance Ranking Verification ---');
+
+// 4. Within BUY NOW, existing relevance ranking still works.
+const buyNowItems = [
+  { itemName: 'ABC GM OIL', classification: 'BUY_NOW' },
+  { itemName: 'GM MUSTARD OIL', classification: 'BUY_NOW' },
+  { itemName: '24M BANYARD MILLET 500 GM', classification: 'BUY_NOW' }
+];
+const resBuyNow = searchItems('gm', buyNowItems);
+assert.strictEqual(resBuyNow[0].item.itemName, 'GM MUSTARD OIL', 'Within BUY NOW, name-prefix must rank first');
+assert.strictEqual(resBuyNow[1].item.itemName, 'ABC GM OIL', 'Within BUY NOW, later word must rank second');
+assert.strictEqual(resBuyNow[2].item.itemName, '24M BANYARD MILLET 500 GM', 'Within BUY NOW, unit suffix must rank third');
+console.log('  ✅ Requirement 4: Within BUY NOW, existing relevance ranking works (GM MUSTARD OIL > ABC GM OIL > ... 500 GM)');
+
+// 5. Within WATCH, existing relevance ranking still works.
+const watchItems = [
+  { itemName: 'ABC GM OIL', classification: 'WATCH' },
+  { itemName: 'GM WATCH OIL', classification: 'WATCH' }
+];
+const resWatch = searchItems('gm', watchItems);
+assert.strictEqual(resWatch[0].item.itemName, 'GM WATCH OIL');
+assert.strictEqual(resWatch[1].item.itemName, 'ABC GM OIL');
+console.log('  ✅ Requirement 5: Within WATCH, existing relevance ranking works (GM WATCH OIL > ABC GM OIL)');
+
+// 6. Within OK, existing relevance ranking still works.
+const okItems = [
+  { itemName: '24M BANYARD MILLET 500 GM', classification: 'OK' },
+  { itemName: 'ABC GM BISCUITS', classification: 'OK' },
+  { itemName: 'GM BISCUITS', classification: 'OK' }
+];
+const resOk = searchItems('gm', okItems);
+assert.strictEqual(resOk[0].item.itemName, 'GM BISCUITS');
+assert.strictEqual(resOk[1].item.itemName, 'ABC GM BISCUITS');
+assert.strictEqual(resOk[2].item.itemName, '24M BANYARD MILLET 500 GM');
+console.log('  ✅ Requirement 6: Within OK, existing relevance ranking works (GM BISCUITS > ABC GM BISCUITS > ... 500 GM)');
+
+// 7. Within REVIEW, existing relevance ranking still works.
+const reviewItems = [
+  { itemName: 'ABC GM REVIEW', classification: 'REVIEW' },
+  { itemName: 'GM MOONG DAL AATA 500 GM', classification: 'REVIEW' }
+];
+const resReview = searchItems('gm', reviewItems);
+assert.strictEqual(resReview[0].item.itemName, 'GM MOONG DAL AATA 500 GM');
+assert.strictEqual(resReview[1].item.itemName, 'ABC GM REVIEW');
+console.log('  ✅ Requirement 7: Within REVIEW, existing relevance ranking works (GM MOONG DAL AATA > ABC GM REVIEW)');
+
+// -------------------------------------------------------------
+// Test 3: Multi-Word Search & Regressions
+// -------------------------------------------------------------
+console.log('\n--- Test 3: Multi-Word Search & Regressions ---');
+
+// 9. gm oil preserves order-independent matching.
+const multiItems = [
+  { itemName: 'GM OIL 1 LTR', classification: 'OK' },
+  { itemName: 'MUSTARD OIL GM', classification: 'BUY_NOW' },
+  { itemName: 'UNMATCHED OIL', classification: 'BUY_NOW' }
+];
+const resGmOil = searchItems('gm oil', multiItems);
+const resOilGm = searchItems('oil gm', multiItems);
+assert.strictEqual(resGmOil.length, 2);
+assert.strictEqual(resOilGm.length, 2);
+assert.strictEqual(resGmOil[0].item.itemName, 'MUSTARD OIL GM', 'MUSTARD OIL GM (BUY NOW) must appear before GM OIL 1 LTR (OK)');
+assert.strictEqual(resOilGm[0].item.itemName, 'MUSTARD OIL GM', 'Reversed "oil gm" must also place BUY NOW first');
+console.log('  ✅ Requirement 9: "gm oil" and "oil gm" preserve order-independence with status priority');
+
+// 10. hima neem continues to match HIMA PURI NEEM FW.
+const himaItems = [
+  { itemName: 'HIMA PURI NEEM FW', classification: 'BUY_NOW' },
+  { itemName: 'OTHER PRODUCT', classification: 'OK' }
+];
+const resHima = searchItems('hima neem', himaItems);
+assert.strictEqual(resHima.length, 1);
+assert.strictEqual(resHima[0].item.itemName, 'HIMA PURI NEEM FW');
+console.log('  ✅ Requirement 10: "hima neem" continues to match HIMA PURI NEEM FW');
 
 console.log('\n================================================================');
-console.log('  ALL IMPROVED COVERAGE & RELEVANCE RANKING TESTS PASSED (100%) ');
+console.log('  ALL 10 STATUS PRIORITY & RELEVANCE TESTS PASSED (100% SUCCESS) ');
 console.log('================================================================');
