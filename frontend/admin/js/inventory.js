@@ -346,105 +346,110 @@
     const normQuery = normalizeSearchText(rawQuery);
     const primaryWords = normPrimary.split(' ').filter(Boolean);
     const firstQueryToken = queryTokens[0];
+    const UNIT_MEASURE_TOKENS = new Set(['gm', 'gms', 'g', 'kg', 'kgs', 'ml', 'mls', 'l', 'ltr', 'ltrs', 'pc', 'pcs', 's', 'n']);
 
     // Priority 1: Exact full-name match
     if (normPrimary === normQuery) {
-      return { rank: 10, name: normPrimary };
+      return { tier: 1, rank: 10, name: normPrimary };
     }
 
     if (queryTokens.length === 1) {
       const token = queryTokens[0];
 
-      // Priority 1: Product name starts with the query token (e.g., GM MUSTARD OIL)
+      // Tier A (tier: 1) — starts with the first query token (e.g., KNR BISCUITS, GM MUSTARD OIL)
       if (primaryWords[0] === token) {
-        return { rank: 20, name: normPrimary };
+        return { tier: 1, rank: 20, name: normPrimary };
       }
       if (primaryWords[0] && primaryWords[0].startsWith(token)) {
-        return { rank: 25, name: normPrimary };
+        return { tier: 1, rank: 25, name: normPrimary };
       }
 
-      // Priority 2: A later word starts with the query token (e.g., ABC GM OIL)
+      // Tier B (tier: 2) — first query token appears later as a whole word or word prefix (e.g., ABC KNR PRODUCT, ABC GM OIL)
       // Note: If the token is acting as a pack-size unit measurement suffix following a numeric quantity
-      // (such as '500 GM', '100 GM', '1 LTR'), it should be categorized as Priority 3 (rank: 60)
-      const UNIT_MEASURE_TOKENS = new Set(['gm', 'gms', 'g', 'kg', 'kgs', 'ml', 'mls', 'l', 'ltr', 'ltrs', 'pc', 'pcs', 's', 'n']);
-      
+      // (such as '500 GM', '100 GM', '1 LTR'), it should be categorized as Tier C / weak match
       const laterWordExactIdx = primaryWords.slice(1).findIndex((w, sliceIdx) => {
         if (w !== token) return false;
         const actualIdx = sliceIdx + 1;
         if (UNIT_MEASURE_TOKENS.has(token) && actualIdx > 0 && /^\d+(\.\d+)?$/.test(primaryWords[actualIdx - 1])) {
-          return false; // measurement suffix (e.g. 500 GM) -> defer to Priority 3
+          return false; // measurement suffix (e.g. 500 GM) -> defer to Tier C
         }
         return true;
       });
 
       if (laterWordExactIdx !== -1) {
-        return { rank: 30 + Math.min(laterWordExactIdx + 1, 9), name: normPrimary };
+        return { tier: 2, rank: 30 + Math.min(laterWordExactIdx + 1, 9), name: normPrimary };
       }
 
       const laterWordPrefixIdx = primaryWords.slice(1).findIndex((w, sliceIdx) => {
         if (!w.startsWith(token)) return false;
         const actualIdx = sliceIdx + 1;
         if (UNIT_MEASURE_TOKENS.has(token) && actualIdx > 0 && /^\d+(\.\d+)?$/.test(primaryWords[actualIdx - 1])) {
-          return false; // measurement suffix (e.g. 500 GM) -> defer to Priority 3
+          return false; // measurement suffix (e.g. 500 GM) -> defer to Tier C
         }
         return true;
       });
       if (laterWordPrefixIdx !== -1) {
-        return { rank: 40 + Math.min(laterWordPrefixIdx + 1, 9), name: normPrimary };
+        return { tier: 2, rank: 40 + Math.min(laterWordPrefixIdx + 1, 9), name: normPrimary };
       }
 
-      // Priority 3: Token occurs as a suffix or substring later in the product name (e.g., ... 500 GM)
-      return { rank: 60, name: normPrimary };
+      // Tier C (tier: 3) — first query token appears only as substring / unit suffix / weak match (e.g., ... 500 GM)
+      return { tier: 3, rank: 60, name: normPrimary };
     } else {
       // MULTI-WORD SEARCH RANKING
       const startsWithExactPhrase = normPrimary.startsWith(normQuery);
       const hasExactPhrase = normPrimary.includes(normQuery);
 
-      // 1. Starts with exact phrase
+      // Tier A (tier: 1) — starts with exact phrase
       if (startsWithExactPhrase) {
-        return { rank: 15, name: normPrimary };
+        return { tier: 1, rank: 15, name: normPrimary };
       }
 
       const firstWordIsFirstToken = primaryWords[0] === firstQueryToken;
       const firstWordStartsWithFirstToken = primaryWords[0] && primaryWords[0].startsWith(firstQueryToken);
       const allTokensAreWords = queryTokens.every(qTok => primaryWords.includes(qTok));
 
-      // 2. First query token appears at the beginning of the product name + remaining tokens match as whole words
+      // Tier A (tier: 1) — First query token appears at the beginning of the product name + remaining tokens match as whole words
       if (firstWordIsFirstToken && allTokensAreWords) {
         const sumWordIdx = queryTokens.reduce((acc, t) => acc + primaryWords.indexOf(t), 0);
-        return { rank: 20 + Math.min(sumWordIdx, 9), name: normPrimary };
+        return { tier: 1, rank: 20 + Math.min(sumWordIdx, 9), name: normPrimary };
       }
       if (firstWordStartsWithFirstToken && allTokensAreWords) {
-        return { rank: 22, name: normPrimary };
+        return { tier: 1, rank: 22, name: normPrimary };
       }
 
-      // 3. Exact phrase appears anywhere else in product name
-      if (hasExactPhrase) {
-        return { rank: 25, name: normPrimary };
-      }
-
-      // 4. First query token appears at beginning of name + remaining tokens match anywhere
+      // Tier A (tier: 1) — First query token appears at beginning of name + remaining tokens match anywhere
       if (firstWordIsFirstToken || firstWordStartsWithFirstToken) {
-        return { rank: 28, name: normPrimary };
+        return { tier: 1, rank: 28, name: normPrimary };
       }
 
-      // 5. Query tokens appear as whole words anywhere in the product name
+      // Tier B (tier: 2) — Exact multi-word phrase appears anywhere else in product name
+      if (hasExactPhrase) {
+        return { tier: 2, rank: 25, name: normPrimary };
+      }
+
+      // Tier B (tier: 2) — First query token appears later as a word/prefix, or tokens appear as whole words anywhere in the product name
+      const firstTokenWordIdx = primaryWords.indexOf(firstQueryToken);
+      const firstTokenIsWordLater = firstTokenWordIdx > 0;
+      const firstTokenIsPrefixLater = primaryWords.some((w, idx) => idx > 0 && w.startsWith(firstQueryToken));
+
       if (allTokensAreWords) {
         const tokenIndices = queryTokens.map(t => primaryWords.indexOf(t));
         const earliestIdx = Math.min(...tokenIndices);
         const maxIdx = Math.max(...tokenIndices);
         const span = maxIdx - earliestIdx;
-        return { rank: 35 + earliestIdx * 3 + span * 2, name: normPrimary };
+        const tier = (firstTokenIsWordLater || firstTokenIsPrefixLater) ? 2 : 3;
+        return { tier, rank: 35 + earliestIdx * 3 + span * 2, name: normPrimary };
       }
 
-      // 6. Query tokens appear as word prefixes anywhere
+      // Word prefixes anywhere
       const allTokensPrefixes = queryTokens.every(qTok => primaryWords.some(w => w.startsWith(qTok)));
       if (allTokensPrefixes) {
-        return { rank: 55, name: normPrimary };
+        const tier = (firstTokenIsWordLater || firstTokenIsPrefixLater) ? 2 : 3;
+        return { tier, rank: 55, name: normPrimary };
       }
 
-      // 7. Query tokens only appear as partial substrings
-      return { rank: 70, name: normPrimary };
+      // Tier C (tier: 3) — Query tokens only appear as partial substrings / weak match
+      return { tier: 3, rank: 70, name: normPrimary };
     }
   }
 
@@ -503,7 +508,7 @@
         const matchEval = evaluateSearchMatch(queryTokens, rawQuery, itemName, searchableTexts);
         if (matchEval) {
           seenNames.add(key);
-          results.push({ item, rank: matchEval.rank });
+          results.push({ item, tier: matchEval.tier, rank: matchEval.rank });
         }
       }
     }
@@ -545,7 +550,8 @@
                 reviewCategory: 'matchRequired',
                 exceptionBadge: '⚠️ Match Required'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -576,7 +582,8 @@
                 reviewCategory: 'negativeStock',
                 exceptionBadge: '⚠️ Negative Stock'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -607,7 +614,8 @@
                 reviewCategory: 'deadStock',
                 exceptionBadge: '📦 Dead Stock'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -638,7 +646,8 @@
                 reviewCategory: 'zeroStock',
                 exceptionBadge: '⏳ Zero Stock'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -671,7 +680,8 @@
                 reviewCategory: 'nameVariants',
                 exceptionBadge: '🔀 Name Variant'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -702,7 +712,8 @@
                 reviewCategory: 'dataQuality',
                 exceptionBadge: '📋 Data Quality'
               },
-              rank: matchEval.rank
+              rank: matchEval.rank,
+              tier: matchEval.tier
             });
           }
         }
@@ -724,18 +735,36 @@
       return 4; // REVIEW and exceptions
     }
 
-    // PRIMARY SORT: Inventory status priority (BUY NOW -> WATCH -> OK -> REVIEW)
-    // SECONDARY SORT: Existing search relevance / positional ranking (rank)
-    // TERTIARY SORT: Existing deterministic alphabetical / name tie-break
+    // LEVEL 1: Positional search relevance tier FIRST
+    // Tier A (tier: 1) — starts with the first query token
+    // Tier B (tier: 2) — first query token appears later as a word
+    // Tier C (tier: 3) — first query token appears only as substring / weak match
+    //
+    // LEVEL 2: Inventory urgency SECOND (within each relevance tier)
+    // 1. BUY_NOW
+    // 2. WATCH
+    // 3. OK
+    // 4. REVIEW
+    //
+    // LEVEL 3: Existing fine-grained search relevance THIRD (rank)
+    // LEVEL 4: Deterministic alphabetical tie-break FOURTH
     results.sort((a, b) => {
+      const tierA = a.tier ?? 3;
+      const tierB = b.tier ?? 3;
+      if (tierA !== tierB) {
+        return tierA - tierB;
+      }
+
       const prioA = getStatusPriority(a.item.classification);
       const prioB = getStatusPriority(b.item.classification);
       if (prioA !== prioB) {
         return prioA - prioB;
       }
+
       if (a.rank !== b.rank) {
         return a.rank - b.rank;
       }
+
       return a.item.itemName.localeCompare(b.item.itemName);
     });
 

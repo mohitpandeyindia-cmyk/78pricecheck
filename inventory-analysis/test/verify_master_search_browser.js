@@ -264,17 +264,23 @@ async function testBrowserMasterSearch() {
   assert(deadStockFound.meta.includes('Dead Stock'), 'Dead stock item must display Dead Stock badge');
   console.log(`  ✅ Dead Stock product found in Master Search: "${deadStockFound.name}" (${deadStockFound.status} - ${deadStockFound.meta})`);
 
-  // Verify status priority ranking:
-  // BUY NOW (GM MUSTARD OIL) < WATCH (ABC GM OIL) < OK (24M BANYARD MILLET) < REVIEW (GM MOONG DAL AATA)
+  // Verify 2D tier + status ranking:
+  // Tier A: GM MUSTARD OIL 1 LTR (BUY NOW) < GM MOONG DAL AATA (REVIEW)
+  // Tier B: ABC GM OIL (WATCH)
+  // Tier C: 24M BANYARD MILLET 500 GM (OK)
   const idxMustard = gmRes.items.findIndex(it => it.name.includes('GM MUSTARD OIL 1 LTR'));
+  const idxMoong = gmRes.items.findIndex(it => it.name.includes('GM MOONG DAL AATA 500 GM'));
   const idxAbcOil = gmRes.items.findIndex(it => it.name.includes('ABC GM OIL'));
   const idxMillet = gmRes.items.findIndex(it => it.name.includes('24M BANYARD MILLET 500 GM'));
-  const idxMoong = gmRes.items.findIndex(it => it.name.includes('GM MOONG DAL AATA 500 GM'));
-  assert(idxMustard !== -1 && idxAbcOil !== -1 && idxMoong !== -1 && idxMillet !== -1);
-  assert(idxMustard < idxAbcOil, `BUY NOW: GM MUSTARD OIL (idx: ${idxMustard}) must rank above WATCH: ABC GM OIL (idx: ${idxAbcOil})`);
-  assert(idxAbcOil < idxMillet, `WATCH: ABC GM OIL (idx: ${idxAbcOil}) must rank above OK: 24M BANYARD MILLET (idx: ${idxMillet})`);
-  assert(idxMillet < idxMoong, `OK: 24M BANYARD MILLET (idx: ${idxMillet}) must rank above REVIEW: GM MOONG DAL AATA (idx: ${idxMoong})`);
-  console.log(`  ✅ Status priority ranking confirmed: BUY NOW -> WATCH -> OK -> REVIEW`);
+  assert(idxMustard !== -1 && idxMoong !== -1 && idxAbcOil !== -1 && idxMillet !== -1);
+
+  // Within Tier A: BUY NOW < REVIEW
+  assert(idxMustard < idxMoong, `Tier A status order: GM MUSTARD OIL BUY NOW (idx: ${idxMustard}) must rank above GM MOONG DAL AATA REVIEW (idx: ${idxMoong})`);
+  // Tier A < Tier B
+  assert(idxMoong < idxAbcOil, `Tier A before Tier B: GM MOONG DAL AATA Tier A (idx: ${idxMoong}) must rank above ABC GM OIL Tier B (idx: ${idxAbcOil})`);
+  // Tier B < Tier C
+  assert(idxAbcOil < idxMillet, `Tier B before Tier C: ABC GM OIL Tier B (idx: ${idxAbcOil}) must rank above 24M BANYARD MILLET Tier C (idx: ${idxMillet})`);
+  console.log(`  ✅ 2D Tier + Status ranking confirmed: Tier A (BUY NOW -> REVIEW) -> Tier B (WATCH) -> Tier C (OK)`);
 
   // 2. Search 'gm oil': verify multi-word ranking and order-independence
   console.log('\n[2/4] Testing search for "gm oil"...');
