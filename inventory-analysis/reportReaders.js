@@ -69,6 +69,7 @@ function parseSaleReport(filePath, sheetSelector = null) {
     itemCode: ['item code', 'itemcode', 'barcode', 'code'],
     pricePerUnit: ['price/unit', 'price per unit', 'unitprice', 'unit price'],
     mrp: ['mrp', 'm.r.p', 'max retail price', 'maximum retail price'],
+    transactionType: ['transaction type', 'txn type', 'type'],
   });
 
   const missing = Object.entries(colMap).filter(([, idx]) => idx === -1);
@@ -81,6 +82,8 @@ function parseSaleReport(filePath, sheetSelector = null) {
 
   const records = [];
   const flagged = [];
+  let minDate = null;
+  let maxDate = null;
 
   for (let i = headerIdx + 1; i < rows.length; i++) {
     const row = rows[i];
@@ -98,15 +101,39 @@ function parseSaleReport(filePath, sheetSelector = null) {
     const pricePerUnit = mrp; // retained for backwards compatibility
     const mrpSource = priceUnitVal !== null ? 'Sale Report / UnitPrice' : (explicitMrp !== null ? 'Sale Report' : 'Not available');
 
+    const rawTxType = optionalColMap.transactionType !== -1 && row[optionalColMap.transactionType]
+      ? String(row[optionalColMap.transactionType]).trim()
+      : 'Sale';
+    const isCreditNote = /credit\s*note/i.test(rawTxType);
+    const transactionType = isCreditNote ? 'Credit Note' : 'Sale';
+
     if (!rawItemName) { flagged.push({ rowNumber: i + 1, reason: 'missing item name', raw: row }); continue; }
     if (quantity === null) { flagged.push({ rowNumber: i + 1, reason: 'unparseable quantity', raw: row }); continue; }
     if (quantity < 0) { flagged.push({ rowNumber: i + 1, reason: 'negative quantity', raw: row }); continue; }
     if (!date) { flagged.push({ rowNumber: i + 1, reason: 'unparseable date', raw: row }); continue; }
 
-    records.push({ itemName, rawItemName, quantity, date, mrp, pricePerUnit, mrpSource, itemCode });
+    if (!minDate || date < minDate) minDate = date;
+    if (!maxDate || date > maxDate) maxDate = date;
+
+    records.push({
+      itemName,
+      rawItemName,
+      quantity,
+      date,
+      mrp,
+      pricePerUnit,
+      mrpSource,
+      itemCode,
+      transactionType,
+      isCreditNote
+    });
   }
 
-  return { records, flagged };
+  return {
+    records,
+    flagged,
+    dateRange: minDate && maxDate ? { from: minDate, to: maxDate } : null
+  };
 }
 
 /**
@@ -479,8 +506,154 @@ function computeAvgMrpByItem(saleRecords) {
   return avgMrp;
 }
 
+/**
+ * Purchase Report -> Supports Desktop/Mobile exports with "Item Details" sheet.
+ * Auto-detects the itemized sheet by content (Date, Item Name, Quantity, Transaction Type).
+ * Columns: Date, Invoice No./Txn No., Party Name, Item Name, Item Code, Quantity, Unit, UnitPrice, Transaction Type, Amount.
+ */
+function parsePurchaseReport(filePath, sheetSelector = null) {
+  const wb = XLSX.readFile(filePath, { cellDates: true });
+  const sheetNames = wb.SheetNames;
+
+  let sheetName = null;
+  let rows = null;
+  let headerIdx = -1;
+  const keywordSets = [['item'], ['qty', 'quantity'], ['date']];
+
+  // Try "Item Details" sheet first if it exists
+  const itemDetailsSheet = sheetNames.find((s) => /item\s*details/i.test(s));
+  if (itemDetailsSheet && (sheetSelector === null || sheetSelector === undefined)) {
+    sheetName = itemDetailsSheet;
+    const candidateRows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: '' });
+    const idx = findHeaderRowIndex(candidateRows, keywordSets);
+    if (idx !== -1) {
+      rows = candidateRows;
+      headerIdx = idx;
+    }
+  }
+
+  // If explicit sheetSelector passed, try that
+  if (headerIdx === -1 && sheetSelector !== null && sheetSelector !== undefined) {
+    if (typeof sheetSelector === 'number') {
+      sheetName = sheetNames[sheetSelector];
+    } else {
+      sheetName = sheetSelector;
+    }
+    if (sheetName && wb.Sheets[sheetName]) {
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, raw: false, defval: '' });
+      headerIdx = findHeaderRowIndex(rows, keywordSets);
+    }
+  }
+
+  // Scan all sheets by content if still not found
+  if (headerIdx === -1) {
+    for (const name of sheetNames) {
+      const candidateRows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' });
+      const idx = findHeaderRowIndex(candidateRows, keywordSets);
+      if (idx !== -1) {
+        sheetName = name;
+        rows = candidateRows;
+        headerIdx = idx;
+        break;
+      }
+    }
+  }
+
+  if (headerIdx === -1 || !rows) {
+    throw new Error(
+      `Could not locate a purchase items sheet in "${filePath}". ` +
+      `Expected columns matching item, quantity, and date. Available sheets: ${sheetNames.join(', ')}`
+    );
+  }
+
+  const headerRow = rows[headerIdx];
+  const colMap = mapColumns(headerRow, {
+    itemName: ['item name', 'item'],
+    quantity: ['quantity', 'qty'],
+    date: ['date'],
+  });
+
+  const optionalColMap = mapColumns(headerRow, {
+    itemCode: ['item code', 'itemcode', 'barcode', 'code'],
+    transactionType: ['transaction type', 'txn type', 'type'],
+    unitPrice: ['unitprice', 'unit price', 'price/unit', 'rate', 'purchase price'],
+    amount: ['amount', 'total amount'],
+    partyName: ['party name', 'supplier', 'vendor'],
+  });
+
+  const missing = Object.entries(colMap).filter(([, idx]) => idx === -1);
+  if (missing.length) {
+    throw new Error(
+      `Purchase Report header row found at row ${headerIdx + 1}, but couldn't match column(s): ` +
+      `${missing.map(([f]) => f).join(', ')}. Header was: [${headerRow.join(' | ')}]`
+    );
+  }
+
+  const records = [];
+  const flagged = [];
+  let minDate = null;
+  let maxDate = null;
+
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (row.every((c) => String(c).trim() === '')) continue;
+
+    const rawItemName = String(row[colMap.itemName] || '').trim();
+    if (rawItemName.toLowerCase() === 'total' || rawItemName.toLowerCase() === 'grand total') {
+      continue;
+    }
+
+    const itemName = normalizeItemName(rawItemName);
+    const quantity = parseNumberCell(row[colMap.quantity]);
+    const date = parseDateCell(row[colMap.date]);
+
+    // Item Code preserved strictly as string with leading zeros
+    const itemCode = optionalColMap.itemCode !== -1 && row[optionalColMap.itemCode] !== undefined && row[optionalColMap.itemCode] !== null
+      ? String(row[optionalColMap.itemCode]).trim()
+      : null;
+
+    const rawTxType = optionalColMap.transactionType !== -1 && row[optionalColMap.transactionType]
+      ? String(row[optionalColMap.transactionType]).trim()
+      : 'Purchase';
+
+    const isDebitNote = /debit\s*note/i.test(rawTxType);
+    const transactionType = isDebitNote ? 'Debit Note' : 'Purchase';
+    const unitPrice = optionalColMap.unitPrice !== -1 ? parseNumberCell(row[optionalColMap.unitPrice]) : null;
+    const amount = optionalColMap.amount !== -1 ? parseNumberCell(row[optionalColMap.amount]) : null;
+    const partyName = optionalColMap.partyName !== -1 && row[optionalColMap.partyName] ? String(row[optionalColMap.partyName]).trim() : null;
+
+    if (!rawItemName) { flagged.push({ rowNumber: i + 1, reason: 'missing item name', raw: row }); continue; }
+    if (quantity === null) { flagged.push({ rowNumber: i + 1, reason: 'unparseable quantity', raw: row }); continue; }
+    if (quantity < 0) { flagged.push({ rowNumber: i + 1, reason: 'negative quantity', raw: row }); continue; }
+    if (!date) { flagged.push({ rowNumber: i + 1, reason: 'unparseable date', raw: row }); continue; }
+
+    if (!minDate || date < minDate) minDate = date;
+    if (!maxDate || date > maxDate) maxDate = date;
+
+    records.push({
+      itemName,
+      rawItemName,
+      quantity,
+      date,
+      itemCode,
+      transactionType,
+      isDebitNote,
+      unitPrice,
+      amount,
+      partyName
+    });
+  }
+
+  return {
+    records,
+    flagged,
+    dateRange: minDate && maxDate ? { from: minDate, to: maxDate } : null
+  };
+}
+
 module.exports = {
   parseSaleReport,
+  parsePurchaseReport,
   parseStockDetailReport,
   getCurrentStockByItem,
   findNameMatchSuggestions,

@@ -564,6 +564,7 @@ const uploadInventoryFiles = multer({
 }).fields([
   { name: 'saleReport', maxCount: 1 },
   { name: 'stockDetail', maxCount: 1 },
+  { name: 'purchaseReport', maxCount: 1 },
   { name: 'mrpMaster', maxCount: 1 }
 ]);
 
@@ -595,6 +596,7 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
   const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
   const saleReportFile = files?.['saleReport']?.[0];
   const stockDetailFile = files?.['stockDetail']?.[0];
+  const purchaseReportFile = files?.['purchaseReport']?.[0];
 
   if (!saleReportFile || !stockDetailFile) {
     if (saleReportFile?.path && fs.existsSync(saleReportFile.path)) {
@@ -603,12 +605,16 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
     if (stockDetailFile?.path && fs.existsSync(stockDetailFile.path)) {
       try { fs.unlinkSync(stockDetailFile.path); } catch (e) { /* ignore */ }
     }
+    if (purchaseReportFile?.path && fs.existsSync(purchaseReportFile.path)) {
+      try { fs.unlinkSync(purchaseReportFile.path); } catch (e) { /* ignore */ }
+    }
     res.status(400).json({ error: 'Both Sale Report and Stock Detail Report files are required.' });
     return;
   }
 
   const saleReportPath = saleReportFile.path;
   const stockDetailPath = stockDetailFile.path;
+  const purchaseReportPath = purchaseReportFile?.path || undefined;
   const mrpMasterFile = files?.['mrpMaster']?.[0];
 
   try {
@@ -670,7 +676,7 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
     const inventoryAnalysisPath = path.resolve(__dirname, '../../../inventory-analysis');
     const { runAnalysis } = require(inventoryAnalysisPath);
 
-    const result = runAnalysis({ saleReportPath, stockDetailPath }, config);
+    const result = runAnalysis({ saleReportPath, stockDetailPath, purchaseReportPath }, config);
     res.json(result);
   } catch (err: any) {
     res.status(400).json({ error: err.message || 'Inventory analysis failed.' });
@@ -681,6 +687,9 @@ router.post('/admin/inventory/analyze', authenticateToken, (req: Request, res: R
     }
     if (stockDetailPath && fs.existsSync(stockDetailPath)) {
       try { fs.unlinkSync(stockDetailPath); } catch (e) { /* ignore */ }
+    }
+    if (purchaseReportPath && fs.existsSync(purchaseReportPath)) {
+      try { fs.unlinkSync(purchaseReportPath); } catch (e) { /* ignore */ }
     }
     if (mrpMasterFile?.path && fs.existsSync(mrpMasterFile.path)) {
       try { fs.unlinkSync(mrpMasterFile.path); } catch (e) { /* ignore */ }

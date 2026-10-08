@@ -222,6 +222,11 @@ function generatePurchaseSuggestions({ salesAnalysis, currentStockByItem, config
       urgency,
       needsReorder,
       reason,
+      // Availability & Reconciliation (V2 Foundation)
+      availability: sales.availability || null,
+      reconciliationStatus: sales.reconciliationStatus || 'NOT_CHECKED',
+      reconciliationDifference: sales.reconciliationDifference ?? null,
+      reconciliationMismatchReasons: sales.reconciliationMismatchReasons || [],
       // Existing useful metadata retained:
       stockAsOfDate: stockEntry.asOfDate,
       demandVariability: round2(sales.dailyStdDev),

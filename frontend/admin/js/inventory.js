@@ -33,12 +33,16 @@
   const form = document.getElementById('analyze-form');
   const saleInput = document.getElementById('sale-report-input');
   const stockInput = document.getElementById('stock-detail-input');
+  const purchaseInput = document.getElementById('purchase-report-input');
   const saleBrowseBtn = document.getElementById('sale-browse-btn');
   const stockBrowseBtn = document.getElementById('stock-browse-btn');
+  const purchaseBrowseBtn = document.getElementById('purchase-browse-btn');
   const saleBox = document.getElementById('sale-box');
   const stockBox = document.getElementById('stock-box');
+  const purchaseBox = document.getElementById('purchase-box');
   const saleFileName = document.getElementById('sale-file-name');
   const stockFileName = document.getElementById('stock-file-name');
+  const purchaseFileName = document.getElementById('purchase-file-name');
   const mrpInput = document.getElementById('mrp-master-input');
   const mrpBrowseBtn = document.getElementById('mrp-browse-btn');
   const mrpBox = document.getElementById('mrp-box');
@@ -54,7 +58,11 @@
 
   const resultsContainer = document.getElementById('results-container');
   const ctxSalesPeriod = document.getElementById('ctx-sales-period');
+  const ctxPurchasePill = document.getElementById('ctx-purchase-pill');
+  const ctxPurchasePeriod = document.getElementById('ctx-purchase-period');
   const ctxSnapshotDate = document.getElementById('ctx-snapshot-date');
+  const ctxReconPill = document.getElementById('ctx-recon-pill');
+  const ctxReconStatus = document.getElementById('ctx-recon-status');
   const ctxGeneratedAt = document.getElementById('ctx-generated-at');
 
   const assumpLeadTime = document.getElementById('assump-lead-time');
@@ -170,6 +178,8 @@
   const drawerMetricCover = document.getElementById('drawer-metric-cover');
   const drawerMetricDemand = document.getElementById('drawer-metric-demand');
 
+  const auditAvailabilityCard = document.getElementById('drawer-availability-card');
+  const auditAvailabilityBox = document.getElementById('audit-availability-box');
   const auditDemandBox = document.getElementById('audit-demand-box');
   const auditSafetyStockBox = document.getElementById('audit-safety-stock-box');
   const auditRopBox = document.getElementById('audit-rop-box');
@@ -181,6 +191,9 @@
   // 1. File Picker Wiring
   saleBrowseBtn.addEventListener('click', () => saleInput.click());
   stockBrowseBtn.addEventListener('click', () => stockInput.click());
+  if (purchaseBrowseBtn && purchaseInput) {
+    purchaseBrowseBtn.addEventListener('click', () => purchaseInput.click());
+  }
 
   saleInput.addEventListener('change', () => {
     if (saleInput.files && saleInput.files[0]) {
@@ -207,6 +220,20 @@
     }
     updateSubmitButtonState();
   });
+
+  if (purchaseInput) {
+    purchaseInput.addEventListener('change', () => {
+      if (purchaseInput.files && purchaseInput.files[0]) {
+        purchaseFileName.textContent = purchaseInput.files[0].name;
+        purchaseFileName.style.color = 'var(--primary-color)';
+        if (purchaseBox) purchaseBox.classList.add('has-file');
+      } else {
+        purchaseFileName.textContent = 'Optional';
+        purchaseFileName.style.color = 'inherit';
+        if (purchaseBox) purchaseBox.classList.remove('has-file');
+      }
+    });
+  }
 
   // MRP Master File Picker Wiring
   if (mrpBrowseBtn && mrpInput) {
@@ -855,6 +882,9 @@
     const formData = new FormData();
     formData.append('saleReport', saleInput.files[0]);
     formData.append('stockDetail', stockInput.files[0]);
+    if (purchaseInput && purchaseInput.files && purchaseInput.files[0]) {
+      formData.append('purchaseReport', purchaseInput.files[0]);
+    }
     if (mrpInput && mrpInput.files && mrpInput.files[0]) {
       formData.append('mrpMaster', mrpInput.files[0]);
     }
@@ -940,10 +970,31 @@
       ctxSalesPeriod.textContent = 'Full period provided';
     }
 
+    if (ctxPurchasePill && ctxPurchasePeriod) {
+      if (meta?.dataCoverage?.purchase?.from && meta?.dataCoverage?.purchase?.to) {
+        const pFrom = formatDate(meta.dataCoverage.purchase.from);
+        const pTo = formatDate(meta.dataCoverage.purchase.to);
+        ctxPurchasePeriod.textContent = `${pFrom} → ${pTo} · ${meta.dataCoverage.purchase.days} days`;
+        ctxPurchasePill.style.display = 'inline-flex';
+      } else {
+        ctxPurchasePill.style.display = 'none';
+      }
+    }
+
     if (meta?.stockSnapshotDate) {
       ctxSnapshotDate.textContent = formatDate(meta.stockSnapshotDate);
     } else {
       ctxSnapshotDate.textContent = 'Not provided by export (Desktop Vyapar Stock Detail)';
+    }
+
+    if (ctxReconPill && ctxReconStatus) {
+      if (meta?.dataCoverage?.hasPurchaseReport) {
+        ctxReconStatus.innerHTML = '<span style="color: var(--admin-success); font-weight: 700;">Active (4 Authoritative Sources)</span>';
+        ctxReconPill.style.display = 'inline-flex';
+      } else {
+        ctxReconStatus.innerHTML = '<span style="color: var(--admin-text-muted);">Standard (V1 Mode)</span>';
+        ctxReconPill.style.display = 'inline-flex';
+      }
     }
 
     if (analysisGeneratedAt) {
@@ -2107,6 +2158,9 @@
       const formData = new FormData();
       formData.append('saleReport', saleInput.files[0]);
       formData.append('stockDetail', stockInput.files[0]);
+      if (purchaseInput?.files?.[0]) {
+        formData.append('purchaseReport', purchaseInput.files[0]);
+      }
       if (mrpInput?.files?.[0]) {
         formData.append('mrpMaster', mrpInput.files[0]);
       }
@@ -2228,6 +2282,48 @@
     drawerMetricStock.textContent = `${item.currentStock} units`;
     drawerMetricCover.textContent = item.daysOfCover !== null ? `${item.daysOfCover} days` : 'None';
     drawerMetricDemand.textContent = `${item.effectiveDailyDemand} /day`;
+
+    // Historical Availability & Reconstruction (V2 Foundation)
+    if (auditAvailabilityCard && auditAvailabilityBox) {
+      if (item.availability) {
+        auditAvailabilityCard.style.display = 'block';
+        const avail = item.availability;
+        const availPct = avail.availabilityPercent !== null && avail.availabilityPercent !== undefined
+          ? `${avail.availabilityPercent}%`
+          : 'N/A';
+        const firstStockoutStr = avail.firstStockoutDate ? formatDate(avail.firstStockoutDate) : 'None';
+        const lastReplenishStr = avail.lastReplenishmentDate ? formatDate(avail.lastReplenishmentDate) : 'None';
+        const reconStatus = item.reconciliationStatus || 'NOT_CHECKED';
+        const reconDiff = item.reconciliationDifference !== null && item.reconciliationDifference !== undefined
+          ? (item.reconciliationDifference > 0 ? `+${item.reconciliationDifference}` : `${item.reconciliationDifference}`)
+          : '0';
+
+        let reconBadge = '';
+        if (reconStatus === 'RECONCILED') {
+          reconBadge = '<span style="color: var(--admin-success); font-weight: 600;">✓ Reconciled with Stock Detail</span>';
+        } else if (reconStatus === 'STOCK_RECONSTRUCTION_MISMATCH') {
+          reconBadge = `<span style="color: var(--admin-danger); font-weight: 700;">⚠️ Discrepancy (${reconDiff} units vs Stock Detail)</span>`;
+        } else {
+          reconBadge = `<span style="color: var(--admin-text-muted);">${reconStatus}</span>`;
+        }
+
+        const constrainedWarning = avail.stockConstrained
+          ? '<div style="color: var(--admin-warning); font-size: 0.8rem; margin-top: 4px; font-weight: 600;">⚠️ Demand calculation based strictly on in-stock days to prevent under-ordering.</div>'
+          : '';
+
+        auditAvailabilityBox.innerHTML = `
+          <div>Available Days: <strong>${avail.availableDays}</strong> / ${avail.analysisPeriodDays} days (${availPct})</div>
+          <div>Stockout Days: <strong>${avail.stockoutDays}</strong> days (Excluded from demand denominator)</div>
+          <div>Daily Demand while Available: <strong>${avail.averageDailyDemandWhileAvailable}</strong> units/day</div>
+          <div>First Stockout: ${firstStockoutStr} · Last Replenishment: ${lastReplenishStr}</div>
+          <div>Replenished After Stockout: <strong>${avail.replenishedAfterStockout ? 'Yes' : 'No'}</strong></div>
+          <div style="margin-top: 4px;">Ledger Reconciliation: ${reconBadge}</div>
+          ${constrainedWarning}
+        `;
+      } else {
+        auditAvailabilityCard.style.display = 'none';
+      }
+    }
 
     // 1. Demand Step
     const trendText = item.trend ? item.trend.toUpperCase() : 'STABLE';

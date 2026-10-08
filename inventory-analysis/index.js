@@ -1,6 +1,7 @@
 const fs = require('fs');
 const {
   parseSaleReport,
+  parsePurchaseReport,
   parseStockDetailReport,
   getCurrentStockByItem,
   computeAvgMrpByItem,
@@ -10,33 +11,21 @@ const { analyzeSalesPatterns } = require('./salesAnalysis');
 const { generatePurchaseSuggestions, validateConfig } = require('./purchaseSuggestions');
 const { resolveCatalogIdentity, CatalogLedger } = require('./nameResolver');
 const { loadMrpMaster, getMasterMrp } = require('./mrpMaster');
+const { reconstructAllStockHistory } = require('./stockReconstruction');
 
 /**
- * Full V1.1 pipeline: Sale Report + Stock Detail Report -> Name Resolution -> purchase suggestions & classifications.
- *
- * Operational Workflow:
- * 1. Validate report files & configuration
- * 2. Parse raw reports (dd/mm/yyyy date support, snapshot date extraction, negative stock handling)
- * 3. V1.1 Cross-Report Catalog & Stock Name Resolution:
- *    - Cross-report raw inventory (Sales + Stock)
- *    - Level 1 deterministic normalization (trailing N/NN/NNN and unit spacing)
- *    - Persistent catalog ledger decisions (MERGE & KEEP_SEPARATE)
- *    - Level 2 semantic candidate matching (identity preservation: brand, size, unit, abbreviations)
- *    - Canonical SKU selection rule (stock master name priority)
- *    - Pre- and post-resolution quantity auditing
- *    - Unresolved identity safeguard: ambiguous/unresolved items are flagged MATCH REQUIRED
- *      and withheld from premature downstream reorder calculations!
- * 4. Aggregate stock quantities and sales time-series by Canonical SKU
- * 5. Automatic trend window derivation (recent/prior halves)
- * 6. Mathematical Safety Stock (Z * sigma * sqrt(L)), Reorder Point, Target Stock, Suggested Qty
- * 7. Classifications (BUY_NOW, WATCH, OK, and REVIEW)
+ * Full V2 Foundation pipeline:
+ * Sale Report + Purchase Report + Stock Detail Report + MRP Master ->
+ * Identity Resolution -> Historical Stock Reconstruction -> Availability-Aware Demand ->
+ * Existing V1 Reorder Model & Suggestions.
  *
  * @param {Object} input
  * @param {string} input.saleReportPath - path to Vyapar Sale Report Excel file
  * @param {string} input.stockDetailPath - path to Vyapar Stock Detail Report Excel file
+ * @param {string} [input.purchaseReportPath] - optional path to Vyapar Purchase Report Excel file
  * @param {Object} [config] - optional configuration (leadTimeDays, reviewFrequencyDays, orderCoverageDays, serviceLevel, etc.)
  */
-function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
+function runAnalysis({ saleReportPath, stockDetailPath, purchaseReportPath } = {}, config = {}) {
   // 1. File existence validation
   if (!saleReportPath) {
     throw new Error('Sale Report path is required.');
@@ -51,19 +40,24 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
     throw new Error(`Stock Detail Report file not found at: "${stockDetailPath}"`);
   }
 
+  // Optional Purchase Report validation
+  const hasPurchaseReport = Boolean(purchaseReportPath && fs.existsSync(purchaseReportPath));
+
   // Validate config early
   const validatedConfig = validateConfig(config);
 
-  // 2. Parse raw reports
+  // 2. Parse raw reports (captures actual date ranges from workbook contents)
   const saleParsed = parseSaleReport(saleReportPath);
   const stockParsed = parseStockDetailReport(stockDetailPath);
+  const purchaseParsed = hasPurchaseReport ? parsePurchaseReport(purchaseReportPath) : { records: [], flagged: [], dateRange: null };
 
-  // 3. V1.1 Cross-Report Name Resolution with Authoritative MRP Master
+  // 3. V1.1 / V2 Cross-Report Name Resolution with Authoritative MRP Master & Item Codes
   const ledger = new CatalogLedger();
   const mrpMasterData = loadMrpMaster({ customPath: config.mrpMasterPath });
   const identityResolution = resolveCatalogIdentity({
     saleRecords: saleParsed.records,
     stockRecords: stockParsed.records,
+    purchaseRecords: purchaseParsed.records,
     ledger,
     runtimeManualMappings: config.manualNameMappings || [],
     runtimeRejectedMerges: config.rejectedMerges || [],
@@ -84,20 +78,40 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
     ...r,
     itemName: identityResolution.resolveRawNameToCanonical(r.itemName),
   }));
+  const resolvedPurchaseRecords = purchaseParsed.records.map((r) => ({
+    ...r,
+    itemName: identityResolution.resolveRawNameToCanonical(r.rawItemName || r.itemName),
+  }));
 
-  // Safeguard 6: Filter out unresolved identity items from downstream reorder calculations
+  // Filter out unresolved identity items from downstream reorder calculations
   const filteredStockRecords = resolvedStockRecords.filter(
     (r) => !unresolvedCanonicalSet.has(r.itemName)
   );
   const filteredSaleRecords = resolvedSaleRecords.filter(
     (r) => !unresolvedCanonicalSet.has(r.itemName)
   );
+  const filteredPurchaseRecords = resolvedPurchaseRecords.filter(
+    (r) => !unresolvedCanonicalSet.has(r.itemName)
+  );
 
   const { currentStock, mergedItemGroups } = getCurrentStockByItem(filteredStockRecords);
 
-  // 4. Sales analysis with automatic trend window
+  // 4. Historical Stock Reconstruction Layer (V2 Movement-Type-Aware Ledger)
+  let reconstructedStockMap = null;
+  if (hasPurchaseReport || filteredPurchaseRecords.length > 0) {
+    reconstructedStockMap = reconstructAllStockHistory({
+      saleRecords: filteredSaleRecords,
+      purchaseRecords: filteredPurchaseRecords,
+      stockRecords: filteredStockRecords,
+      mrpMaster: mrpMasterData,
+      resolveToCanonical: (name) => identityResolution.resolveRawNameToCanonical(name),
+    });
+  }
+
+  // 5. Sales analysis with automatic trend window and availability-aware demand
   const salesAnalysis = analyzeSalesPatterns(filteredSaleRecords, {
     trendWindowDays: config.trendWindowDays,
+    reconstructedMap: reconstructedStockMap,
   });
 
   // Average MRP by variant from Sale Report Price/Unit
@@ -112,7 +126,7 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
     avgPriceB: avgMrpByItem[c.itemB] ?? (c.variantB ? c.variantB.mrp : null),
   }));
 
-  // 5. Purchase suggestions and inventory requirements
+  // 6. Purchase suggestions and inventory requirements (Existing V1 math preserved)
   const result = generatePurchaseSuggestions({
     salesAnalysis: salesAnalysis.items,
     currentStockByItem: currentStock,
@@ -296,6 +310,13 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
       stockSnapshotDate: stockParsed.generationDate,
       stockSnapshotDateSource: stockParsed.snapshotDateSource || (stockParsed.generationDate ? 'title' : 'not provided by export'),
       trendWindowDays: salesAnalysis.trendWindowDays,
+      dataCoverage: {
+        sale: saleParsed.dateRange,
+        purchase: purchaseParsed.dateRange,
+        stockSnapshotDate: stockParsed.generationDate,
+        hasPurchaseReport,
+        mrpMasterCount: mrpMasterData ? mrpMasterData.count : 0,
+      },
       mrpMaster: {
         loaded: mrpMasterData.loaded,
         sourceFile: mrpMasterData.sourceFile,
@@ -304,6 +325,7 @@ function runAnalysis({ saleReportPath, stockDetailPath } = {}, config = {}) {
       flaggedRows: {
         sale: saleParsed.flagged,
         stockDetail: stockParsed.flagged,
+        purchase: purchaseParsed.flagged,
       },
       mergedItemGroups,
       nameResolutionSummary: identityResolution.summary,

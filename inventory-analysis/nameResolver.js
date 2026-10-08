@@ -647,6 +647,7 @@ function selectCanonicalName(rawVariants, ledgerCanonical, stockNamesSet, salesN
 function resolveCatalogIdentity({
   saleRecords = [],
   stockRecords = [],
+  purchaseRecords = [],
   ledger = null,
   runtimeManualMappings = [],
   runtimeRejectedMerges = [],
@@ -658,7 +659,7 @@ function resolveCatalogIdentity({
     ? mrpMaster
     : (masterCatalogMap ? null : loadMrpMaster());
 
-  // Index Item Codes from stock and sales reports where available
+  // Index Item Codes from stock, sales, and purchase reports where available
   const rawItemCodeMap = new Map();
   for (const r of stockRecords) {
     const raw = String(r.rawItemName || r.itemName || '').trim();
@@ -666,6 +667,11 @@ function resolveCatalogIdentity({
     if (raw && code && !rawItemCodeMap.has(raw)) rawItemCodeMap.set(raw, code);
   }
   for (const r of saleRecords) {
+    const raw = String(r.rawItemName || r.itemName || '').trim();
+    const code = String(r.itemCode || r['Item Code'] || r['Item code'] || '').trim();
+    if (raw && code && !rawItemCodeMap.has(raw)) rawItemCodeMap.set(raw, code);
+  }
+  for (const r of purchaseRecords) {
     const raw = String(r.rawItemName || r.itemName || '').trim();
     const code = String(r.itemCode || r['Item Code'] || r['Item code'] || '').trim();
     if (raw && code && !rawItemCodeMap.has(raw)) rawItemCodeMap.set(raw, code);

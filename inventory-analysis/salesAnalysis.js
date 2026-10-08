@@ -141,6 +141,7 @@ function analyzeSalesPatterns(saleRecords, opts = {}) {
     : autoTrendWindowDays;
 
   const items = {};
+  const reconstructedMap = opts.reconstructedMap || null;
 
   for (const [itemName, dayMap] of byItem.entries()) {
     const dailyValues = fillDailyValues(dayMap, minDate, maxDate);
@@ -149,18 +150,34 @@ function analyzeSalesPatterns(saleRecords, opts = {}) {
     const dailyStdDev = stdDev(dailyValues);
     const trendInfo = detectTrend(dailyValues, trendWindowDays);
 
+    const recon = reconstructedMap ? (reconstructedMap.get(itemName) || null) : null;
+    let effectiveAvgDailyDemand = avgDailyDemand;
+    let availabilityMetrics = null;
+
+    if (recon && recon.metrics) {
+      availabilityMetrics = recon.metrics;
+      if (recon.metrics.availableDays > 0) {
+        effectiveAvgDailyDemand = recon.metrics.averageDailyDemandWhileAvailable;
+      }
+    }
+
     items[itemName] = {
       totalSold,
       periodDays,
       trendWindowDays,
-      fullPeriodAvgDailyDemand: round2(avgDailyDemand),
-      avgDailyDemand: round2(avgDailyDemand),
+      fullPeriodAvgDailyDemand: round2(effectiveAvgDailyDemand),
+      calendarAvgDailyDemand: round2(avgDailyDemand),
+      avgDailyDemand: round2(effectiveAvgDailyDemand),
       dailyStdDev: round2(dailyStdDev),
-      coefficientOfVariation: avgDailyDemand > 0 ? round2(dailyStdDev / avgDailyDemand) : null,
+      coefficientOfVariation: effectiveAvgDailyDemand > 0 ? round2(dailyStdDev / effectiveAvgDailyDemand) : null,
       trend: trendInfo.trend,
       recentAvgDailyDemand: trendInfo.recentAvg !== null ? round2(trendInfo.recentAvg) : null,
       priorAvgDailyDemand: trendInfo.priorAvg !== null ? round2(trendInfo.priorAvg) : null,
       demandChangePct: trendInfo.changePct !== null ? round2(trendInfo.changePct) : null,
+      availability: availabilityMetrics,
+      reconciliationStatus: recon ? recon.reconciliationStatus : 'NOT_CHECKED',
+      reconciliationDifference: recon ? recon.reconciliationDifference : null,
+      reconciliationMismatchReasons: recon ? recon.reconciliationMismatchReasons : [],
     };
   }
 

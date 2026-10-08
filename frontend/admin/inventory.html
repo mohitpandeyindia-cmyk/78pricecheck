@@ -1352,6 +1352,7 @@
         <div class="top-controls-group">
           <form id="analyze-form" class="top-analysis-form" style="margin: 0;">
             <input type="file" id="sale-report-input" accept=".xls,.xlsx" style="display: none;">
+            <input type="file" id="purchase-report-input" accept=".xls,.xlsx" style="display: none;">
             <input type="file" id="stock-detail-input" accept=".xls,.xlsx" style="display: none;">
             <input type="file" id="mrp-master-input" accept=".xls,.xlsx" style="display: none;">
 
@@ -1359,15 +1360,23 @@
               <!-- Sale Report Upload -->
               <div class="compact-upload-box" id="sale-box">
                 <button type="button" id="sale-browse-btn" class="btn btn-outline btn-sm compact-file-btn">
-                  <span>📄</span> Upload Sale Report
+                  <span>📄</span> Sale Report
                 </button>
                 <span id="sale-file-name" class="compact-filename">No file selected</span>
+              </div>
+
+              <!-- Purchase Report Upload (V2 Movement Ledger) -->
+              <div class="compact-upload-box" id="purchase-box">
+                <button type="button" id="purchase-browse-btn" class="btn btn-outline btn-sm compact-file-btn">
+                  <span>📥</span> Purchase Report
+                </button>
+                <span id="purchase-file-name" class="compact-filename">Optional</span>
               </div>
 
               <!-- Stock Detail Upload -->
               <div class="compact-upload-box" id="stock-box">
                 <button type="button" id="stock-browse-btn" class="btn btn-outline btn-sm compact-file-btn">
-                  <span>📊</span> Upload Stock Detail
+                  <span>📊</span> Stock Detail
                 </button>
                 <span id="stock-file-name" class="compact-filename">No file selected</span>
               </div>
@@ -1375,7 +1384,7 @@
               <!-- MRP Master Upload -->
               <div class="compact-upload-box" id="mrp-box">
                 <button type="button" id="mrp-browse-btn" class="btn btn-outline btn-sm compact-file-btn">
-                  <span>📦</span> Upload MRP Master
+                  <span>📦</span> MRP Master
                 </button>
                 <span id="mrp-file-name" class="compact-filename">MRP Master: Not loaded</span>
               </div>
@@ -1500,9 +1509,17 @@
           <span class="context-pill-label">Sales Period:</span>
           <span class="context-pill-val" id="ctx-sales-period">-</span>
         </div>
+        <div class="context-pill" id="ctx-purchase-pill" style="display: none;">
+          <span class="context-pill-label">Purchase Period:</span>
+          <span class="context-pill-val" id="ctx-purchase-period">-</span>
+        </div>
         <div class="context-pill">
           <span class="context-pill-label">Stock Snapshot:</span>
           <span class="context-pill-val" id="ctx-snapshot-date">-</span>
+        </div>
+        <div class="context-pill" id="ctx-recon-pill" style="display: none;">
+          <span class="context-pill-label">Reconstruction:</span>
+          <span class="context-pill-val" id="ctx-recon-status">-</span>
         </div>
         <div class="context-pill">
           <span class="context-pill-label">Generated:</span>
@@ -1874,6 +1891,14 @@
       <!-- Section B: Mathematical Audit Trail -->
       <div class="audit-section-header">How the System Arrived Here</div>
 
+      <!-- Historical Availability (V2 Reconstruction Layer) -->
+      <div class="audit-step-card" id="drawer-availability-card" style="display: none;">
+        <div class="audit-step-title">Historical Availability &amp; Reconstruction</div>
+        <div class="audit-formula-box" id="audit-availability-box">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
       <!-- Step 1: Demand & Trend -->
       <div class="audit-step-card">
         <div class="audit-step-title">1. Demand &amp; Trend Modeling</div>
@@ -1922,6 +1947,6 @@
     </div>
   </div>
 
-  <script src="/admin/js/inventory.js?v=202609182210"></script>
+  <script src="/admin/js/inventory.js?v=202610081700"></script>
 </body>
 </html>
