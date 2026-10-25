@@ -823,6 +823,7 @@
           pillHtml = `<div class="search-item-status-pill badge-watch"><span class="status-dot dot-watch"></span> WATCH</div>`;
           metaHtml = `
             <span class="meta-tag">Stock: <strong>${item.currentStock}</strong></span>
+            ${item.suggestedOrderQty > 0 ? `<span class="meta-tag">Deficit: <strong style="color: var(--color-watch);">${item.suggestedOrderQty} units</strong></span>` : ''}
             <span class="meta-tag">Cover: <strong>${item.daysOfCover !== null && item.daysOfCover !== undefined ? `${item.daysOfCover}d` : '—'}</strong></span>
             <span class="meta-tag">Demand: <strong>${item.effectiveDailyDemand}/day</strong></span>
           `;
@@ -981,8 +982,16 @@
       }
     }
 
-    if (meta?.stockSnapshotDate) {
-      ctxSnapshotDate.textContent = formatDate(meta.stockSnapshotDate);
+    const effectiveSnapshotDate = meta?.stockSnapshotDate || meta?.dataCoverage?.sales?.to || null;
+    if (effectiveSnapshotDate) {
+      const snapTime = new Date(effectiveSnapshotDate).getTime();
+      const nowTime = Date.now();
+      const daysOld = Math.max(0, Math.round((nowTime - snapTime) / (24 * 60 * 60 * 1000)));
+      if (daysOld >= 3) {
+        ctxSnapshotDate.innerHTML = `${formatDate(effectiveSnapshotDate)} <span style="color: var(--admin-danger); font-weight: 700; margin-left: 6px;">(⚠️ ${daysOld} days stale — physical stock on shelves will differ; re-export before ordering)</span>`;
+      } else {
+        ctxSnapshotDate.textContent = formatDate(effectiveSnapshotDate);
+      }
     } else {
       ctxSnapshotDate.textContent = 'Not provided by export (Desktop Vyapar Stock Detail)';
     }
@@ -1276,9 +1285,14 @@
 
       const daysCoverDisplay = item.daysOfCover !== null ? `${item.daysOfCover}d` : '—';
       const trendTag = getTrendBadge(item.trend);
-      const orderQtyDisplay = item.classification === 'BUY_NOW' && item.suggestedOrderQty > 0
-        ? `<span class="order-qty-pill">${item.suggestedOrderQty}</span>`
-        : '0';
+      let orderQtyDisplay = '0';
+      if (item.classification === 'BUY_NOW' && item.suggestedOrderQty > 0) {
+        orderQtyDisplay = `<span class="order-qty-pill">${item.suggestedOrderQty}</span>`;
+      } else if (item.classification === 'WATCH' && item.suggestedOrderQty > 0) {
+        orderQtyDisplay = `<span class="order-qty-pill pill-watch">${item.suggestedOrderQty}</span>`;
+      } else if (item.suggestedOrderQty > 0) {
+        orderQtyDisplay = `${item.suggestedOrderQty}`;
+      }
 
       tr.innerHTML = `
         <td>
@@ -2300,25 +2314,47 @@
 
         let reconBadge = '';
         if (reconStatus === 'RECONCILED') {
-          reconBadge = '<span style="color: var(--admin-success); font-weight: 600;">✓ Reconciled with Stock Detail</span>';
+          reconBadge = '<span style="color: var(--admin-success); font-weight: 600;">✓ Quantity Match (Aggregate balance verified, not daily chronology)</span>';
         } else if (reconStatus === 'STOCK_RECONSTRUCTION_MISMATCH') {
           reconBadge = `<span style="color: var(--admin-danger); font-weight: 700;">⚠️ Discrepancy (${reconDiff} units vs Stock Detail)</span>`;
         } else {
           reconBadge = `<span style="color: var(--admin-text-muted);">${reconStatus}</span>`;
         }
 
-        const constrainedWarning = avail.stockConstrained
+        const confidence = item.availabilityConfidence || avail.availabilityConfidence || 'INDETERMINATE';
+        let confBadge = '';
+        if (confidence === 'VERIFIED') {
+          confBadge = '<span style="color: var(--admin-success); font-weight: 700;">VERIFIED</span> (Opening & dated movements validated)';
+        } else if (confidence === 'BOUNDED') {
+          confBadge = '<span style="color: var(--admin-warning); font-weight: 700;">BOUNDED</span> (Undated inward arrival; bounded stockout window)';
+        } else {
+          confBadge = '<span style="color: var(--admin-text-muted); font-weight: 700;">INDETERMINATE</span> (Insufficient movement evidence; calendar baseline used)';
+        }
+
+        let stockoutDisplay = `<div>First Stockout: ${firstStockoutStr} · Last Replenishment: ${lastReplenishStr}</div>`;
+        if (avail.stockoutWindow && avail.stockoutWindow.type === 'INTERVAL') {
+          stockoutDisplay = `<div>Stockout Window: <em>${avail.stockoutWindow.description || 'Interval bound'}</em></div>`;
+        }
+
+        const provisionalWarning = item.isProvisional
+          ? `<div style="color: var(--admin-warning); font-size: 0.8rem; margin-top: 6px; font-weight: 600;">⚠️ Provisional Estimate: ${item.provisionalReason || 'Availability bounds or sparse observations.'} Calendar baseline: ${item.calendarAvgDailyDemand} units/day.</div>`
+          : '';
+
+        const constrainedWarning = avail.stockConstrained && !item.isProvisional
           ? '<div style="color: var(--admin-warning); font-size: 0.8rem; margin-top: 4px; font-weight: 600;">⚠️ Demand calculation based strictly on in-stock days to prevent under-ordering.</div>'
           : '';
 
         auditAvailabilityBox.innerHTML = `
-          <div>Available Days: <strong>${avail.availableDays}</strong> / ${avail.analysisPeriodDays} days (${availPct})</div>
-          <div>Stockout Days: <strong>${avail.stockoutDays}</strong> days (Excluded from demand denominator)</div>
+          <div>Availability Confidence: <strong>${confBadge}</strong></div>
+          <div style="margin-top: 4px;">Verified Available Days: <strong>${avail.availableDays}</strong> / ${avail.analysisPeriodDays} days (${availPct})</div>
+          <div>Confirmed Stockout Days: <strong>${avail.stockoutDays}</strong> days (Excluded from demand denominator)</div>
+          <div>Unknown Availability Days: <strong>${avail.unknownDays || 0}</strong> days</div>
           <div>Daily Demand while Available: <strong>${avail.averageDailyDemandWhileAvailable}</strong> units/day</div>
-          <div>First Stockout: ${firstStockoutStr} · Last Replenishment: ${lastReplenishStr}</div>
+          ${stockoutDisplay}
           <div>Replenished After Stockout: <strong>${avail.replenishedAfterStockout ? 'Yes' : 'No'}</strong></div>
-          <div style="margin-top: 4px;">Ledger Reconciliation: ${reconBadge}</div>
+          <div style="margin-top: 4px;">Stock Detail Reconciliation: ${reconBadge}</div>
           ${constrainedWarning}
+          ${provisionalWarning}
         `;
       } else {
         auditAvailabilityCard.style.display = 'none';
@@ -2346,28 +2382,37 @@
     // 2. Safety Stock Step (Real Numbers)
     const zVal = getZScoreFor(item.serviceLevel);
     const sigmaVal = item.demandVariability ?? 0;
+    const sigmaRawVal = typeof item.demandVariabilityRaw === 'number' ? item.demandVariabilityRaw : sigmaVal;
+    const sigmaDisplay = typeof item.demandVariabilityRaw === 'number' && Math.abs(item.demandVariabilityRaw - sigmaVal) > 0.001
+      ? item.demandVariabilityRaw.toFixed(4)
+      : sigmaVal;
     const sqrtL = Math.sqrt(item.leadTimeDays).toFixed(2);
+    const ssRaw = (item.safetyStockRaw !== undefined && item.safetyStockRaw !== null)
+      ? Number(item.safetyStockRaw).toFixed(2)
+      : (zVal * sigmaRawVal * Math.sqrt(item.leadTimeDays)).toFixed(2);
     auditSafetyStockBox.innerHTML = `
-      <div>Formula: Z × σ × √LeadTime</div>
-      <div>Values: ${zVal} × ${sigmaVal} × √${item.leadTimeDays} (${sqrtL})</div>
+      <div>Formula: ⌈Z × σ × √LeadTime⌉</div>
+      <div>Values: ⌈${zVal} × ${sigmaDisplay} × √${item.leadTimeDays} (${sqrtL})⌉ = ⌈${ssRaw}⌉</div>
       <div class="result-line">= ${item.safetyStock} units</div>
       <div style="font-size: 0.76rem; color: var(--admin-text-secondary); margin-top: 2px;">Protects against stockouts during ${item.leadTimeDays}-day delivery window (SL: ${Math.round(item.serviceLevel * 100)}%)</div>
     `;
 
     // 3. Reorder Point Step (Real Numbers)
     const demandLeadRaw = (item.effectiveDailyDemand * item.leadTimeDays).toFixed(2);
+    const ropRaw = (item.effectiveDailyDemand * item.leadTimeDays + item.safetyStock).toFixed(2);
     auditRopBox.innerHTML = `
-      <div>Formula: EffectiveDailyDemand × LeadTime + SafetyStock</div>
-      <div>Values: ${item.effectiveDailyDemand} × ${item.leadTimeDays} (${demandLeadRaw}) + ${item.safetyStock}</div>
+      <div>Formula: ⌈EffectiveDailyDemand × LeadTime + SafetyStock⌉</div>
+      <div>Values: ⌈${item.effectiveDailyDemand} × ${item.leadTimeDays} (${demandLeadRaw}) + ${item.safetyStock}⌉ = ⌈${ropRaw}⌉</div>
       <div class="result-line">= ${item.reorderPoint} units</div>
       <div style="font-size: 0.76rem; color: var(--admin-text-secondary); margin-top: 2px;">Stock below this point triggers an immediate purchase recommendation</div>
     `;
 
     // 4. Target Stock Step (Real Numbers)
     const demandCoverageRaw = (item.effectiveDailyDemand * item.orderCoverageDays).toFixed(2);
+    const tsRaw = (item.effectiveDailyDemand * item.orderCoverageDays + item.safetyStock).toFixed(2);
     auditTargetStockBox.innerHTML = `
-      <div>Formula: EffectiveDailyDemand × OrderCoverage + SafetyStock</div>
-      <div>Values: ${item.effectiveDailyDemand} × ${item.orderCoverageDays} (${demandCoverageRaw}) + ${item.safetyStock}</div>
+      <div>Formula: ⌈EffectiveDailyDemand × OrderCoverage + SafetyStock⌉</div>
+      <div>Values: ⌈${item.effectiveDailyDemand} × ${item.orderCoverageDays} (${demandCoverageRaw}) + ${item.safetyStock}⌉ = ⌈${tsRaw}⌉</div>
       <div class="result-line">= ${item.targetStock} units</div>
       <div style="font-size: 0.76rem; color: var(--admin-text-secondary); margin-top: 2px;">Order-up-to ceiling covering ${item.orderCoverageDays} days of forecast demand plus buffer</div>
     `;
@@ -2376,8 +2421,8 @@
     const currentStockClamped = Math.max(0, item.currentStock);
     const diffRaw = (item.targetStock - currentStockClamped).toFixed(2);
     auditOrderQtyBox.innerHTML = `
-      <div>Formula: ⌈TargetStock − CurrentStock⌉</div>
-      <div>Values: ⌈${item.targetStock} − ${currentStockClamped}⌉ (${diffRaw})</div>
+      <div>Formula: max(0, ⌈TargetStock − CurrentStock⌉)</div>
+      <div>Values: max(0, ⌈${item.targetStock} − ${currentStockClamped}⌉) = max(0, ⌈${diffRaw}⌉)</div>
       <div class="result-line">= ${item.suggestedOrderQty} units</div>
       ${item.currentStock < 0 ? `<div style="font-size: 0.76rem; color: var(--admin-danger); margin-top: 2px;">(Physical stock clamped to 0 from recorded ${item.currentStock})</div>` : ''}
     `;
@@ -2386,6 +2431,9 @@
     if (item.classification === 'BUY_NOW' && item.suggestedOrderQty > 0) {
       drawerActionBanner.className = 'recommendation-action-banner buy';
       drawerActionValue.textContent = `BUY ${item.suggestedOrderQty} UNITS`;
+    } else if (item.classification === 'WATCH' && item.suggestedOrderQty > 0) {
+      drawerActionBanner.className = 'recommendation-action-banner watch';
+      drawerActionValue.textContent = `WATCH — BUFFER DEFICIT: ${item.suggestedOrderQty} UNITS`;
     } else {
       drawerActionBanner.className = 'recommendation-action-banner';
       drawerActionValue.textContent = 'NO ORDER REQUIRED';

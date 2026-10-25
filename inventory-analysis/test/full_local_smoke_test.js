@@ -129,13 +129,28 @@ async function runLocalSmokeTest() {
 
   // Classification summary
   assert(analysis.summary, 'Summary must exist');
-  console.log(`✅ Dashboard Classification Counts:`);
-  console.log(`   - BUY NOW:  ${analysis.summary.buyNowCount}`);
-  console.log(`   - WATCH:    ${analysis.summary.watchCount}`);
-  console.log(`   - OK:       ${analysis.summary.okCount}`);
-  console.log(`   - REVIEW:   ${analysis.summary.reviewCount}`);
-  console.log(`   - TOTAL:    ${analysis.summary.totalItems}`);
+  const activeCount = analysis.summary.buyNowCount + analysis.summary.watchCount + analysis.summary.okCount;
+  const unsoldCatalogCount = (analysis.summary.deadStockCount || 0) + (analysis.summary.zeroStockCount || 0);
+  const dataQualityCount = (analysis.review?.dataQualityNotes?.length || 0);
+  const matchRequiredCount = (analysis.summary.matchRequiredCount || 0);
+  const exhaustiveTotal = activeCount + unsoldCatalogCount + dataQualityCount + matchRequiredCount;
 
+  console.log(`✅ Catalog Population & Category Breakdown:`);
+  console.log(`   1. Active Reorder Queue: ${activeCount} SKUs`);
+  console.log(`      - BUY NOW:  ${analysis.summary.buyNowCount}`);
+  console.log(`      - WATCH:    ${analysis.summary.watchCount}`);
+  console.log(`      - OK:       ${analysis.summary.okCount}`);
+  console.log(`   2. Unsold Catalog Items: ${unsoldCatalogCount} SKUs`);
+  console.log(`      - Dead Stock Candidates (Stock > 0, Sold = 0): ${analysis.summary.deadStockCount}`);
+  console.log(`      - Zero Stock Never Sold (Stock = 0, Sold = 0): ${analysis.summary.zeroStockCount}`);
+  console.log(`   3. Data Quality Notes (Sold, missing Stock Detail): ${dataQualityCount} SKUs`);
+  console.log(`   4. Unresolved Identity Conflicts: ${matchRequiredCount} SKUs`);
+  console.log(`   ------------------------------------------------------`);
+  console.log(`   TOTAL UNIQUE CATALOG SKUs (1 + 2 + 3 + 4): ${analysis.summary.totalItems} (Exhaustive match: ${exhaustiveTotal === analysis.summary.totalItems})`);
+  console.log(`   Operational Exception Overlay: ${analysis.summary.reviewCount} (${analysis.summary.negativeStockCount} Negative Stock + ${dataQualityCount} Data Quality)`);
+  console.log(`   Review Tab Action Population: ${analysis.summary.negativeStockCount + unsoldCatalogCount + dataQualityCount + matchRequiredCount}`);
+
+  assert.strictEqual(exhaustiveTotal, analysis.summary.totalItems, 'Active + Unsold + DataQuality + Matches must exhaustively equal totalItems');
   assert(analysis.summary.buyNowCount > 0, 'BUY NOW count must be > 0');
   assert(analysis.summary.okCount > 0, 'OK count must be > 0');
 

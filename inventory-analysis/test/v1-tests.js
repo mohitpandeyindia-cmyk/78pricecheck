@@ -411,8 +411,9 @@ try {
     config: { leadTimeDays: 3, orderCoverageDays: 15, serviceLevel: 0.95 },
   });
 
-  assert.strictEqual(sug.suggestions[0].safetyStock, Math.round(expectedSS * 100) / 100);
-  assert.strictEqual(sug.suggestions[0].safetyStock, 5.72);
+  assert.strictEqual(sug.suggestions[0].safetyStock, Math.ceil(expectedSS));
+  assert.strictEqual(sug.suggestions[0].safetyStock, 6);
+  assert.strictEqual(sug.suggestions[0].safetyStockRaw, 5.72);
 
   recordCategory('Safety stock', true, 'Correctly computed as Z * sigma * sqrt(leadTimeDays)');
 } catch (e) {
@@ -580,7 +581,8 @@ try {
   const item = sug.suggestions[0];
   assert.strictEqual(item.classification, 'WATCH');
   assert.strictEqual(item.needsReorder, false);
-  assert.strictEqual(item.suggestedOrderQty, 0);
+  // Under the approved independent quantity formula: Q = max(0, ceilClean(TS - Stock)) = 81 - 24 = 57
+  assert.strictEqual(item.suggestedOrderQty, 57);
   assert(item.reason.includes('within 25% above the reorder point'));
 
   recordCategory('WATCH classification', true, 'Stock between ROP and ROP * 1.25 classified as WATCH');
@@ -616,7 +618,8 @@ try {
   const item = sug.suggestions[0];
   assert.strictEqual(item.classification, 'OK');
   assert.strictEqual(item.needsReorder, false);
-  assert.strictEqual(item.suggestedOrderQty, 0);
+  // Under the approved independent quantity formula: Q = max(0, ceilClean(TS - Stock)) = 81 - 50 = 31
+  assert.strictEqual(item.suggestedOrderQty, 31);
   assert(item.reason.includes('well above the reorder point'));
 
   recordCategory('OK classification', true, 'Stock > ROP * 1.25 classified as OK');

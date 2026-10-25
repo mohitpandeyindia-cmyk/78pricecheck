@@ -105,6 +105,7 @@ function runAnalysis({ saleReportPath, stockDetailPath, purchaseReportPath } = {
       stockRecords: filteredStockRecords,
       mrpMaster: mrpMasterData,
       resolveToCanonical: (name) => identityResolution.resolveRawNameToCanonical(name),
+      periodBounds: saleParsed.dateRange,
     });
   }
 

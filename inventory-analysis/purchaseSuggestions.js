@@ -16,6 +16,12 @@ function zFor(serviceLevel) {
   return SERVICE_LEVEL_Z[nearest];
 }
 
+function ceilClean(val) {
+  if (typeof val !== 'number' || isNaN(val)) return 0;
+  // Subtract small epsilon (1e-9) to prevent IEEE-754 precision noise (e.g. 6.000000000000001) from bumping to next integer
+  return Math.max(0, Math.ceil(val - 1e-9));
+}
+
 /**
  * Validates configuration values according to V1 rules (Section 41).
  */
@@ -146,30 +152,60 @@ function generatePurchaseSuggestions({ salesAnalysis, currentStockByItem, config
       demandBasis = `recent-window average (trend: ${sales.trend})`;
     }
 
-    // Mathematical calculations (keep full precision internally, round at output)
-    const safetyStockRaw = z * (sales.dailyStdDev || 0) * Math.sqrt(leadTimeDays);
-    const reorderPointRaw = effectiveDailyDemand * leadTimeDays + safetyStockRaw;
-    const targetStockRaw = effectiveDailyDemand * orderCoverageDays + safetyStockRaw;
+    // Separate missing/null/NaN data from valid measured zero demand
+    const isInvalidEdd = effectiveDailyDemand === null || effectiveDailyDemand === undefined || typeof effectiveDailyDemand !== 'number' || isNaN(effectiveDailyDemand);
+    const isInvalidSigma = sales.dailyStdDev === null || sales.dailyStdDev === undefined || typeof sales.dailyStdDev !== 'number' || isNaN(sales.dailyStdDev);
+    const isInvalidStock = currentStock === null || currentStock === undefined || typeof currentStock !== 'number' || isNaN(currentStock);
 
-    // Classification (Section 14)
+    if (isInvalidEdd || isInvalidSigma || isInvalidStock) {
+      let issue = 'Data is insufficient for reliable classification.';
+      if (isInvalidEdd) issue = 'Demand velocity (EDD) is missing or invalid; calculation withheld from automated reorder.';
+      else if (isInvalidSigma) issue = 'Demand variability (sigma) is missing or invalid; calculation withheld from automated reorder.';
+      else if (isInvalidStock) issue = 'Current physical stock quantity is missing or invalid; calculation withheld from automated reorder.';
+
+      dataQualityNotes.push({
+        itemName,
+        issue,
+      });
+      continue;
+    }
+
+    // Mathematical calculations (approved business formulas with integer ceiling)
+    // 1. Safety Stock: SS = ceil(Z * dailyDemandStdDev * sqrt(L))
+    const sigmaVal = typeof sales.dailyStdDev === 'number' ? sales.dailyStdDev : (sales.dailyStdDevRaw ?? 0);
+    const safetyStockRaw = z * sigmaVal * Math.sqrt(leadTimeDays);
+    const safetyStock = ceilClean(safetyStockRaw);
+
+    // 2. Reorder Point: ROP = ceil(EDD * L + SS)
+    const reorderPointRaw = effectiveDailyDemand * leadTimeDays + safetyStock;
+    const reorderPoint = ceilClean(reorderPointRaw);
+
+    // 3. Target Stock: TS = ceil(EDD * C + SS)
+    const targetStockRaw = effectiveDailyDemand * orderCoverageDays + safetyStock;
+    const targetStock = ceilClean(targetStockRaw);
+
+    // Physical stock for operational ordering (negative physical stock clamped to 0)
+    const currentPhysicalStock = currentStock;
+    const operationalStock = Math.max(0, currentPhysicalStock);
+
+    // Classification (Section 14) - Urgency status
     let classification = 'OK';
     let needsReorder = false;
-    let suggestedOrderQty = 0;
 
-    if (currentStock < reorderPointRaw && effectiveDailyDemand > 0) {
+    if (currentPhysicalStock < reorderPoint && effectiveDailyDemand > 0) {
       classification = 'BUY_NOW';
       needsReorder = true;
-      const unroundedOrder = targetStockRaw - currentStock;
-      suggestedOrderQty = unroundedOrder > 0 ? Math.ceil(unroundedOrder) : 0;
-    } else if (currentStock <= reorderPointRaw * watchThresholdFactor && reorderPointRaw > 0) {
+    } else if (currentPhysicalStock <= reorderPoint * watchThresholdFactor && reorderPoint > 0) {
       classification = 'WATCH';
       needsReorder = false;
-      suggestedOrderQty = 0;
     } else {
       classification = 'OK';
       needsReorder = false;
-      suggestedOrderQty = 0;
     }
+
+    // Approved suggested quantity formula (independent of classification and EDD):
+    // Q = max(0, ceilClean(TS - max(0, currentPhysicalStock)))
+    const suggestedOrderQty = Math.max(0, ceilClean(targetStock - operationalStock));
 
     // Days of Cover (Section 15)
     let daysOfCover = null;
@@ -192,7 +228,7 @@ function generatePurchaseSuggestions({ salesAnalysis, currentStockByItem, config
       currentStock,
       daysOfCover,
       trend: sales.trend,
-      reorderPoint: round2(reorderPointRaw),
+      reorderPoint,
       orderCoverageDays,
     });
 
@@ -214,22 +250,30 @@ function generatePurchaseSuggestions({ salesAnalysis, currentStockByItem, config
       reviewFrequencyDays,
       orderCoverageDays,
       serviceLevel,
-      safetyStock: round2(safetyStockRaw),
-      reorderPoint: round2(reorderPointRaw),
-      targetStock: round2(targetStockRaw),
+      safetyStock,
+      reorderPoint,
+      targetStock,
       suggestedOrderQty,
+      safetyStockRaw: round2(safetyStockRaw),
+      reorderPointRaw: round2(reorderPointRaw),
+      targetStockRaw: round2(targetStockRaw),
       classification,
       urgency,
       needsReorder,
       reason,
       // Availability & Reconciliation (V2 Foundation)
       availability: sales.availability || null,
+      availabilityConfidence: sales.availabilityConfidence || 'INDETERMINATE',
+      isProvisional: sales.isProvisional || false,
+      provisionalReason: sales.provisionalReason || null,
+      calendarAvgDailyDemand: sales.calendarAvgDailyDemand ?? null,
       reconciliationStatus: sales.reconciliationStatus || 'NOT_CHECKED',
       reconciliationDifference: sales.reconciliationDifference ?? null,
       reconciliationMismatchReasons: sales.reconciliationMismatchReasons || [],
       // Existing useful metadata retained:
       stockAsOfDate: stockEntry.asOfDate,
-      demandVariability: round2(sales.dailyStdDev),
+      demandVariability: round2(sigmaVal),
+      demandVariabilityRaw: sigmaVal,
     });
   }
 

@@ -58,6 +58,7 @@ function startOfDay(date) {
  * @param {string} [params.itemName] - display name
  * @param {string} [params.itemCode] - primary item code (string)
  * @param {number} [params.openingStock=0] - opening/beginning stock from Stock Detail
+ * @param {boolean} [params.hasExplicitOpeningEvidence=false] - whether opening stock is backed by explicit audit evidence
  * @param {number|null} [params.stockDetailClosing=null] - closing quantity from Stock Detail
  * @param {number|null} [params.stockDetailIn=null] - quantityIn from Stock Detail
  * @param {number|null} [params.stockDetailOut=null] - quantityOut from Stock Detail
@@ -69,6 +70,7 @@ function reconstructSkuStock({
   itemName = '',
   itemCode = null,
   openingStock = 0,
+  hasExplicitOpeningEvidence = false,
   stockDetailClosing = null,
   stockDetailIn = null,
   stockDetailOut = null,
@@ -158,27 +160,68 @@ function reconstructSkuStock({
   let runningStock = cleanOpening;
   let availableDays = 0;
   let stockoutDays = 0;
+  let unknownDays = 0;
   let salesWhileAvailable = 0;
   let firstStockoutDate = null;
+  let earliestPlausibleStockoutDate = null;
+  let latestPlausibleStockoutDate = null;
   let lastAvailableDate = null;
   let lastReplenishmentDate = null;
   let replenishedAfterStockout = false;
+  let hasNegativeRunningDip = false;
 
-  const cursor = new Date(minDate);
+  // Determine whether this SKU has undated inward and opening trust
+  const totalBilledPurchasesNet = totalPurchases - totalDebitNotes;
+  const cleanStockDetailIn = stockDetailIn !== null && stockDetailIn !== undefined ? Number(stockDetailIn) : null;
+  const cleanStockDetailClosing = stockDetailClosing !== null && stockDetailClosing !== undefined ? Number(stockDetailClosing) : null;
+  const undatedInward = cleanStockDetailIn !== null ? Math.max(0, cleanStockDetailIn - totalBilledPurchasesNet) : 0;
+  const hasUndatedInward = cleanStockDetailIn !== null && (cleanStockDetailIn - totalBilledPurchasesNet) > 0.001;
+  const hasMissingOpeningEvidence = cleanOpening === 0 && cleanStockDetailIn !== null && cleanStockDetailIn > 0 && totalPurchases === 0;
+  const isOpeningTrustworthy = hasExplicitOpeningEvidence || (cleanOpening > 0 && typeof openingStock === 'number');
+
+  // Pre-collect daily records chronologically
+  const dayRecords = [];
+  const cursorPre = new Date(minDate);
   for (let i = 0; i < analysisPeriodDays; i++) {
-    const dayKey = toDayKey(cursor);
-    const moves = dailyMovements.get(dayKey) || {
+    const k = toDayKey(cursorPre);
+    const m = dailyMovements.get(k) || {
       purchases: 0,
       debitNotes: 0,
       sales: 0,
       creditNotes: 0,
       adjustments: 0,
     };
+    dayRecords.push({
+      date: new Date(cursorPre),
+      dayKey: k,
+      moves: m,
+    });
+    cursorPre.setDate(cursorPre.getDate() + 1);
+  }
+
+  // Precompute cumulative net purchases and sales
+  const cumPurchasesArr = new Array(analysisPeriodDays);
+  const cumSalesArr = new Array(analysisPeriodDays);
+  let accPurchases = 0;
+  let accSales = 0;
+  for (let i = 0; i < analysisPeriodDays; i++) {
+    const m = dayRecords[i].moves;
+    accPurchases += (m.purchases - m.debitNotes);
+    accSales += (m.sales - m.creditNotes);
+    cumPurchasesArr[i] = accPurchases;
+    cumSalesArr[i] = accSales;
+  }
+  const totalPeriodSales = accSales;
+  const totalPeriodPurchases = accPurchases;
+
+  for (let i = 0; i < analysisPeriodDays; i++) {
+    const { date, dayKey, moves } = dayRecords[i];
+    const cumPurchases = cumPurchasesArr[i];
+    const cumSales = cumSalesArr[i];
+    const futureSales = totalPeriodSales - cumSales;
+    const futurePurchases = totalPeriodPurchases - cumPurchases;
 
     // Net movements on day d
-    // Inbound: purchases + creditNotes (sales returns)
-    // Outbound: sales + debitNotes (purchase returns)
-    // Adjustments: added directly
     const dayIn = moves.purchases + moves.creditNotes;
     const dayOut = moves.sales + moves.debitNotes;
     const netDayMovements = dayIn - dayOut + moves.adjustments;
@@ -188,33 +231,123 @@ function reconstructSkuStock({
 
     // Track replenishments
     if (moves.purchases > 0) {
-      lastReplenishmentDate = new Date(cursor);
+      lastReplenishmentDate = new Date(date);
       if (firstStockoutDate) {
         replenishedAfterStockout = true;
       }
     }
 
-    // End-of-day stock
+    // End-of-day stock under dated movements
     runningStock = dayStartStock + netDayMovements;
+    if (runningStock < 0 || dayStartStock < 0) {
+      hasNegativeRunningDip = true;
+    }
 
-    // Availability determination:
-    // A SKU is considered AVAILABLE if it had stock to sell during that day (dayStartStock > 0 or runningStock > 0)
-    // Stockout is when both start and end are <= 0, or end drops <= 0
-    const wasAvailable = dayStartStock > 0 || (dayIn > 0 && dayIn >= dayOut);
-
-    if (wasAvailable) {
-      availableDays++;
-      salesWhileAvailable += moves.sales;
-      lastAvailableDate = new Date(cursor);
+    // Feasible stock balance bounds under all admissible histories
+    // Raw past constraint: maximum physical stock that could have existed by day i
+    // S_i <= S_0_max + cumPurchases + undatedInward - cumSales
+    // When opening is untrusted:
+    // - If Stock Detail closing stock is known, opening is bounded by: S_0 <= cleanStockDetailClosing + totalPeriodSales - totalPeriodPurchases
+    //   Substituting this S_0_max into S_i gives exactly rawFutureMax.
+    // - If no defensible opening-stock upper bound exists (closing stock is null/unknown), do not manufacture one by assuming zero!
+    let rawPastMax = Infinity;
+    if (isOpeningTrustworthy) {
+      rawPastMax = cleanOpening + cumPurchases + undatedInward - cumSales;
+    } else if (cleanStockDetailClosing !== null) {
+      // Defensible upper bound from complete Stock Detail accounting identity:
+      // S_0 <= cleanStockDetailClosing + totalPeriodSales - totalPeriodPurchases
+      // Thus: rawPastMax = (cleanStockDetailClosing + totalPeriodSales - totalPeriodPurchases) + cumPurchases + undatedInward - cumSales;
+      // In conservative admissible histories with undated inward:
+      rawPastMax = (cleanStockDetailClosing + totalPeriodSales - totalPeriodPurchases) + cumPurchases + undatedInward - cumSales;
     } else {
-      stockoutDays++;
-      if (!firstStockoutDate) {
-        firstStockoutDate = new Date(cursor);
+      // No defensible opening-stock upper bound exists; do NOT manufacture zero!
+      rawPastMax = Infinity;
+    }
+
+    // Raw future constraint: maximum physical stock at day i compatible with cleanStockDetailClosing and future sales
+    // S_i <= cleanStockDetailClosing + futureSales - futurePurchases
+    let rawFutureMax = Infinity;
+    if (cleanStockDetailClosing !== null) {
+      rawFutureMax = cleanStockDetailClosing + futureSales - futurePurchases;
+    }
+
+    // Mathematical upper bound candidate before clamping
+    const rawMaxFeasibleStock = Math.min(rawPastMax, rawFutureMax);
+
+    // Minimum feasible stock candidate:
+    // Only dated movements with trustworthy opening balance can prove positive lower bound S_i >= min
+    let rawMinFeasibleStock = -Infinity;
+    if (isOpeningTrustworthy && !hasUndatedInward) {
+      rawMinFeasibleStock = cleanOpening + cumPurchases - cumSales;
+    } else if (isOpeningTrustworthy && hasUndatedInward) {
+      // Even if undated inward exists, dated purchases alone establish lower bound if they exceed sales
+      rawMinFeasibleStock = cleanOpening + cumPurchases - cumSales;
+    } else {
+      // Unanchored opening balance cannot guarantee positive lower bound
+      rawMinFeasibleStock = 0;
+    }
+
+    // Evidence Consistency and Feasibility Validation (Defect 1)
+    // Check if the ledger constraints are jointly feasible:
+    // 1. rawMaxFeasibleStock < 0 means physical stock constraints are contradictory under assumed opening / movements
+    // 2. rawMinFeasibleStock > rawMaxFeasibleStock means inverted feasible interval
+    // 3. rawPastMax < 0 means cumulative sales exceeded all known inward to date
+    const isInfeasible = rawMaxFeasibleStock < -0.001 || (rawMinFeasibleStock > rawMaxFeasibleStock + 0.001);
+
+    // Clamped operational stock values for ordering (never negative)
+    const maxFeasibleStock = Math.max(0, rawMaxFeasibleStock);
+    const minFeasibleStock = Math.max(0, rawMinFeasibleStock);
+
+    let dayStatus = 'UNKNOWN';
+    let rationale = '';
+
+    if (isInfeasible) {
+      // Contradictory ledger constraints: DO NOT clamp to zero to claim stockout!
+      dayStatus = 'INDETERMINATE';
+      unknownDays++;
+      rationale = `Infeasible stock constraints: raw upper bound (${Math.round(rawMaxFeasibleStock * 100) / 100}) is negative or inverted relative to lower bound (${Math.round(rawMinFeasibleStock * 100) / 100}). Ledger is contradictory on this date.`;
+    } else if (hasUndatedInward || hasMissingOpeningEvidence) {
+      // Under undated inward or unanchored opening balance:
+      // Rule 4: Classify STOCKOUT only when maximum feasible stock is zero AND underlying constraints are feasible AND no customer sales occurred.
+      // Proven terminal stockout occurs when future sales = 0 and cleanStockDetailClosing = 0 and past inward is exhausted.
+      if (rawMaxFeasibleStock <= 0.001 && moves.sales === 0) {
+        dayStatus = 'STOCKOUT';
+        stockoutDays++;
+        if (!firstStockoutDate) firstStockoutDate = new Date(date);
+        rationale = 'Stockout verified: max feasible stock is zero under all admissible histories (future sales = 0, closing stock = 0).';
+      } else {
+        dayStatus = 'UNKNOWN';
+        unknownDays++;
+        if (moves.sales > 0) {
+          rationale = `Sales occurred (${moves.sales} units), but arrival chronology of undated inward (${undatedInward} units) prevents exact stock reconstruction.`;
+        } else {
+          rationale = `Potential stock present: feasible interval is [${Math.round(minFeasibleStock * 100) / 100}, ${Math.round(maxFeasibleStock * 100) / 100}]. Future sales or undated inward (${undatedInward} units) allow non-zero stock.`;
+        }
+      }
+    } else {
+      // All inward movements are dated and opening evidence is validated
+      if (dayStartStock > 0 || (dayIn > 0 && dayIn >= dayOut)) {
+        dayStatus = 'AVAILABLE';
+        availableDays++;
+        salesWhileAvailable += moves.sales;
+        lastAvailableDate = new Date(date);
+        rationale = 'Verified available: dated stock balance strictly positive.';
+      } else if (dayStartStock <= 0 && runningStock <= 0 && maxFeasibleStock <= 0.001) {
+        dayStatus = 'STOCKOUT';
+        stockoutDays++;
+        if (!firstStockoutDate) {
+          firstStockoutDate = new Date(date);
+        }
+        rationale = 'Stockout verified: dated inventory balance is zero and no inward replenishment present.';
+      } else {
+        dayStatus = 'UNKNOWN';
+        unknownDays++;
+        rationale = 'Stock status unknown under dated movements.';
       }
     }
 
     dailyStates.push({
-      date: new Date(cursor),
+      date: new Date(date),
       dayKey,
       dayStartStock: Math.round(dayStartStock * 100) / 100,
       purchases: moves.purchases,
@@ -223,39 +356,31 @@ function reconstructSkuStock({
       creditNotes: moves.creditNotes,
       adjustments: moves.adjustments,
       estimatedEndingStock: Math.round(runningStock * 100) / 100,
-      isAvailable: wasAvailable,
-      status: wasAvailable ? 'AVAILABLE' : 'STOCKOUT',
+      rawMinFeasibleStock: Math.round(rawMinFeasibleStock * 100) / 100,
+      rawMaxFeasibleStock: Math.round(rawMaxFeasibleStock * 100) / 100,
+      minFeasibleStock: Math.round(minFeasibleStock * 100) / 100,
+      maxFeasibleStock: Math.round(maxFeasibleStock * 100) / 100,
+      undatedInwardConstraint: Math.round(undatedInward * 100) / 100,
+      isAvailable: dayStatus === 'AVAILABLE',
+      status: dayStatus,
+      rationale,
     });
-
-    cursor.setDate(cursor.getDate() + 1);
   }
 
   const reconstructedClosingStock = Math.round(runningStock * 100) / 100;
 
-  // Stockout metrics
-  let stockoutDurationDays = stockoutDays;
+  // Stockout metrics & interval bounding
   let daysSinceLastReplenishment = null;
   if (lastReplenishmentDate) {
     daysSinceLastReplenishment = Math.max(0, Math.round((maxDate - lastReplenishmentDate) / MS_PER_DAY));
   }
 
-  const availabilityPercent = analysisPeriodDays > 0
-    ? Math.round((availableDays / analysisPeriodDays) * 1000) / 10
-    : 0;
-
-  const averageDailyDemandWhileAvailable = availableDays > 0
-    ? Math.round((salesWhileAvailable / availableDays) * 100) / 100
-    : 0;
-
-  const stockConstrained = stockoutDays > 0 && availableDays < analysisPeriodDays;
-
-  // Mandatory Reconciliation against Stock Detail
+  // Stock Detail Reconciliation
   let reconciliationStatus = 'NOT_CHECKED';
   let reconciliationDifference = null;
   const reconciliationMismatchReasons = [];
 
-  if (stockDetailClosing !== null && stockDetailClosing !== undefined) {
-    const cleanStockDetailClosing = Number(stockDetailClosing);
+  if (cleanStockDetailClosing !== null) {
     reconciliationDifference = Math.round((reconstructedClosingStock - cleanStockDetailClosing) * 100) / 100;
 
     const EPSILON = 0.001;
@@ -289,13 +414,65 @@ function reconstructSkuStock({
     }
   }
 
+  // Determine availabilityConfidence: VERIFIED | BOUNDED | INDETERMINATE
+  let availabilityConfidence = 'INDETERMINATE';
+  let stockoutWindow = null;
+
+  const inwardMatchesBilled = cleanStockDetailIn !== null && Math.abs(cleanStockDetailIn - totalBilledPurchasesNet) <= 0.001;
+  const isClosingReconciled = reconciliationStatus === 'RECONCILED';
+
+  // Opening balance evidence rule (evaluated earlier):
+  // isOpeningTrustworthy was determined above for daily feasible stock bounds.
+
+  if (inwardMatchesBilled && isClosingReconciled && !hasNegativeRunningDip && isOpeningTrustworthy && cleanStockDetailClosing !== null) {
+    // Only VERIFIED when dated chronology is validated, balances non-negative, and opening is explicitly trustworthy
+    availabilityConfidence = 'VERIFIED';
+    stockoutWindow = firstStockoutDate ? { exact: firstStockoutDate, type: 'EXACT' } : null;
+  } else if (cleanStockDetailClosing !== null && !hasNegativeRunningDip && inwardMatchesBilled && isClosingReconciled && !isOpeningTrustworthy) {
+    // Dated purchases reconcile with Stock Detail, but opening balance is unanchored (assumed 0 Beginning Quantity)
+    availabilityConfidence = 'BOUNDED';
+    stockoutWindow = firstStockoutDate
+      ? { earliestPlausibleDate: firstStockoutDate, latestPlausibleDate: maxDate, type: 'INTERVAL', description: 'Assumed zero opening stock; stockout bounded by dated replenishment.' }
+      : { type: 'UNKNOWN', description: 'Continuously active under assumed zero opening balance.' };
+  } else if (cleanStockDetailClosing !== null && (hasUndatedInward || hasMissingOpeningEvidence || hasNegativeRunningDip)) {
+    // BOUNDED when terminal stockout or bounded coverage can be determined, but exact chronology is incomplete
+    if (cleanStockDetailClosing === 0 && totalSales > 0) {
+      availabilityConfidence = 'BOUNDED';
+      stockoutWindow = {
+        earliestPlausibleDate: minDate,
+        latestPlausibleDate: maxDate,
+        type: 'INTERVAL',
+        description: 'Stockout occurred within period; arrival chronology of inward inventory is undated.'
+      };
+    } else {
+      availabilityConfidence = 'INDETERMINATE';
+      stockoutWindow = { type: 'UNKNOWN', description: 'Availability indeterminate due to unsupported inward movement chronology.' };
+    }
+  } else {
+    availabilityConfidence = 'INDETERMINATE';
+    stockoutWindow = { type: 'UNKNOWN', description: 'Insufficient movement or stock anchor evidence.' };
+  }
+
+  // Calculate demand rate while available (only across verified available days)
+  const averageDailyDemandWhileAvailable = availableDays > 0
+    ? Math.round((salesWhileAvailable / availableDays) * 100) / 100
+    : 0;
+
+  const availabilityPercent = analysisPeriodDays > 0
+    ? Math.round((availableDays / analysisPeriodDays) * 1000) / 10
+    : 0;
+
+  const stockConstrained = stockoutDays > 0 && availableDays < analysisPeriodDays;
+  const isProvisional = availabilityConfidence !== 'VERIFIED' || availableDays < 14;
+
   return {
     skuKey,
     itemName,
     itemCode,
     openingStock: cleanOpening,
     reconstructedClosingStock,
-    stockDetailClosing: stockDetailClosing !== null ? Number(stockDetailClosing) : null,
+    operationalStock: Math.max(0, cleanStockDetailClosing !== null ? cleanStockDetailClosing : reconstructedClosingStock),
+    stockDetailClosing: cleanStockDetailClosing,
     reconciliationStatus,
     reconciliationDifference,
     reconciliationMismatchReasons,
@@ -310,15 +487,19 @@ function reconstructSkuStock({
       analysisPeriodDays,
       availableDays,
       stockoutDays,
+      unknownDays,
       availabilityPercent,
       salesWhileAvailable,
       averageDailyDemandWhileAvailable,
-      firstStockoutDate,
+      availabilityConfidence,
+      stockoutWindow,
+      firstStockoutDate: availabilityConfidence === 'VERIFIED' ? firstStockoutDate : null,
       lastAvailableDate,
       lastReplenishmentDate,
       daysSinceLastReplenishment,
       replenishedAfterStockout,
       stockConstrained,
+      isProvisional,
     },
     dailyStates,
   };
@@ -340,6 +521,7 @@ function reconstructAllStockHistory({
   stockRecords = [],
   mrpMaster = null,
   resolveToCanonical = null,
+  periodBounds = null,
 }) {
   const skuMap = new Map(); // key -> { skuKey, itemName, itemCode, openingStock, stockDetailClosing, stockDetailIn, stockDetailOut, movements: [] }
 
@@ -439,10 +621,30 @@ function reconstructAllStockHistory({
     if (!entry.itemCode && itemCode) entry.itemCode = itemCode;
   }
 
-  // 4. Run reconstruction for each SKU
+  // 4. Compute global analysis date range across all records
+  let globalMinDate = null;
+  let globalMaxDate = null;
+  for (const s of saleRecords) {
+    if (s.date) {
+      if (!globalMinDate || s.date < globalMinDate) globalMinDate = s.date;
+      if (!globalMaxDate || s.date > globalMaxDate) globalMaxDate = s.date;
+    }
+  }
+  for (const p of purchaseRecords) {
+    if (p.date) {
+      if (!globalMinDate || p.date < globalMinDate) globalMinDate = p.date;
+      if (!globalMaxDate || p.date > globalMaxDate) globalMaxDate = p.date;
+    }
+  }
+  const globalPeriodBounds = periodBounds || (globalMinDate && globalMaxDate ? { from: globalMinDate, to: globalMaxDate } : null);
+
+  // 5. Run reconstruction for each SKU across the full store observation period
   const results = new Map();
   for (const [key, data] of skuMap.entries()) {
-    const recon = reconstructSkuStock(data);
+    const recon = reconstructSkuStock({
+      ...data,
+      periodBounds: globalPeriodBounds,
+    });
     results.set(key, recon);
     // Also index by canonical itemName if different from key
     if (data.itemName && data.itemName !== key) {
