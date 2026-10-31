@@ -8,6 +8,7 @@
     "start": "node ../scripts/build.js && tsc && node dist/index.js",
     "dev": "ts-node src/index.ts",
     "test": "ts-node src/test/lookup.test.ts",
+    "test:scanner": "ts-node src/test/scanner_verification.test.ts",
     "test:import": "ts-node src/test/import.test.ts"
   },
   "dependencies": {

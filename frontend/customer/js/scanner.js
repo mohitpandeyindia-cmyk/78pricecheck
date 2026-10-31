@@ -6,6 +6,9 @@
 // Scanner Runtime State Variables
 let html5QrcodeScanner = null;
 let lastScannedBarcode = ""; // Prevent repeated lookups of same item
+let lastAcceptedBarcode = ""; // Deduplication lock: prevents repeated scans of continuously visible barcode
+let lastAcceptedScanTime = 0;
+const REARM_ABSENCE_MS = 1200; // Milliseconds barcode must be absent before re-arming
 let lastScanTime = 0;
 let lastSeenTime = 0; // Track when current barcode was last seen in viewport
 let lastDetectedBarcode = ""; // Track consecutive frame detections
@@ -179,6 +182,10 @@ const ScannerFocusConfig = {
   SUSTAINED_BLUR_CONSECUTIVE_FRAMES: 10,
   // Failed attempt threshold to attempt zoom refocus nudge
   REFOCUS_NUDGE_FAILED_ATTEMPTS: 25,
+  // Cooldown between refocus nudge attempts (ms)
+  REFOCUS_NUDGE_COOLDOWN_MS: 15000,
+  // Cooldown between blur warning telemetry records (ms)
+  BLUR_LOG_COOLDOWN_MS: 30000,
   // Feature flag to enable/disable hardware zoom refocus nudge (1-day test: ENABLED by default)
   ENABLE_ZOOM_NUDGE: true,
 
@@ -846,6 +853,9 @@ const CameraManager = {
     // Reset scanning lock flags on session start
     isScanPaused = false;
     lookupInProgress = false;
+    lastAcceptedBarcode = "";
+    lastScannedBarcode = "";
+    lastSeenTime = 0;
 
     if (this.state === 'READY' || this.state === 'STARTING') {
       console.log('[Diag] Camera start rejected: already in state', this.state);
@@ -1006,6 +1016,9 @@ const CameraManager = {
     // Reset scanning lock flags on session stop/exit
     isScanPaused = false;
     lookupInProgress = false;
+    lastAcceptedBarcode = "";
+    lastScannedBarcode = "";
+    lastSeenTime = 0;
 
     if (this.state === 'STOPPED' || this.state === 'IDLE' || !this.html5Qrcode) {
       return;
@@ -1108,41 +1121,61 @@ const CameraManager = {
 
   pendingNudgeEvent: null,
 
+  lastNudgeTimestamp: 0,
+
   async triggerRefocusNudge() {
     if (!ScannerFocusConfig.ENABLE_ZOOM_NUDGE) {
       console.log('[RefocusNudge] Zoom nudge skipped (ENABLE_ZOOM_NUDGE is false). Pass ?zoomNudge=1 or set flag.');
       return false;
     }
 
-    if (!this.activeTrack || typeof this.activeTrack.getCapabilities !== 'function') return false;
+    // Cooldown verification: Avoid repeatedly firing without sufficient recovery window
+    const now = Date.now();
+    if (now - this.lastNudgeTimestamp < ScannerFocusConfig.REFOCUS_NUDGE_COOLDOWN_MS) {
+      return false;
+    }
+
+    // Verify camera track is currently active and live
+    const video = document.querySelector('#reader video');
+    const track = (video && video.srcObject && video.srcObject.getVideoTracks()[0]) || this.activeTrack;
+    if (!track || track.readyState !== 'live' || typeof track.getCapabilities !== 'function') {
+      return false;
+    }
+
+    // Verify recovery is actually necessary: Do not trigger nudge if frame is already sharp
+    const varBefore = FrameSharpnessAnalyzer.calculateLaplacianVariance(video);
+    if (varBefore !== null && varBefore >= ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD) {
+      return false; // No focus recovery needed
+    }
+
     try {
-      const capabilities = this.activeTrack.getCapabilities();
-      if (!capabilities.zoom) {
-        console.log('[RefocusNudge] Zoom capability not supported on active video track.');
+      const capabilities = track.getCapabilities();
+      if (!capabilities.zoom && (!capabilities.focusMode || !capabilities.focusMode.includes('continuous'))) {
         return false;
       }
 
-      const video = document.querySelector('#reader video');
-      const varBefore = video ? FrameSharpnessAnalyzer.calculateLaplacianVariance(video) : null;
+      this.lastNudgeTimestamp = now;
 
-      const settings = typeof this.activeTrack.getSettings === 'function' ? this.activeTrack.getSettings() : {};
+      const settings = typeof track.getSettings === 'function' ? track.getSettings() : {};
       const currentZoom = settings.zoom || 1;
-      const maxZoom = capabilities.zoom.max || 1;
-      const minZoom = capabilities.zoom.min || 1;
-      const step = capabilities.zoom.step || 0.1;
+      const maxZoom = capabilities.zoom ? (capabilities.zoom.max || 1) : 1;
+      const minZoom = capabilities.zoom ? (capabilities.zoom.min || 1) : 1;
+      const step = capabilities.zoom ? (capabilities.zoom.step || 0.1) : 0.1;
 
-      const bumpVal = (currentZoom + step <= maxZoom) ? (currentZoom + step) : (currentZoom - step >= minZoom ? currentZoom - step : currentZoom);
-      if (bumpVal === currentZoom) return false;
+      if (capabilities.zoom && maxZoom > minZoom) {
+        const bumpVal = (currentZoom + step <= maxZoom) ? (currentZoom + step) : (currentZoom - step >= minZoom ? currentZoom - step : currentZoom);
+        if (bumpVal !== currentZoom) {
+          console.log(`[RefocusNudge] Executing hardware refocus zoom bump (${currentZoom} -> ${bumpVal} -> ${currentZoom}) | Variance Before: ${varBefore}`);
+          await track.applyConstraints({ advanced: [{ zoom: bumpVal }] });
+          await new Promise(r => setTimeout(r, 120));
+          await track.applyConstraints({ advanced: [{ zoom: currentZoom }] });
+          await new Promise(r => setTimeout(r, 250));
+        }
+      }
 
-      console.log(`[RefocusNudge] Executing hardware refocus zoom bump (${currentZoom} -> ${bumpVal} -> ${currentZoom}) | Variance Before: ${varBefore}`);
-      await this.activeTrack.applyConstraints({ advanced: [{ zoom: bumpVal }] });
-      await new Promise(r => setTimeout(r, 120));
-      await this.activeTrack.applyConstraints({ advanced: [{ zoom: currentZoom }] });
-      await new Promise(r => setTimeout(r, 250));
-
-      const varAfter = video ? FrameSharpnessAnalyzer.calculateLaplacianVariance(video) : null;
-      const delta = (varAfter !== null && varBefore !== null) ? (varAfter - varBefore) : null;
-      console.log(`[RefocusNudge] Refocus zoom bump completed | Variance After: ${varAfter} | Delta: ${delta >= 0 ? '+' : ''}${delta}`);
+      const varAfter = FrameSharpnessAnalyzer.calculateLaplacianVariance(video);
+      const delta = (varAfter !== null && varBefore !== null) ? (varAfter - varBefore) : 0;
+      console.log(`[RefocusNudge] Refocus nudge completed | Variance After: ${varAfter} | Delta: ${delta >= 0 ? '+' : ''}${delta}`);
 
       const availableFocusModes = capabilities.focusMode ? JSON.stringify(capabilities.focusMode) : 'none';
 
@@ -1150,7 +1183,7 @@ const CameraManager = {
       this.pendingNudgeEvent = {
         varBefore: varBefore !== null ? varBefore : 0,
         varAfter: varAfter !== null ? varAfter : 0,
-        delta: delta !== null ? delta : 0,
+        delta: delta,
         focusModes: availableFocusModes,
         framesRemaining: 15,
         recorded: false
@@ -1158,7 +1191,7 @@ const CameraManager = {
 
       return true;
     } catch (e) {
-      console.warn('[RefocusNudge] Refocus zoom bump failed:', e);
+      console.warn('[RefocusNudge] Refocus nudge failed:', e);
       return false;
     }
   },
@@ -2279,6 +2312,9 @@ function appendDebugInfo(container, errText) {
 
 // Handler functions
 function onBarcodeDecoded(decodedText, decodedResult) {
+  // Count frames for real-time FPS evaluation on successful decodes
+  registerFrameForFps();
+
   if (CameraManager.pendingNudgeEvent && !CameraManager.pendingNudgeEvent.recorded) {
     const p = CameraManager.pendingNudgeEvent;
     p.recorded = true;
@@ -2291,24 +2327,23 @@ function onBarcodeDecoded(decodedText, decodedResult) {
     });
   }
 
-  DiagnosticTelemetry.recordSuccessfulDecode(decodedText, decodedResult);
-  SilentDiagnosticService.recordScanEvent(decodedText, decodedResult);
-
-  const videoEl = document.querySelector('#reader video');
-  const actRes = videoEl ? `${videoEl.videoWidth}×${videoEl.videoHeight}` : 'Unknown';
-  const timeToDecodeMs = cameraStartTime > 0 ? Math.round(performance.now() - cameraStartTime) : 'N/A';
-  console.log(`[DiagnosticExperiment] Barcode Decoded: ${decodedText} | Resolution: ${actRes} | Time from Start: ${timeToDecodeMs}ms | Attempts: ${SilentDiagnosticService.failedFramesCount} | UserAgent: ${navigator.userAgent}`);
-
   const now = Date.now();
 
-  // Track last seen timestamp to calculate disappearance intervals for anti-double scans
+  // Absence/re-arm check: If camera view was clear of barcodes for > REARM_ABSENCE_MS, clear lock
+  if (lastAcceptedBarcode && (now - lastSeenTime > REARM_ABSENCE_MS)) {
+    if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log('[DEBUG] Scan lock on barcode ' + lastAcceptedBarcode + ' re-armed after ' + REARM_ABSENCE_MS + 'ms of absence.');
+    lastAcceptedBarcode = "";
+    lastScannedBarcode = "";
+  }
+
+  // Track last seen timestamp to calculate disappearance intervals for anti-double scans & re-arming
   lastSeenTime = now;
 
-  // Ignore subsequent scans if lookup is in progress or scan debouncing is active
+  // Deduplication Layer 1: Ignore scans if lookup is in progress or scan debouncing is active
   if (isScanPaused || lookupInProgress) return;
 
-  // Anti-double scan check: ignore stationary scanned barcode
-  if (decodedText === lastScannedBarcode) {
+  // Deduplication Layer 2: Suppress repeated success callbacks for continuously visible barcode
+  if (decodedText === lastAcceptedBarcode) {
     return;
   }
 
@@ -2331,7 +2366,14 @@ function onBarcodeDecoded(decodedText, decodedResult) {
     return;
   }
 
-  // Stable detection confirmed! Reset transient state frame counters
+  // ========================================================
+  // ACCEPTED PHYSICAL SCAN (Confirmed unique physical scan)
+  // ========================================================
+  lastAcceptedBarcode = decodedText;
+  lastScannedBarcode = decodedText;
+  lastAcceptedScanTime = now;
+
+  // Reset transient state frame counters
   detectionCount = 0;
   lastDetectedBarcode = "";
 
@@ -2339,11 +2381,20 @@ function onBarcodeDecoded(decodedText, decodedResult) {
   isScanPaused = true;
   lastScanTime = now;
 
+  // Record diagnostic telemetry and scan counters ONCE per accepted physical scan
+  DiagnosticTelemetry.recordSuccessfulDecode(decodedText, decodedResult);
+  SilentDiagnosticService.recordScanEvent(decodedText, decodedResult);
+
+  const videoEl = document.querySelector('#reader video');
+  const actRes = videoEl ? `${videoEl.videoWidth}×${videoEl.videoHeight}` : 'Unknown';
+  const timeToDecodeMs = cameraStartTime > 0 ? Math.round(performance.now() - cameraStartTime) : 'N/A';
+  console.log(`[DiagnosticExperiment] Barcode Decoded: ${decodedText} | Resolution: ${actRes} | Time from Start: ${timeToDecodeMs}ms | Attempts: ${SilentDiagnosticService.failedFramesCount} | UserAgent: ${navigator.userAgent}`);
+
   // Signal barcode found on guidance capsule
   setScannerGuidance('Found');
 
   // A11y and Telemetry Hooks
-  AnalyticsService.logEvent('scan_success', { barcode: decodedText });
+  if (typeof AnalyticsService !== 'undefined') AnalyticsService.logEvent('scan_success', { barcode: decodedText });
   const announcer = document.getElementById('a11y-announcer');
   if (announcer) {
     announcer.textContent = "Barcode scanned successfully. Fetching details.";
@@ -2373,11 +2424,11 @@ function onBarcodeDecoded(decodedText, decodedResult) {
   }
 
   // 4. Synthesize beep and haptic feedback
-  triggerHapticVibrate();
-  playSuccessBeep();
+  if (typeof triggerHapticVibrate === 'function') triggerHapticVibrate();
+  if (typeof playSuccessBeep === 'function') playSuccessBeep();
 
   // 5. Lookup details from backend catalog
-  lookupBarcode(decodedText);
+  if (typeof lookupBarcode === 'function') lookupBarcode(decodedText);
 }
 
 // Real-time Frame Sharpness Analyzer (Variance of Laplacian heuristic)
@@ -2386,6 +2437,9 @@ const FrameSharpnessAnalyzer = {
   ctx: null,
   consecutiveBlurFrames: 0,
   lastVariance: null,
+  lastTextureContrast: null,
+  isBlurIncidentActive: false,
+  lastBlurLogTime: 0,
 
   init() {
     if (!this.canvas) {
@@ -2412,8 +2466,23 @@ const FrameSharpnessAnalyzer = {
       const data = imgData.data;
 
       const gray = new Float32Array(64 * 64);
+      let minVal = 255;
+      let maxVal = 0;
       for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-        gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        const g = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        gray[j] = g;
+        if (g < minVal) minVal = g;
+        if (g > maxVal) maxVal = g;
+      }
+
+      // Feature Check: Contrast dynamic range.
+      // If frame has insufficient texture (uniform wall, empty table, solid background),
+      // variance of Laplacian will naturally be low (< 10) not because of optical blur,
+      // but due to lack of high-frequency content / edges. Do not falsely classify as blur.
+      const contrast = maxVal - minVal;
+      this.lastTextureContrast = contrast;
+      if (contrast < 20) {
+        return null; // Empty / untextured scene
       }
 
       let sumL = 0;
@@ -2457,6 +2526,10 @@ const FrameSharpnessAnalyzer = {
       this.consecutiveBlurFrames++;
     } else {
       this.consecutiveBlurFrames = 0;
+      if (this.isBlurIncidentActive) {
+        this.isBlurIncidentActive = false;
+        resetScannerStatusLine();
+      }
     }
 
     // Prompt user to adjust camera distance if sustained blur occurs over threshold failed attempts
@@ -2469,8 +2542,15 @@ const FrameSharpnessAnalyzer = {
         dot.style.backgroundColor = '#f59e0b';
         text.textContent = 'Hold phone 2–3 inches farther back to focus';
       }
-      console.warn(`[FocusDiagnostic] Sustained blur detected (Variance: ${variance} < ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames.`);
-      SilentDiagnosticService.recordMeaningfulEvent('SUSTAINED_FRAME_BLUR', `Variance of Laplacian dropped to ${variance} (threshold ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames`);
+
+      const now = Date.now();
+      // Incident-based bounded logging: Emit SUSTAINED_FRAME_BLUR once per incident (with cooldown)
+      if (!this.isBlurIncidentActive || (now - this.lastBlurLogTime >= ScannerFocusConfig.BLUR_LOG_COOLDOWN_MS)) {
+        this.isBlurIncidentActive = true;
+        this.lastBlurLogTime = now;
+        console.warn(`[FocusDiagnostic] Sustained blur detected (Variance: ${variance} < ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames.`);
+        SilentDiagnosticService.recordMeaningfulEvent('SUSTAINED_FRAME_BLUR', `Variance of Laplacian dropped to ${variance} (threshold ${ScannerFocusConfig.BLUR_VARIANCE_THRESHOLD}) across ${failedAttemptsCount} failed frames`);
+      }
     }
   }
 };
@@ -2506,9 +2586,10 @@ function onBarcodeScanError(errorMessage) {
     }
   }
 
-  // Trigger autofocus zoom bump once at configured failed attempts threshold
-  if (failedCount === ScannerFocusConfig.REFOCUS_NUDGE_FAILED_ATTEMPTS) {
-    console.log(`[RefocusNudgeTrigger] ${ScannerFocusConfig.REFOCUS_NUDGE_FAILED_ATTEMPTS} failed decode attempts threshold reached! Invoking CameraManager.triggerRefocusNudge()... (EnableZoomNudge: ${ScannerFocusConfig.ENABLE_ZOOM_NUDGE})`);
+  // Trigger autofocus zoom bump once at configured failed attempts threshold if sustained blur is present
+  if (failedCount === ScannerFocusConfig.REFOCUS_NUDGE_FAILED_ATTEMPTS && 
+      FrameSharpnessAnalyzer.consecutiveBlurFrames >= ScannerFocusConfig.SUSTAINED_BLUR_CONSECUTIVE_FRAMES) {
+    console.log(`[RefocusNudgeTrigger] Failed attempts and sustained blur detected. Invoking CameraManager.triggerRefocusNudge()... (EnableZoomNudge: ${ScannerFocusConfig.ENABLE_ZOOM_NUDGE})`);
     CameraManager.triggerRefocusNudge();
   }
 }
@@ -2750,13 +2831,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (container) container.style.display = 'none';
   }
 
-  // Scan Lock background cleaner: resets barcode lock if absent for 2 seconds
+  // Scan Lock background cleaner & re-arm mechanism:
+  // Clears lock once barcode is absent from camera view for REARM_ABSENCE_MS (1.2s),
+  // enabling a deliberate rescan of the same barcode.
   setInterval(() => {
-    if (lastScannedBarcode && Date.now() - lastSeenTime > 2000) {
-      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[DEBUG] Scan lock on barcode ${lastScannedBarcode} cleared after 2.0s of absence.`);
+    const now = Date.now();
+    if (lastAcceptedBarcode && (now - lastSeenTime > REARM_ABSENCE_MS)) {
+      if (typeof DEBUG_MODE !== 'undefined' && DEBUG_MODE) console.log(`[DEBUG] Scan lock on barcode ${lastAcceptedBarcode} re-armed after ${REARM_ABSENCE_MS}ms of absence.`);
+      lastAcceptedBarcode = "";
       lastScannedBarcode = "";
     }
-  }, 500);
+  }, 300);
 
   // Query browser camera permission state on load safely
   try {
@@ -2833,3 +2918,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 100);
 })();
+
+// CommonJS export for automated Node.js tests
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    ScannerFocusConfig,
+    DiagnosticTelemetry,
+    SilentDiagnosticService,
+    FrameSharpnessAnalyzer,
+    CameraManager,
+    onBarcodeDecoded,
+    onBarcodeScanError,
+    get lastAcceptedBarcode() { return lastAcceptedBarcode; },
+    set lastAcceptedBarcode(v) { lastAcceptedBarcode = v; },
+    get lastScannedBarcode() { return lastScannedBarcode; },
+    set lastScannedBarcode(v) { lastScannedBarcode = v; },
+    get isScanPaused() { return isScanPaused; },
+    set isScanPaused(v) { isScanPaused = v; },
+    get lookupInProgress() { return lookupInProgress; },
+    set lookupInProgress(v) { lookupInProgress = v; },
+    get lastSeenTime() { return lastSeenTime; },
+    set lastSeenTime(v) { lastSeenTime = v; },
+    REARM_ABSENCE_MS
+  };
+}
