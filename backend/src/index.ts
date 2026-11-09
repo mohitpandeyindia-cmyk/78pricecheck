@@ -229,7 +229,7 @@ app.get('/admin/upload', (req, res) => {
 });
 
 app.get('/admin/history', (req, res) => {
-  res.sendFile(path.join(FRONTEND_PATH, 'admin/history.html'));
+  res.redirect(301, '/admin/upload');
 });
 
 app.get('/admin/analytics', (req, res) => {

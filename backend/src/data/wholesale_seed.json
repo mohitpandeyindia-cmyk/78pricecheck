@@ -1,0 +1,612 @@
+[
+  {
+    "original_name": "AMUL COW GHEE TP 1LTR",
+    "normalized_name": "AMUL COW GHEE TP 1LTR",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "ASHIRVAD AATA 10 kg",
+    "normalized_name": "ASHIRVAD AATA 10 KG",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "MONSTER WHITE ZRO SGR 500ML",
+    "normalized_name": "MONSTER WHITE ZRO SGR 500ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER WHITE",
+    "normalized_name": "MONSTER WHITE",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER ORG",
+    "normalized_name": "MONSTER ORG",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "MONSTER STRWBRY",
+    "normalized_name": "MONSTER STRWBRY",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER LEMONADE",
+    "normalized_name": "MONSTER LEMONADE",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER ROSA",
+    "normalized_name": "MONSTER ROSA",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER FULL THROTTLE",
+    "normalized_name": "MONSTER FULL THROTTLE",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER WATERMELON 500ML",
+    "normalized_name": "MONSTER WATERMELON 500ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER MONARCH",
+    "normalized_name": "MONSTER MONARCH",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER SUPERDRY",
+    "normalized_name": "MONSTER SUPERDRY",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER U F MNGO",
+    "normalized_name": "MONSTER U F MNGO",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER MUCHO LOCO 500ML",
+    "normalized_name": "MONSTER MUCHO LOCO 500ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER MNGO",
+    "normalized_name": "MONSTER MNGO",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER STRWBRY 0 SGR 500ML",
+    "normalized_name": "MONSTER STRWBRY 0 SGR 500ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER LANDO NORRIS",
+    "normalized_name": "MONSTER LANDO NORRIS",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER U PEACHY KEEN 500ML",
+    "normalized_name": "MONSTER U PEACHY KEEN 500ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER RIO PUNCH",
+    "normalized_name": "MONSTER RIO PUNCH",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MONSTER RIPPER",
+    "normalized_name": "MONSTER RIPPER",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "HR GULAB JAMUN 1KG",
+    "normalized_name": "HR GULAB JAMUN 1KG",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "HR SOAN PAPDI GHEE 500G",
+    "normalized_name": "HR SOAN PAPDI GHEE 500G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "SAFFOLA GLD 1L PCH N",
+    "normalized_name": "SAFFOLA GLD 1L PCH N",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "EXO YLLOW 750ML N",
+    "normalized_name": "EXO YLLOW 750ML N",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "EXO GRN 750ML N",
+    "normalized_name": "EXO GRN 750ML N",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "CLEAN & CLEAR ME  BB FW 100ML",
+    "normalized_name": "CLEAN & CLEAR ME BB FW 100ML",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "HR SOAN PAPDI  500 G",
+    "normalized_name": "HR SOAN PAPDI 500 G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PITAMBARI DSHWSH GEL LQD 900ML B2G1",
+    "normalized_name": "PITAMBARI DSHWSH GEL LQD 900ML B2G1",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "IMPCT SF SB MNT 14G",
+    "normalized_name": "IMPCT SF SB MNT 14G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "IMPCT SF PEACH MNT 14G",
+    "normalized_name": "IMPCT SF PEACH MNT 14G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "RB MAX CHOCO BSRT SHAKE 250ML",
+    "normalized_name": "RB MAX CHOCO BSRT SHAKE 250ML",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "PHAB MSHAKE VNL ALMND",
+    "normalized_name": "PHAB MSHAKE VNL ALMND",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "PHAB MSHAKE STRW & CRM",
+    "normalized_name": "PHAB MSHAKE STRW & CRM",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "PITAMBARI DSHWSH GEL 500ML B2G1",
+    "normalized_name": "PITAMBARI DSHWSH GEL 500ML B2G1",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "PHAB BBERRY CHEESCKE",
+    "normalized_name": "PHAB BBERRY CHEESCKE",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "PHAB CHOCOLATE HAZELNUTS",
+    "normalized_name": "PHAB CHOCOLATE HAZELNUTS",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "SLEEPY OWL CF BELGIAN MOCHA 230ML",
+    "normalized_name": "SLEEPY OWL CF BELGIAN MOCHA 230ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "SLEEPY OWL CF FRENCH VANILLA 230ML",
+    "normalized_name": "SLEEPY OWL CF FRENCH VANILLA 230ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "SLEEPY OWL CF CARAMEL LATTE 230ML",
+    "normalized_name": "SLEEPY OWL CF CARAMEL LATTE 230ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "SLEEPY OWL CF HAZELNUT 230ML",
+    "normalized_name": "SLEEPY OWL CF HAZELNUT 230ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "DTTL LSR ORG 650ML",
+    "normalized_name": "DTTL LSR ORG 650ML",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "MXP FRNUTS BAR 50G",
+    "normalized_name": "MXP FRNUTS BAR 50G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "NSCFE CRML LTTE 200ML",
+    "normalized_name": "NSCFE CRML LTTE 200ML",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "DO BRWNIE BAR CHOCO COFFEE 135G",
+    "normalized_name": "DO BRWNIE BAR CHOCO COFFEE 135G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "TK  GT IT LEMON 300ML",
+    "normalized_name": "TK GT IT LEMON 300ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MXP SLT & CRML BAR 50G",
+    "normalized_name": "MXP SLT & CRML BAR 50G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "MXP CHOCOBERRY BAR 50G",
+    "normalized_name": "MXP CHOCOBERRY BAR 50G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "MXP CHOCO ALMND BAR 50G",
+    "normalized_name": "MXP CHOCO ALMND BAR 50G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "MXP CHOCOCLAS BAR 50G",
+    "normalized_name": "MXP CHOCOCLAS BAR 50G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "EXO BAR 200 G",
+    "normalized_name": "EXO BAR 200 G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "RB MP COFFEE MOUSE WAFER 40G",
+    "normalized_name": "RB MP COFFEE MOUSE WAFER 40G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "MXP CHOCOBERRY BAR 50G N",
+    "normalized_name": "MXP CHOCOBERRY BAR 50G N",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "LFBY GRMXPRT 4X75G",
+    "normalized_name": "LFBY GRMXPRT 4X75G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PHAB STRW&GREEK YGRT BAR 35G",
+    "normalized_name": "PHAB STRW&GREEK YGRT BAR 35G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PHAB MCHA NT FDGE BAR 35G",
+    "normalized_name": "PHAB MCHA NT FDGE BAR 35G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PHAB CHOCO BRWNIE BAR 35G",
+    "normalized_name": "PHAB CHOCO BRWNIE BAR 35G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PHAB COOK&CRM PROT WAFER",
+    "normalized_name": "PHAB COOK&CRM PROT WAFER",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "PHAB MCHA LATTE PROT WAFER",
+    "normalized_name": "PHAB MCHA LATTE PROT WAFER",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "NSN GEKI HS KORN V CHEESE 80 G",
+    "normalized_name": "NSN GEKI HS KORN V CHEESE 80 G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "NSN GEKI HS KORN VEG 80 G",
+    "normalized_name": "NSN GEKI HS KORN VEG 80 G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "ZYRO VITA COLA 250ML",
+    "normalized_name": "ZYRO VITA COLA 250ML",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "ZYRO TNC WTR 250ML",
+    "normalized_name": "ZYRO TNC WTR 250ML",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "RB MP CC CHOCI CHPS BLS 50G",
+    "normalized_name": "RB MP CC CHOCI CHPS BLS 50G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "RB MP CC BERRY BLS 50G",
+    "normalized_name": "RB MP CC BERRY BLS 50G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "TIDE NATURAL LEMON & CHANDAN 500G",
+    "normalized_name": "TIDE NATURAL LEMON & CHANDAN 500G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "EXO ROUND 500 G",
+    "normalized_name": "EXO ROUND 500 G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "PEAR OIL CLR GLW 75G",
+    "normalized_name": "PEAR OIL CLR GLW 75G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "KNR CLAS MIX VEG SOUP 40G",
+    "normalized_name": "KNR CLAS MIX VEG SOUP 40G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "RB MP CHOCO ALMND COOKE 60G",
+    "normalized_name": "RB MP CHOCO ALMND COOKE 60G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "DIET COKE 330ML",
+    "normalized_name": "DIET COKE 330ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "PITAMBARI DSHWSH BAR 4X150G",
+    "normalized_name": "PITAMBARI DSHWSH BAR 4X150G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "LC VTIC SRM SHEET MSK 25L",
+    "normalized_name": "LC VTIC SRM SHEET MSK 25L",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "LC GRN TEA MSK 25ML",
+    "normalized_name": "LC GRN TEA MSK 25ML",
+    "wholesale_qty": 10
+  },
+  {
+    "original_name": "LC HYALURONIC ACD MSK 25ML",
+    "normalized_name": "LC HYALURONIC ACD MSK 25ML",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "SRF EXL BAR 250G",
+    "normalized_name": "SRF EXL BAR 250G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "RB NB NTS&SEEDS 35G",
+    "normalized_name": "RB NB NTS&SEEDS 35G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "RB NB FRT & SEEDS 35G",
+    "normalized_name": "RB NB FRT & SEEDS 35G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "RB NB SPRT BAR 40G",
+    "normalized_name": "RB NB SPRT BAR 40G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "RB NB YGRT BERRY 35G",
+    "normalized_name": "RB NB YGRT BERRY 35G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "RB NB CHOCO DLT 40G",
+    "normalized_name": "RB NB CHOCO DLT 40G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "SPRITE LMN LIME 300ML CAN",
+    "normalized_name": "SPRITE LMN LIME 300ML CAN",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "COCA COLA CAN 300ML",
+    "normalized_name": "COCA COLA CAN 300ML",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "RB NB PNUT BTTR 40G",
+    "normalized_name": "RB NB PNUT BTTR 40G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "LFBY MLD CRM 100G",
+    "normalized_name": "LFBY MLD CRM 100G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "HENKO STN C BAR 250G",
+    "normalized_name": "HENKO STN C BAR 250G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "DIET COKE CAN 180ML",
+    "normalized_name": "DIET COKE CAN 180ML",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "PEAR PR&GNTL 75 G",
+    "normalized_name": "PEAR PR&GNTL 75 G",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "DIET COKE CAN 180ML N",
+    "normalized_name": "DIET COKE CAN 180ML N",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "EXO GGF BAR 300G",
+    "normalized_name": "EXO GGF BAR 300G",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "PEAR SFT&FRSH 50G N",
+    "normalized_name": "PEAR SFT&FRSH 50G N",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "RIN BAR  250G",
+    "normalized_name": "RIN BAR 250G",
+    "wholesale_qty": 3
+  },
+  {
+    "original_name": "SRF EXL BAR 145G",
+    "normalized_name": "SRF EXL BAR 145G",
+    "wholesale_qty": 12
+  },
+  {
+    "original_name": "KNR CRM BRCLI 12.5G",
+    "normalized_name": "KNR CRM BRCLI 12.5G",
+    "wholesale_qty": 4
+  },
+  {
+    "original_name": "ORION SNOW PIE",
+    "normalized_name": "ORION SNOW PIE",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "YAKULT MANGO FLAVOUR",
+    "normalized_name": "YAKULT MANGO FLAVOUR",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "YAKULT LIGHT",
+    "normalized_name": "YAKULT LIGHT",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "GILL G-B3G1",
+    "normalized_name": "GILL G-B3G1",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "YAKULT ORIGINAL",
+    "normalized_name": "YAKULT ORIGINAL",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "PNASNC METAL N",
+    "normalized_name": "PNASNC METAL N",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "PNASNC MPURPOSE N",
+    "normalized_name": "PNASNC MPURPOSE N",
+    "wholesale_qty": 12
+  },
+  {
+    "original_name": "GM POHA MSLA 15G",
+    "normalized_name": "GM POHA MSLA 15G",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "CAMPA SURE WTR 1L",
+    "normalized_name": "CAMPA SURE WTR 1L",
+    "wholesale_qty": 5
+  },
+  {
+    "original_name": "LFBY LMN ALOE FRSH 44G 4P1",
+    "normalized_name": "LFBY LMN ALOE FRSH 44G 4P1",
+    "wholesale_qty": 10
+  },
+  {
+    "original_name": "GDRJ MGC HW PWDR 9G",
+    "normalized_name": "GDRJ MGC HW PWDR 9G",
+    "wholesale_qty": 10
+  },
+  {
+    "original_name": "NSCFE CLSC 4.5G",
+    "normalized_name": "NSCFE CLSC 4.5G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "LFBY HW PWDR 8G 9P1",
+    "normalized_name": "LFBY HW PWDR 8G 9P1",
+    "wholesale_qty": 15
+  },
+  {
+    "original_name": "LUX ADVNC FG 41G",
+    "normalized_name": "LUX ADVNC FG 41G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "BKNR KDI PTTA BOONDI 35G",
+    "normalized_name": "BKNR KDI PTTA BOONDI 35G",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "LOTUS BISCOFF 25G",
+    "normalized_name": "LOTUS BISCOFF 25G",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "DTTL  BANDAID 4PCS",
+    "normalized_name": "DTTL BANDAID 4PCS",
+    "wholesale_qty": 43
+  },
+  {
+    "original_name": "EXO BAR 5 MRP",
+    "normalized_name": "EXO BAR 5 MRP",
+    "wholesale_qty": 10
+  },
+  {
+    "original_name": "DOV HF CON P SHMP 11ML 6P1",
+    "normalized_name": "DOV HF CON P SHMP 11ML 6P1",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "GIFT WRAPPING SHEET",
+    "normalized_name": "GIFT WRAPPING SHEET",
+    "wholesale_qty": 2
+  },
+  {
+    "original_name": "SNSLK LNF & THCK TWN 11ML 5P1",
+    "normalized_name": "SNSLK LNF & THCK TWN 11ML 5P1",
+    "wholesale_qty": 6
+  },
+  {
+    "original_name": "LIZOL S AQUA FLOOR CLNR 900ML",
+    "normalized_name": "LIZOL S AQUA FLOOR CLNR 900ML",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "KSN JAM PCH 11G 24P1",
+    "normalized_name": "KSN JAM PCH 11G 24P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "DOV D SHINE 6ML 6P1",
+    "normalized_name": "DOV D SHINE 6ML 6P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "DOV HAIR FALL SHMP 6ML 6P1",
+    "normalized_name": "DOV HAIR FALL SHMP 6ML 6P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "SNSLK BLCK SHNE  6ML 6P1",
+    "normalized_name": "SNSLK BLCK SHNE 6ML 6P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "SNSLK SHMP 5.5 ML 6P1",
+    "normalized_name": "SNSLK SHMP 5.5 ML 6P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "SNSLK LNG & THCKS 6P1",
+    "normalized_name": "SNSLK LNG & THCKS 6P1",
+    "wholesale_qty": 7
+  },
+  {
+    "original_name": "CLPS PLS EGG PRTN SHMP 6ML",
+    "normalized_name": "CLPS PLS EGG PRTN SHMP 6ML",
+    "wholesale_qty": 7
+  }
+]

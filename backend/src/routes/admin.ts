@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { getDb, initializeDatabase, resetDatabase } from '../db';
+import { getDb, initializeDatabase, resetDatabase, normalizeProductName } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { randomUUID } from 'crypto';
 
 const router = Router();
 
@@ -72,21 +73,305 @@ router.post('/admin/setup', authenticateToken, async (req: Request, res: Respons
   }
 });
 
-// Configure Multer memory storage with 20MB limit and .xlsx filter
+// Configure Multer memory storage with 30MB limit and .xlsx/.xls filter
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 20 * 1024 * 1024 // 20 MB limit
+    fileSize: 30 * 1024 * 1024 // 30 MB limit
   },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    if (ext !== '.xlsx') {
-      cb(new Error('Only .xlsx spreadsheet files are allowed.'));
+    if (ext !== '.xlsx' && ext !== '.xls') {
+      cb(new Error('Only .xlsx and .xls spreadsheet files are allowed.'));
       return;
     }
     cb(null, true);
   }
 });
+
+export interface ConflictCandidate {
+  candidateId: string;
+  rowNumber: number;
+  barcode: string;
+  name: string;
+  mrp: number;
+  salePrice: number;
+  wholesalePrice: number | null;
+}
+
+export interface DuplicateConflictGroup {
+  barcode: string;
+  candidates: ConflictCandidate[];
+  status: 'PENDING' | 'RESOLVED' | 'EXCLUDED';
+  selectedCandidateId: string | 'EXCLUDE' | null;
+}
+
+export interface StagedProduct {
+  barcode: string;
+  name: string;
+  normalizedName: string;
+  mrp: number;
+  salePrice: number;
+  wholesalePrice: number | null;
+  wholesaleQty: number | null;
+  discountPercent: number;
+  isWholesale: boolean;
+  status: 'REQUIRED' | 'MATCHED' | 'AMBIGUOUS';
+}
+
+export interface StagingSession {
+  sessionId: string;
+  filename: string;
+  uploadedBy: string;
+  createdAt: number;
+  totalSourceRows: number;
+  blankBarcodesExcluded: number;
+  duplicateBarcodesCount: number;
+  duplicateConflicts: DuplicateConflictGroup[];
+  conflicts: { barcode: string; name: string; error: string }[];
+  allProducts: StagedProduct[];
+  wholesaleItems: StagedProduct[];
+}
+
+export const stagingSessions = new Map<string, StagingSession>();
+
+function cleanupOldSessions() {
+  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+  for (const [id, s] of stagingSessions.entries()) {
+    if (s.createdAt < twoHoursAgo) {
+      stagingSessions.delete(id);
+    }
+  }
+}
+
+export async function processExportItemsBuffer(buffer: Buffer, filename: string, username: string) {
+  cleanupOldSessions();
+  const db = await getDb();
+  let workbook;
+  try {
+    workbook = XLSX.read(buffer, { type: 'buffer' });
+  } catch (err: any) {
+    throw new Error('Invalid Excel file format.');
+  }
+
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+  if (rows.length === 0) {
+    throw new Error('Uploaded sheet is empty.');
+  }
+
+  const rawHeaders = rows[0].map((h: any) => String(h).trim());
+  const lowerHeaders = rawHeaders.map((h: string) => h.toLowerCase());
+
+  const findHeader = (exactList: string[], fallbackFn: (h: string) => boolean) => {
+    const exact = lowerHeaders.findIndex((h: string) => exactList.includes(h));
+    if (exact !== -1) return exact;
+    return lowerHeaders.findIndex(fallbackFn);
+  };
+
+  const nameIdx = findHeader(['item name*', 'item name', 'product name'], h => h.startsWith('item name') || h.includes('product name'));
+  const codeIdx = findHeader(['item code', 'barcode', 'item barcode'], h => h.includes('item code') || h.includes('barcode'));
+  const mrpIdx = findHeader(['default mrp', 'mrp', 'default_mrp'], h => h.includes('mrp'));
+  const saleIdx = findHeader(['sale price', 'sale', 'sales price', 'sale_price'], h => h.includes('sale') && !h.includes('wholesale'));
+  const wpIdx = findHeader(['wholesale price', 'wholesale', 'wp', 'wholesale_price'], h => h.includes('wholesale') || h === 'wp');
+
+  if (codeIdx === -1 || nameIdx === -1) {
+    throw new Error('Header mismatch. Vyapar Export Items must contain "Item name" and "Item code" columns.');
+  }
+
+  let blankBarcodesExcluded = 0;
+  const conflicts: { barcode: string; name: string; error: string }[] = [];
+  const barcodeMap = new Map<string, { firstCand: ConflictCandidate; identicalCount: number; conflicting: ConflictCandidate[] }>();
+
+  const totalSourceRows = rows.length - 1;
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (r.length === 0 || r.every((v: any) => v === null || v === undefined || String(v).trim() === '')) {
+      continue;
+    }
+
+    const rawBarcode = r[codeIdx];
+    let barcode = '';
+    if (rawBarcode !== undefined && rawBarcode !== null) {
+      if (typeof rawBarcode === 'number') {
+        barcode = Number.isInteger(rawBarcode) ? BigInt(Math.trunc(rawBarcode)).toString() : String(rawBarcode).trim();
+      } else {
+        barcode = String(rawBarcode).trim();
+      }
+    }
+    if (!barcode) {
+      blankBarcodesExcluded++;
+      continue;
+    }
+
+    const rawName = r[nameIdx];
+    const name = rawName !== undefined && rawName !== null ? String(rawName).trim() : '';
+    if (!name) {
+      conflicts.push({
+        barcode,
+        name: '',
+        error: `Row ${i + 1}: Product name is missing.`
+      });
+      continue;
+    }
+
+    const rawMrp = mrpIdx !== -1 ? r[mrpIdx] : 0;
+    const mrp = !isNaN(Number(rawMrp)) ? Number(rawMrp) : 0;
+
+    const rawSalePrice = saleIdx !== -1 ? r[saleIdx] : 0;
+    const salePrice = !isNaN(Number(rawSalePrice)) ? Number(rawSalePrice) : 0;
+
+    const rawWp = wpIdx !== -1 ? r[wpIdx] : null;
+    const hasWp = rawWp !== undefined && rawWp !== null && String(rawWp).trim() !== '' && !isNaN(Number(rawWp)) && Number(rawWp) > 0;
+    const wholesalePrice = hasWp ? Number(rawWp) : null;
+
+    const cand: ConflictCandidate = {
+      candidateId: `${barcode}_r${i + 1}`,
+      rowNumber: i + 1,
+      barcode,
+      name,
+      mrp,
+      salePrice,
+      wholesalePrice
+    };
+
+    if (!barcodeMap.has(barcode)) {
+      barcodeMap.set(barcode, { firstCand: cand, identicalCount: 0, conflicting: [] });
+    } else {
+      const entry = barcodeMap.get(barcode)!;
+      const first = entry.firstCand;
+      const isIdentical = (first.name === name && first.mrp === mrp && first.salePrice === salePrice && first.wholesalePrice === wholesalePrice);
+      if (isIdentical) {
+        entry.identicalCount++;
+      } else {
+        entry.conflicting.push(cand);
+      }
+    }
+  }
+
+  let duplicateBarcodesCount = 0;
+  const duplicateConflicts: DuplicateConflictGroup[] = [];
+  const stagedProducts: StagedProduct[] = [];
+  const wholesaleProducts: StagedProduct[] = [];
+
+  for (const [barcode, entry] of barcodeMap.entries()) {
+    if (entry.identicalCount > 0) {
+      duplicateBarcodesCount += entry.identicalCount;
+    }
+
+    if (entry.conflicting.length > 0) {
+      // Conflicting duplicates: administrator must choose or exclude
+      duplicateBarcodesCount += entry.conflicting.length;
+      duplicateConflicts.push({
+        barcode,
+        candidates: [entry.firstCand, ...entry.conflicting],
+        status: 'PENDING',
+        selectedCandidateId: null
+      });
+    } else {
+      // Clean, non-conflicting product
+      const p = entry.firstCand;
+      const discountPercent = p.mrp > 0 ? Math.round(((p.mrp - p.salePrice) / p.mrp) * 100 * 10) / 10 : 0.0;
+      const normalizedName = normalizeProductName(p.name);
+      const hasWp = p.wholesalePrice !== null && p.wholesalePrice > 0;
+
+      let wholesaleQty: number | null = null;
+      let status: 'REQUIRED' | 'MATCHED' | 'AMBIGUOUS' = 'MATCHED';
+
+      if (hasWp) {
+        const matches = await db.all(
+          'SELECT wholesale_qty FROM wholesale_quantities WHERE normalized_name = ?',
+          normalizedName
+        );
+        if (matches && matches.length === 1 && matches[0].wholesale_qty >= 1) {
+          wholesaleQty = matches[0].wholesale_qty;
+          status = 'MATCHED';
+        } else if (matches && matches.length > 1) {
+          const uniqueQtys = [...new Set(matches.map((m: any) => m.wholesale_qty))];
+          if (uniqueQtys.length === 1 && uniqueQtys[0] >= 1) {
+            wholesaleQty = uniqueQtys[0];
+            status = 'MATCHED';
+          } else {
+            wholesaleQty = null;
+            status = 'AMBIGUOUS';
+          }
+        } else {
+          wholesaleQty = null;
+          status = 'REQUIRED';
+        }
+      }
+
+      const product: StagedProduct = {
+        barcode: p.barcode,
+        name: p.name,
+        normalizedName,
+        mrp: p.mrp,
+        salePrice: p.salePrice,
+        wholesalePrice: p.wholesalePrice,
+        wholesaleQty,
+        discountPercent,
+        isWholesale: hasWp,
+        status
+      };
+
+      stagedProducts.push(product);
+      if (hasWp) {
+        wholesaleProducts.push(product);
+      }
+    }
+  }
+
+  // Sort wholesaleProducts: REQUIRED first, then AMBIGUOUS, then MATCHED
+  wholesaleProducts.sort((a, b) => {
+    const order: Record<string, number> = { 'REQUIRED': 1, 'AMBIGUOUS': 2, 'MATCHED': 3 };
+    const diff = (order[a.status] || 99) - (order[b.status] || 99);
+    if (diff !== 0) return diff;
+    return a.name.localeCompare(b.name);
+  });
+
+  const matchedCount = wholesaleProducts.filter(p => p.status === 'MATCHED').length;
+  const missingCount = wholesaleProducts.filter(p => p.status === 'REQUIRED').length;
+  const ambiguousCount = wholesaleProducts.filter(p => p.status === 'AMBIGUOUS').length;
+
+  const sessionId = randomUUID();
+  const session: StagingSession = {
+    sessionId,
+    filename,
+    uploadedBy: username,
+    createdAt: Date.now(),
+    totalSourceRows,
+    blankBarcodesExcluded,
+    duplicateBarcodesCount,
+    duplicateConflicts,
+    conflicts,
+    allProducts: stagedProducts,
+    wholesaleItems: wholesaleProducts
+  };
+
+  stagingSessions.set(sessionId, session);
+
+  return {
+    sessionId,
+    filename,
+    summary: {
+      totalSourceRows,
+      blankBarcodesExcluded,
+      duplicateBarcodesCount,
+      conflictingBarcodesCount: duplicateConflicts.length,
+      totalValidProducts: stagedProducts.length,
+      totalWholesaleProducts: wholesaleProducts.length,
+      matchedCount,
+      missingCount,
+      ambiguousCount
+    },
+    duplicateConflicts,
+    wholesaleItems: wholesaleProducts,
+    conflicts
+  };
+}
 
 // GET /api/admin/template - Download the blank Excel product catalogue template
 router.get('/admin/template', (req: Request, res: Response): void => {
@@ -105,6 +390,378 @@ router.get('/admin/template', (req: Request, res: Response): void => {
     res.status(500).json({
       success: false,
       message: 'Failed to generate Excel template',
+      error: error.message || error
+    });
+  }
+});
+
+// POST /api/admin/upload-export-items - Parse Vyapar Export Items workbook and prepare staging session
+router.post('/admin/upload-export-items', authenticateToken, (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      res.status(400).json({
+        success: false,
+        message: err.message || 'File upload failed.'
+      });
+      return;
+    }
+    next();
+  });
+}, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'Export Items Excel file is required.' });
+      return;
+    }
+
+    const username = req.admin!.username;
+    const result = await processExportItemsBuffer(req.file.buffer, req.file.originalname, username);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to process Export Items spreadsheet.'
+    });
+  }
+});
+
+// POST /api/admin/publish-catalogue - Atomically update PriceCheck catalogue and persist Wholesale Quantities
+router.post('/admin/publish-catalogue', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const startTime = Date.now();
+  try {
+    const { sessionId, wholesaleUpdates, duplicateResolutions } = req.body;
+    if (!sessionId) {
+      res.status(400).json({ success: false, message: 'sessionId is required for publishing catalogue.' });
+      return;
+    }
+
+    const session = stagingSessions.get(sessionId);
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Staging session expired or not found. Please upload the file again.' });
+      return;
+    }
+
+    // Map wholesaleUpdates if provided: [{ normalizedName, originalName, wholesaleQty }]
+    const updatesMap = new Map<string, { originalName: string; wholesaleQty: number }>();
+    if (Array.isArray(wholesaleUpdates)) {
+      for (const u of wholesaleUpdates) {
+        const norm = u.normalizedName || normalizeProductName(u.originalName);
+        const qty = Number(u.wholesaleQty);
+        if (!isNaN(qty) && Number.isInteger(qty) && qty >= 1) {
+          updatesMap.set(norm, { originalName: u.originalName || norm, wholesaleQty: qty });
+        }
+      }
+    }
+
+    const db = await getDb();
+
+    // 1. Process duplicate barcode conflict resolutions
+    const resolutionMap = new Map<string, { barcode: string; action: 'SELECT' | 'EXCLUDE'; candidateId?: string }>();
+    if (Array.isArray(duplicateResolutions)) {
+      for (const r of duplicateResolutions) {
+        if (r && r.barcode && (r.action === 'SELECT' || r.action === 'EXCLUDE')) {
+          resolutionMap.set(r.barcode, r);
+        }
+      }
+    }
+
+    const unresolvedConflicts: string[] = [];
+    const auditDecisions: any[] = [];
+
+    if (Array.isArray(session.duplicateConflicts) && session.duplicateConflicts.length > 0) {
+      for (const conflict of session.duplicateConflicts) {
+        const resInfo = resolutionMap.get(conflict.barcode);
+        if (!resInfo) {
+          unresolvedConflicts.push(conflict.barcode);
+          continue;
+        }
+
+        if (resInfo.action === 'SELECT') {
+          const chosen = conflict.candidates.find(c => c.candidateId === (resInfo as any).candidateId)
+            || (typeof (resInfo as any).selectedIndex === 'number' ? conflict.candidates[(resInfo as any).selectedIndex] : undefined);
+          if (!chosen) {
+            unresolvedConflicts.push(conflict.barcode);
+            continue;
+          }
+
+          conflict.status = 'RESOLVED';
+          conflict.selectedCandidateId = chosen.candidateId;
+
+          const discountPercent = chosen.mrp > 0 ? Math.round(((chosen.mrp - chosen.salePrice) / chosen.mrp) * 100 * 10) / 10 : 0.0;
+          const normalizedName = normalizeProductName(chosen.name);
+          const hasWp = chosen.wholesalePrice !== null && chosen.wholesalePrice > 0;
+          let wholesaleQty: number | null = null;
+          let status: 'REQUIRED' | 'MATCHED' | 'AMBIGUOUS' = 'MATCHED';
+
+          if (hasWp) {
+            if (updatesMap.has(normalizedName)) {
+              wholesaleQty = updatesMap.get(normalizedName)!.wholesaleQty;
+              status = 'MATCHED';
+            } else {
+              const matches = await db.all(
+                'SELECT wholesale_qty FROM wholesale_quantities WHERE normalized_name = ?',
+                normalizedName
+              );
+              if (matches && matches.length === 1 && matches[0].wholesale_qty >= 1) {
+                wholesaleQty = matches[0].wholesale_qty;
+                status = 'MATCHED';
+              } else {
+                wholesaleQty = null;
+                status = 'REQUIRED';
+              }
+            }
+          }
+
+          const stagedProd: StagedProduct = {
+            barcode: chosen.barcode,
+            name: chosen.name,
+            normalizedName,
+            mrp: chosen.mrp,
+            salePrice: chosen.salePrice,
+            wholesalePrice: chosen.wholesalePrice,
+            wholesaleQty,
+            discountPercent,
+            isWholesale: hasWp,
+            status
+          };
+
+          // Check if not already in allProducts
+          if (!session.allProducts.some(p => p.barcode === stagedProd.barcode)) {
+            session.allProducts.push(stagedProd);
+            if (hasWp) {
+              session.wholesaleItems.push(stagedProd);
+            }
+          }
+
+          auditDecisions.push({
+            barcode: chosen.barcode,
+            resolution: 'SELECTED',
+            selectedRow: chosen.rowNumber,
+            productName: chosen.name,
+            mrp: chosen.mrp,
+            salePrice: chosen.salePrice,
+            wholesalePrice: chosen.wholesalePrice
+          });
+        } else if (resInfo.action === 'EXCLUDE') {
+          conflict.status = 'EXCLUDED';
+          conflict.selectedCandidateId = 'EXCLUDE';
+          auditDecisions.push({
+            barcode: conflict.barcode,
+            resolution: 'EXCLUDED',
+            reason: 'Administrator excluded conflicting duplicate barcode'
+          });
+        }
+      }
+    }
+
+    if (unresolvedConflicts.length > 0) {
+      res.status(400).json({
+        success: false,
+        error: `Cannot publish catalogue: ${unresolvedConflicts.length} conflicting duplicate barcode(s) remain unresolved: ${unresolvedConflicts.join(', ')}. Administrator must select the correct row or explicitly exclude each duplicate.`,
+        message: `Cannot publish catalogue: ${unresolvedConflicts.length} conflicting duplicate barcode(s) remain unresolved: ${unresolvedConflicts.join(', ')}. Administrator must select the correct row or explicitly exclude each duplicate.`,
+        unresolvedBarcodes: unresolvedConflicts.slice(0, 10)
+      });
+      return;
+    }
+
+    // Apply updates and validate that all wholesale products have valid quantities
+    const missingItems: string[] = [];
+    const ambiguousItems: string[] = [];
+    let manualCount = 0;
+
+    for (const item of session.wholesaleItems) {
+      if (updatesMap.has(item.normalizedName)) {
+        item.wholesaleQty = updatesMap.get(item.normalizedName)!.wholesaleQty;
+        item.status = 'MATCHED';
+        manualCount++;
+      } else if (item.status === 'AMBIGUOUS') {
+        ambiguousItems.push(item.name);
+      } else if (item.wholesaleQty === null || item.wholesaleQty < 1) {
+        missingItems.push(item.name);
+      }
+    }
+
+    if (ambiguousItems.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot publish catalogue: ${ambiguousItems.length} wholesale item(s) have ambiguous matches that must be reviewed and resolved before publication.`,
+        ambiguousItems: ambiguousItems.slice(0, 10)
+      });
+      return;
+    }
+
+    if (missingItems.length > 0) {
+      res.status(400).json({
+        success: false,
+        message: `Cannot publish catalogue: ${missingItems.length} wholesale item(s) are missing valid wholesale quantities (must be positive integer >= 1).`,
+        missingItems: missingItems.slice(0, 10)
+      });
+      return;
+    }
+
+    // Also update allProducts with new wholesaleQty
+    for (const p of session.allProducts) {
+      if (p.isWholesale && updatesMap.has(p.normalizedName)) {
+        p.wholesaleQty = updatesMap.get(p.normalizedName)!.wholesaleQty;
+      }
+    }
+
+    let savedWqCount = 0;
+
+    await db.run('BEGIN TRANSACTION');
+    try {
+      // 1. Upsert updated wholesale quantities
+      if (updatesMap.size > 0) {
+        for (const [norm, data] of updatesMap.entries()) {
+          const checkExisting = await db.all(
+            'SELECT id FROM wholesale_quantities WHERE normalized_name = ?',
+            norm
+          );
+          if (checkExisting.length > 0) {
+            await db.run(
+              `UPDATE wholesale_quantities 
+               SET wholesale_qty = ?, updated_at = CURRENT_TIMESTAMP, last_modified_source = 'MANUAL_REVIEW'
+               WHERE normalized_name = ?`,
+              data.wholesaleQty,
+              norm
+            );
+          } else {
+            await db.run(
+              `INSERT INTO wholesale_quantities 
+               (original_name, normalized_name, wholesale_qty, created_at, updated_at, last_modified_source)
+               VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'MANUAL_REVIEW')`,
+              data.originalName,
+              norm,
+              data.wholesaleQty
+            );
+          }
+          savedWqCount++;
+        }
+      }
+
+      // 2. Replace products table atomically
+      await db.run('DELETE FROM products');
+      const insertStmt = await db.prepare(
+        `INSERT INTO products 
+         (barcode, name, sale_price, mrp, wholesale_price, wholesale_qty, discount_percent, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+      );
+
+      for (const p of session.allProducts) {
+        await insertStmt.run(
+          p.barcode,
+          p.name,
+          p.salePrice,
+          p.mrp,
+          p.wholesalePrice,
+          p.wholesaleQty,
+          p.discountPercent
+        );
+      }
+      await insertStmt.finalize();
+
+      const version = Date.now().toString();
+      await db.run('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', 'setup_completed', '1');
+      await db.run('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', 'last_catalog_upload', new Date().toISOString());
+      await db.run('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', 'catalog_version', version);
+
+      const processingTime = Date.now() - startTime;
+
+      const combinedAuditDetails = [
+        ...auditDecisions,
+        ...(session.conflicts || [])
+      ];
+
+      // 3. Log to upload_history
+      await db.run(
+        `INSERT INTO upload_history 
+         (filename, uploaded_by, total_rows, successful_rows, failed_rows, status, processing_time_ms, error_details,
+          blank_barcodes, duplicate_barcodes, wholesale_products, wholesale_matched, wholesale_manual, wholesale_saved)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        session.filename,
+        session.uploadedBy,
+        session.totalSourceRows,
+        session.allProducts.length,
+        0,
+        'Success',
+        processingTime,
+        combinedAuditDetails.length > 0 ? JSON.stringify(combinedAuditDetails) : null,
+        session.blankBarcodesExcluded,
+        session.duplicateBarcodesCount,
+        session.wholesaleItems.length,
+        session.wholesaleItems.length - manualCount,
+        manualCount,
+        savedWqCount
+      );
+
+      await db.run('COMMIT');
+
+      // Refresh hot deals cache
+      const { refreshHotDeals } = require('../services/hotDealsService');
+      await refreshHotDeals(db);
+
+      // Clean up staging session
+      stagingSessions.delete(sessionId);
+
+      res.json({
+        success: true,
+        message: 'Product catalogue published successfully.',
+        totalProducts: session.allProducts.length,
+        totalWholesaleProducts: session.wholesaleItems.length,
+        wholesaleSaved: savedWqCount,
+        processingTimeMs: processingTime,
+        catalogVersion: version
+      });
+    } catch (txErr: any) {
+      await db.run('ROLLBACK');
+      throw txErr;
+    }
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to publish catalogue',
+      error: error.message || error
+    });
+  }
+});
+
+// GET /api/admin/export-compiled-catalogue/:sessionId - Download compiled 6-column catalogue Excel
+router.get('/admin/export-compiled-catalogue/:sessionId', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    const session = stagingSessions.get(sessionId);
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Session not found or expired.' });
+      return;
+    }
+
+    const headers = ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Wholesale Qty'];
+    const dataRows = session.allProducts.map(p => [
+      p.barcode,
+      p.name,
+      p.mrp,
+      p.salePrice,
+      p.wholesalePrice !== null ? p.wholesalePrice : '',
+      p.wholesaleQty !== null ? p.wholesaleQty : ''
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=COMPILED_CATALOGUE_${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate compiled catalogue file',
       error: error.message || error
     });
   }
@@ -149,6 +806,19 @@ router.post('/admin/upload', authenticateToken, (req, res, next) => {
 
     // Header validation (case-insensitive column match)
     const headers = rows[0].map(h => String(h).trim().toLowerCase());
+
+    // If file is a Vyapar Export Items workbook, route seamlessly through the Export Items processor
+    if (headers.some(h => h.startsWith('item name') || h === 'item code')) {
+      const username = req.admin!.username;
+      const result = await processExportItemsBuffer(req.file.buffer, req.file.originalname, username);
+      res.json({
+        success: true,
+        isExportItems: true,
+        ...result
+      });
+      return;
+    }
+
     const expectedHeadersBase = ['barcode', 'product name', 'mrp', 'sale price'];
     const expectedHeadersFull = ['barcode', 'product name', 'mrp', 'sale price', 'wholesale price', 'wholesale qty'];
 
@@ -446,7 +1116,14 @@ router.get('/admin/upload-history', authenticateToken, async (req: Authenticated
     const history = await db.all(
       `SELECT id, filename, uploaded_by as uploadedBy, total_rows as totalRows, 
               successful_rows as successfulRows, failed_rows as failedRows, 
-              status, processing_time_ms as processingTimeMs, uploaded_at as uploadedAt 
+              status, processing_time_ms as processingTimeMs, uploaded_at as uploadedAt,
+              error_details as errorDetails,
+              COALESCE(blank_barcodes, 0) as blankBarcodes,
+              COALESCE(duplicate_barcodes, 0) as duplicateBarcodes,
+              COALESCE(wholesale_products, 0) as wholesaleProducts,
+              COALESCE(wholesale_matched, 0) as wholesaleMatched,
+              COALESCE(wholesale_manual, 0) as wholesaleManual,
+              COALESCE(wholesale_saved, 0) as wholesaleSaved
        FROM upload_history 
        ORDER BY uploaded_at DESC`
     );

@@ -13,7 +13,14 @@ Define the following environment variables in your production server environment
 NODE_ENV=production
 PORT=8080
 JWT_SECRET=your_long_secure_secret_key_string_here
+DATABASE_PATH=/data/78pricecheck.db
 ```
+
+> [!IMPORTANT]
+> **Persistent Storage & Fail-Safe Database Configuration**:
+> - In production, a persistent volume MUST be mounted at `/data`.
+> - `DATABASE_PATH` must be explicitly configured as `/data/78pricecheck.db`.
+> - If the volume or target directory is missing or unmounted, the server will fail startup with a diagnostic error rather than silently creating an ephemeral database.
 
 > [!IMPORTANT]
 > **JWT Secret Security Enforcement**:

@@ -43,13 +43,17 @@ router.get('/version', async (req: Request, res: Response): Promise<void> => {
     const countRow = await db.get('SELECT COUNT(*) as count FROM products');
     const productsCount = countRow ? countRow.count : 0;
 
+    const wqRow = await db.get('SELECT COUNT(*) as count FROM wholesale_quantities');
+    const wholesaleRepoCount = wqRow ? wqRow.count : 0;
+
     res.json({
       application: '78 PriceCheck',
       version: packageVersion,
       databaseVersion: '3',
       catalogVersion,
       lastCatalogUpload,
-      productsCount
+      productsCount,
+      wholesaleRepoCount
     });
   } catch (error: any) {
     res.status(500).json({

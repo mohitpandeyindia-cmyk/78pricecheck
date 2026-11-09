@@ -864,3 +864,181 @@ textarea::placeholder {
   margin-top: 6px;
 }
 
+/* ==========================================================================
+   Product Catalogue Upgrade: Wholesale Quantity Review & Inline History
+   ========================================================================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.kpi-card {
+  background: var(--admin-surface-3);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-card--highlight {
+  border-left: 4px solid var(--admin-warning);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.kpi-card--success {
+  border-left: 4px solid var(--admin-brand);
+}
+
+.kpi-card--info {
+  border-left: 4px solid var(--admin-info);
+}
+
+.kpi-card--danger {
+  border-left: 4px solid var(--admin-danger);
+}
+
+.kpi-val {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--admin-text);
+  line-height: 1.2;
+}
+
+.kpi-lbl {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.badge-required {
+  background: var(--admin-warning-bg);
+  color: var(--admin-warning);
+  border: 1px solid var(--admin-warning-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-matched {
+  background: var(--admin-brand-dim);
+  color: var(--admin-brand);
+  border: 1px solid var(--admin-brand-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-ambiguous {
+  background: var(--admin-review-bg);
+  color: var(--admin-review);
+  border: 1px solid var(--admin-review-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.row-required {
+  background: rgba(251, 191, 36, 0.08) !important;
+}
+
+.row-required:hover {
+  background: rgba(251, 191, 36, 0.12) !important;
+}
+
+.wq-input {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text);
+  padding: 6px 10px;
+  border-radius: 4px;
+  width: 90px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.wq-input:focus {
+  outline: none;
+  border-color: var(--admin-brand);
+  box-shadow: 0 0 0 2px var(--admin-brand-dim);
+}
+
+.wq-input.invalid {
+  border-color: var(--admin-danger);
+  background: var(--admin-danger-bg);
+}
+
+.review-table-container {
+  max-height: 520px;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  margin-top: 14px;
+}
+
+.review-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.review-table th {
+  position: sticky;
+  top: 0;
+  background: var(--admin-surface-3);
+  z-index: 2;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+  text-align: left;
+}
+
+.review-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--admin-border-soft);
+  font-size: 0.88rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  width: 90%;
+  max-width: 540px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+

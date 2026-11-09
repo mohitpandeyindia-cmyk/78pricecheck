@@ -48,7 +48,34 @@ try {
   passed = false;
 }
 
-// 3. Verify HTML and JS build IDs match
+// 3. Ensure runtime artifact wholesale_seed.json is included in compiled dist output
+try {
+  const srcSeed = path.resolve(__dirname, '../backend/src/data/wholesale_seed.json');
+  const distDir = path.resolve(__dirname, '../backend/dist/data');
+  const distSeed = path.join(distDir, 'wholesale_seed.json');
+  
+  if (fs.existsSync(srcSeed)) {
+    if (!fs.existsSync(distDir)) {
+      fs.mkdirSync(distDir, { recursive: true });
+    }
+    fs.copyFileSync(srcSeed, distSeed);
+    const parsed = JSON.parse(fs.readFileSync(distSeed, 'utf8'));
+    if (Array.isArray(parsed) && parsed.length === 122) {
+      console.log(`  \u2705 Compiled runtime seed verified: dist/data/wholesale_seed.json (${parsed.length} records)`);
+    } else {
+      console.error(`  \u274c Invalid seed record count in compiled runtime: ${parsed.length} (expected 122)`);
+      passed = false;
+    }
+  } else {
+    console.error('  \u274c Source wholesale_seed.json not found in backend/src/data/');
+    passed = false;
+  }
+} catch (e) {
+  console.error('  \u274c Wholesale seed build verification failed:', e.message);
+  passed = false;
+}
+
+// 4. Verify HTML and JS build IDs match
 try {
   const indexHtmlPath = path.resolve(__dirname, '../frontend/customer/index.html');
   const buildEnvPath = path.resolve(__dirname, '../frontend/customer/js/build-env.js');

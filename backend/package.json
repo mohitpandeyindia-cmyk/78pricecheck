@@ -9,7 +9,8 @@
     "dev": "ts-node src/index.ts",
     "test": "ts-node src/test/lookup.test.ts",
     "test:scanner": "ts-node src/test/scanner_verification.test.ts",
-    "test:import": "ts-node src/test/import.test.ts"
+    "test:import": "ts-node src/test/import.test.ts",
+    "test:export": "ts-node src/test/export_items_workflow.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

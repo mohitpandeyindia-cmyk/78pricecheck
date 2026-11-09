@@ -1,12 +1,14 @@
+import 'dotenv/config';
 import { getDb } from '../db';
 import bcrypt from 'bcryptjs';
-
+import jwt from 'jsonwebtoken';
 import http from 'http';
 
 const PORT = process.env.PORT || 8080;
 const BASE_URL = `http://127.0.0.1:${PORT}/api`;
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-function httpFetch(urlStr: string): Promise<any> {
+function httpFetch(urlStr: string, customHeaders: Record<string, string> = {}): Promise<any> {
   return new Promise((resolve, reject) => {
     const u = new URL(urlStr);
     const req = http.request({
@@ -15,7 +17,8 @@ function httpFetch(urlStr: string): Promise<any> {
       path: u.pathname + u.search,
       method: 'GET',
       headers: {
-        'x-forwarded-proto': 'https'
+        'x-forwarded-proto': 'https',
+        ...customHeaders
       }
     }, (res) => {
       let data = '';
@@ -77,7 +80,10 @@ async function runTests() {
   console.log('\n[2/3] Executing lookup test scenarios...');
 
   try {
-    // Scenario A: Exact barcode match
+    // Generate admin JWT token for authorized admin tests
+    const adminToken = jwt.sign({ id: 999, username: 'test_admin' }, JWT_SECRET);
+
+    // Scenario A: Exact barcode match - Customer (Unauthorized)
     const resA = await httpFetch(`${BASE_URL}/products/lookup/TEST_1002`);
     assert(resA.status === 200, 'Exact lookup returns 200 OK status');
     const dataA = await resA.json() as any;
@@ -85,8 +91,17 @@ async function runTests() {
     assert(Array.isArray(dataA.products), 'Exact lookup returns products list');
     assert(dataA.products.length === 1, 'Exact lookup returns exactly 1 item');
     assert(dataA.products[0].barcode === 'TEST_1002', 'Exact lookup returns correct product barcode');
-    assert(dataA.products[0].wholesalePrice === 16.00, 'Exact lookup returns correct wholesalePrice (16.00)');
-    assert(dataA.products[0].wholesaleQty === 3, 'Exact lookup returns correct wholesaleQty (3)');
+    assert(dataA.products[0].wholesalePrice === undefined, 'Customer lookup does NOT disclose wholesalePrice (omitted)');
+    assert(dataA.products[0].wholesaleQty === undefined, 'Customer lookup does NOT disclose wholesaleQty (omitted)');
+
+    // Scenario A-Admin: Exact barcode match - Authorized Admin
+    const resAAdmin = await httpFetch(`${BASE_URL}/products/lookup/TEST_1002`, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    assert(resAAdmin.status === 200, 'Admin exact lookup returns 200 OK');
+    const dataAAdmin = await resAAdmin.json() as any;
+    assert(dataAAdmin.products[0].wholesalePrice === 16.00, 'Admin lookup returns correct wholesalePrice (16.00)');
+    assert(dataAAdmin.products[0].wholesaleQty === 3, 'Admin lookup returns correct wholesaleQty (3)');
 
     // Scenario B: Trailing-zero match
     // Querying TEST_10010 should match exactly
@@ -96,10 +111,10 @@ async function runTests() {
     assert(dataB.multipleMatches === false, 'Zero padded lookup has multipleMatches: false');
     assert(dataB.products.length === 1, 'Zero padded lookup returns exactly 1 item');
     assert(dataB.products[0].barcode === 'TEST_10010', 'Zero padded lookup returns correct barcode');
-    assert(dataB.products[0].wholesalePrice === null, 'Zero padded lookup returns null wholesalePrice');
-    assert(dataB.products[0].wholesaleQty === null, 'Zero padded lookup returns null wholesaleQty');
+    assert(dataB.products[0].wholesalePrice === undefined, 'Customer lookup zero-padded wholesalePrice is undefined');
+    assert(dataB.products[0].wholesaleQty === undefined, 'Customer lookup zero-padded wholesaleQty is undefined');
 
-    // Scenario C: Both exact and trailing-zero matches returned together
+    // Scenario C: Both exact and trailing-zero matches returned together (Customer)
     // Querying TEST_1001 matches exact TEST_1001 and trailing-zero TEST_10010
     const resC = await httpFetch(`${BASE_URL}/products/lookup/TEST_1001`);
     assert(resC.status === 200, 'Query matches both barcodes');
@@ -120,13 +135,24 @@ async function runTests() {
     assert(dataC.products[0].barcode === 'TEST_10010', 'Cheaper product is listed first in response');
     assert(dataC.products[0].mrp === 10.00, 'First item MRP is $10.00');
     assert(dataC.products[0].salePrice === 10.00, 'First item salePrice is $10.00');
-    assert(dataC.products[0].wholesalePrice === null, 'First item wholesalePrice is null');
-    assert(dataC.products[0].wholesaleQty === null, 'First item wholesaleQty is null');
+    assert(dataC.products[0].wholesalePrice === undefined, 'Customer lookup item 0 wholesalePrice omitted');
+    assert(dataC.products[0].wholesaleQty === undefined, 'Customer lookup item 0 wholesaleQty omitted');
     assert(dataC.products[1].barcode === 'TEST_1001', 'More expensive product is listed second');
     assert(dataC.products[1].mrp === 15.00, 'Second item MRP is $15.00');
     assert(dataC.products[1].salePrice === 15.00, 'Second item salePrice is $15.00');
-    assert(dataC.products[1].wholesalePrice === 12.00, 'Second item wholesalePrice is 12.00');
-    assert(dataC.products[1].wholesaleQty === 5, 'Second item wholesaleQty is 5');
+    assert(dataC.products[1].wholesalePrice === undefined, 'Customer lookup item 1 wholesalePrice omitted');
+    assert(dataC.products[1].wholesaleQty === undefined, 'Customer lookup item 1 wholesaleQty omitted');
+
+    // Scenario E-Admin: Both exact and trailing-zero matches returned for Authorized Admin
+    const resCAdmin = await httpFetch(`${BASE_URL}/products/lookup/TEST_1001`, {
+      'Authorization': `Bearer ${adminToken}`
+    });
+    assert(resCAdmin.status === 200, 'Admin query matches both barcodes');
+    const dataCAdmin = await resCAdmin.json() as any;
+    assert(dataCAdmin.products[0].wholesalePrice === null, 'Admin item 0 has null wholesalePrice');
+    assert(dataCAdmin.products[0].wholesaleQty === null, 'Admin item 0 has null wholesaleQty');
+    assert(dataCAdmin.products[1].wholesalePrice === 12.00, 'Admin item 1 has correct wholesalePrice (12.00)');
+    assert(dataCAdmin.products[1].wholesaleQty === 5, 'Admin item 1 has correct wholesaleQty (5)');
 
     // Scenario F: No matching products (Article VII: Price Integrity)
     const resF = await httpFetch(`${BASE_URL}/products/lookup/TEST_9999_NON_EXISTENT`);
@@ -134,6 +160,15 @@ async function runTests() {
     const dataF = await resF.json() as any;
     assert(dataF.success === false, 'Non-existent response success flag is false');
     assert(dataF.message === 'Product is unavailable or not found', 'Non-existent response shows correct message');
+
+    // Scenario G: Customer Product Search endpoint does NOT disclose wholesale info
+    const resG = await httpFetch(`${BASE_URL}/products/search?q=TEST`);
+    assert(resG.status === 200, 'Search returns 200 OK');
+    const dataG = await resG.json() as any;
+    const results = Array.isArray(dataG) ? dataG : dataG.products;
+    assert(Array.isArray(results) && results.length > 0, 'Search returns product results');
+    const anyDisclosed = results.some((p: any) => p.wholesalePrice !== undefined || p.wholesaleQty !== undefined);
+    assert(!anyDisclosed, 'Customer search endpoint strictly omits wholesalePrice and wholesaleQty');
 
   } catch (err: any) {
     console.error('Fatal test runtime error:', err);

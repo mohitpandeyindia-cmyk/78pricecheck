@@ -72,9 +72,36 @@ router.get('/products/lookup/:barcode', async (req: Request, res: Response): Pro
       console.error('[Analytics Error] Record scan success:', err);
     });
 
+    // Access Control: Wholesale fields are internal administrative data.
+    // Public customer responses must not disclose wholesalePrice or wholesaleQty.
+    // Retained only for authorized administrators with a valid token.
+    let isAdmin = false;
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const { JWT_SECRET } = require('../middleware/auth');
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded && (decoded.id || decoded.username)) {
+          isAdmin = true;
+        }
+      } catch (e) {
+        // Not an authorized admin token -> treated as public customer
+      }
+    }
+
+    const sanitizedResults = combinedResults.map(prod => {
+      if (!isAdmin) {
+        const { wholesalePrice, wholesaleQty, ...customerFields } = prod;
+        return customerFields;
+      }
+      return prod;
+    });
+
     res.json({
-      multipleMatches: combinedResults.length > 1,
-      products: combinedResults
+      multipleMatches: sanitizedResults.length > 1,
+      products: sanitizedResults
     });
   } catch (error: any) {
     res.status(500).json({

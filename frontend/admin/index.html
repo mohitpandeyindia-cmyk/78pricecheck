@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>78 PriceCheck - Upload Catalogue</title>
+  <title>78 PriceCheck - Product Catalogue</title>
   <link rel="stylesheet" href="/admin/css/style.css">
   <script src="/admin/js/auth.js"></script>
 </head>
@@ -13,8 +13,7 @@
       <span class="nav-brand">78 PriceCheck</span>
       <div class="nav-links">
         <a href="/admin/analytics" class="nav-link">Analytics</a>
-        <a href="/admin/upload" class="nav-link active">Upload Catalogue</a>
-        <a href="/admin/history" class="nav-link">Upload History</a>
+        <a href="/admin/upload" class="nav-link active">Product Catalogue</a>
         <a href="/admin/inventory" class="nav-link">Reorder Suggestions</a>
         <a href="/admin/diagnostics" class="nav-link">Diagnostics</a>
         <button id="logout-btn" class="btn btn-link">Logout</button>
@@ -23,70 +22,93 @@
   </nav>
   
   <div class="main-container">
-    <div class="grid-layout">
+    <!-- Page Header -->
+    <div class="page-header" style="margin-bottom: 24px;">
+      <h1 class="page-title" style="font-size: 1.75rem; font-weight: 700; color: var(--admin-text); margin-bottom: 6px;">Product Catalogue</h1>
+      <p class="page-desc" style="color: var(--admin-text-secondary); font-size: 0.95rem;">Upload the latest Vyapar Export Items file. The system extracts product prices, reconciles wholesale quantities against the repository, and updates the live catalogue atomically.</p>
+    </div>
+
+    <!-- 1. Inline Upload History (Positioned near the top, below heading & above upload control) -->
+    <div class="card" id="history-section" style="margin-bottom: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <div>
+          <h2 class="card-title" style="font-size: 1.15rem; margin-bottom: 4px;">Upload History & Audit Log</h2>
+          <p class="card-desc" style="font-size: 0.85rem; margin-bottom: 0;">Recent catalogue upload executions and replacement logs.</p>
+        </div>
+        <button id="refresh-history-btn" class="btn btn-outline btn-sm" style="font-size: 0.8rem;">Refresh History</button>
+      </div>
+
+      <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+        <table class="history-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>File Name</th>
+              <th>Status</th>
+              <th>Source Rows</th>
+              <th>Cleaned Items</th>
+              <th>Blank Barcodes</th>
+              <th>Duplicate Barcodes</th>
+              <th>Wholesale (Matched / Manual)</th>
+              <th>Duration</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="history-rows">
+            <tr>
+              <td colspan="10" class="text-center text-muted" style="padding: 16px;">Loading upload history...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2. Main Upload & Status Section -->
+    <div class="grid-layout" id="upload-section">
       <!-- Left Column: Upload Controls -->
       <div class="card">
-        <h2 class="card-title">Upload Catalogue</h2>
-        <p class="card-desc">Select and upload the complete product catalogue Excel sheet. The database will be atomically replaced on a successful run.</p>
-        
-        <div class="action-bar" style="margin-bottom: 20px;">
-          <a href="/api/admin/template" class="btn btn-secondary">Download Excel Template</a>
-        </div>
+        <h2 class="card-title">Upload Export Items</h2>
+        <p class="card-desc">Select and upload the latest Vyapar Export Items Excel workbook (<code>.xlsx</code> or <code>.xls</code>). You will review any new wholesale quantities before publishing.</p>
         
         <form id="upload-form" class="upload-area">
           <div class="file-picker">
-            <input type="file" id="file-input" name="file" accept=".xlsx" style="display: none;">
-            <button type="button" id="browse-btn" class="btn btn-outline">Choose Excel File</button>
+            <input type="file" id="file-input" name="file" accept=".xlsx,.xls" style="display: none;">
+            <button type="button" id="browse-btn" class="btn btn-outline">Choose Vyapar Export File</button>
             <span id="file-name" class="file-name-label">No file selected</span>
           </div>
           
-          <button type="submit" id="upload-btn" class="btn btn-primary" disabled>Upload Catalogue</button>
+          <button type="submit" id="upload-btn" class="btn btn-primary" disabled>Inspect & Review Export Items</button>
         </form>
         
         <!-- Progress Indicator -->
-        <div id="progress-container" class="progress-container" style="display: none;">
+        <div id="progress-container" class="progress-container" style="display: none; margin-top: 14px;">
           <div class="progress-bar-wrapper">
             <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
           </div>
-          <span id="progress-text" class="progress-text">Uploading: 0%</span>
+          <span id="progress-text" class="progress-text">Processing file: 0%</span>
         </div>
         
         <!-- Upload Result Alerts -->
         <div id="result-container" style="display: none; margin-top: 20px;">
           <!-- Success Alert -->
           <div id="success-alert" class="alert alert-success" style="display: none;">
-            <h3 class="alert-title">✔ Upload completed successfully</h3>
+            <h3 class="alert-title">✔ Product Catalogue Published Successfully</h3>
             <div class="alert-details">
-              <p>Total products imported: <strong id="res-total">0</strong></p>
+              <p>Total products in catalogue: <strong id="res-total">0</strong></p>
+              <p>Wholesale products configured: <strong id="res-wholesale">0</strong></p>
+              <p>Wholesale quantities saved to repository: <strong id="res-wq-saved">0</strong></p>
               <p>Processing time: <strong id="res-time">0</strong> ms</p>
               <p>Catalogue version: <strong id="res-version">N/A</strong></p>
-              <p>Upload timestamp: <strong id="res-date">N/A</strong></p>
             </div>
           </div>
           
           <!-- Failure Alert -->
           <div id="failure-alert" class="alert alert-danger" style="display: none;">
-            <h3 class="alert-title">❌ Upload rejected</h3>
+            <h3 class="alert-title">❌ Upload Rejected</h3>
             <p id="failure-msg" style="margin-bottom: 10px;"></p>
             
             <div id="errors-report-link" style="margin-bottom: 15px; display: none;">
-              <a id="download-errors-btn" class="btn btn-danger" href="#">Download CSV Error Report</a>
-            </div>
-            
-            <div class="error-log-wrapper">
-              <table class="error-table">
-                <thead>
-                  <tr>
-                    <th>Row</th>
-                    <th>Barcode</th>
-                    <th>Product Name</th>
-                    <th>Error Description</th>
-                  </tr>
-                </thead>
-                <tbody id="error-logs-body">
-                  <!-- Populated dynamically -->
-                </tbody>
-              </table>
+              <a id="download-errors-btn" class="btn btn-danger" href="#">Download Error Report</a>
             </div>
           </div>
         </div>
@@ -94,21 +116,247 @@
       
       <!-- Right Column: Status Panel -->
       <div class="card status-card">
-        <h2 class="card-title">Current Catalogue</h2>
+        <h2 class="card-title">Live Catalogue Status</h2>
         <div class="status-panel">
           <div class="status-item">
-            <span class="status-label">Products:</span>
+            <span class="status-label">Active Products:</span>
             <strong id="status-products" class="status-val">-</strong>
           </div>
           <div class="status-item">
-            <span class="status-label">Version:</span>
+            <span class="status-label">Catalogue Version:</span>
             <strong id="status-version" class="status-val">-</strong>
           </div>
           <div class="status-item">
             <span class="status-label">Last Updated:</span>
             <div id="status-updated" class="status-val-multi">-</div>
           </div>
+          <div class="status-item" style="border-top: 1px solid var(--admin-border-soft); padding-top: 10px; margin-top: 10px;">
+            <span class="status-label">Wholesale Repository:</span>
+            <strong id="status-wholesale-repo" class="status-val" style="color: var(--admin-brand);">-</strong>
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- 3. Wholesale Quantity Interactive Review Section (Revealed after upload) -->
+    <div id="review-section" class="card" style="display: none; margin-top: 24px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px; margin-bottom: 18px;">
+        <div>
+          <h2 class="card-title" style="margin-bottom: 4px;">Wholesale Quantity & Catalogue Review</h2>
+          <p class="card-desc" style="margin-bottom: 0;">Review extracted items. New wholesale items require a valid positive quantity (&ge; 1) before publication.</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button id="download-preview-btn" class="btn btn-outline btn-sm">Download Compiled Excel</button>
+          <button id="cancel-review-btn" class="btn btn-outline btn-sm">Cancel</button>
+          <button id="publish-btn" class="btn btn-primary" disabled>Publish to PriceCheck</button>
+        </div>
+      </div>
+
+      <!-- Conflicting Duplicate Barcodes Section -->
+      <div id="duplicate-conflicts-card" style="display: none; background: var(--admin-surface-3); border: 1px solid var(--admin-warning-border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--admin-warning); margin-bottom: 2px;">
+              ⚠️ Conflicting Duplicate Barcodes Requiring Resolution
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--admin-text-secondary); margin: 0;">
+              The file contains duplicate barcodes with conflicting product details or prices. Select the authoritative row or explicitly exclude each duplicate to proceed.
+            </p>
+          </div>
+          <span id="duplicate-conflict-badge" class="badge badge-required">0 Unresolved</span>
+        </div>
+        <div id="duplicate-conflicts-container" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-source-rows">0</span>
+          <span class="kpi-lbl">Source Rows</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-blank-barcodes" style="color: var(--admin-text-secondary);">0</span>
+          <span class="kpi-lbl">Blank Barcodes (Excluded)</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-duplicate-barcodes" style="color: var(--admin-info);">0</span>
+          <span class="kpi-lbl">Duplicate Barcodes</span>
+        </div>
+        <div class="kpi-card kpi-card--success">
+          <span class="kpi-val" id="kpi-valid-products" style="color: var(--admin-brand);">0</span>
+          <span class="kpi-lbl">Cleaned Products</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-total-wholesale">0</span>
+          <span class="kpi-lbl">Total Wholesale Items</span>
+        </div>
+        <div class="kpi-card kpi-card--success">
+          <span class="kpi-val" id="kpi-matched-wq" style="color: var(--admin-brand);">0</span>
+          <span class="kpi-lbl">Existing WQ Matches</span>
+        </div>
+        <div class="kpi-card kpi-card--highlight">
+          <span class="kpi-val" id="kpi-new-wq" style="color: var(--admin-warning);">0</span>
+          <span class="kpi-lbl">New Products Requiring WQ</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-ambiguous-wq" style="color: #a5b4fc;">0</span>
+          <span class="kpi-lbl">Ambiguous Matches</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-edited-wq" style="color: #22d3ee;">0</span>
+          <span class="kpi-lbl">Quantities Edited</span>
+        </div>
+        <div class="kpi-card kpi-card--highlight">
+          <span class="kpi-val" id="kpi-missing-wq" style="color: var(--admin-danger);">0</span>
+          <span class="kpi-lbl">Quantities Still Missing</span>
+        </div>
+      </div>
+
+      <!-- Pending Attention Banner -->
+      <div id="missing-alert-box" class="alert alert-warning" style="display: none; margin-bottom: 16px;">
+        <span id="missing-alert-text">Attention: Wholesale quantities are required for highlighted items before publishing.</span>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+        <input type="text" id="review-search" placeholder="Search wholesale item by name or barcode..." 
+               style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); color: var(--admin-text); padding: 8px 12px; border-radius: 6px; width: 340px; font-size: 0.88rem;">
+        <div style="display: flex; gap: 8px; font-size: 0.82rem; color: var(--admin-text-secondary); align-items: center;">
+          <span>Sort Order:</span>
+          <span class="badge badge-required">1. NEW — QUANTITY REQUIRED</span>
+          <span class="badge badge-ambiguous">2. AMBIGUOUS</span>
+          <span class="badge badge-matched">3. MATCHED</span>
+        </div>
+      </div>
+
+      <!-- Wholesale Review Table -->
+      <div class="review-table-container">
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th style="width: 220px;">Review Status</th>
+              <th style="width: 140px;">Barcode</th>
+              <th>Product Name</th>
+              <th style="width: 90px; text-align: right;">MRP</th>
+              <th style="width: 100px; text-align: right;">Sale Price</th>
+              <th style="width: 120px; text-align: right;">Wholesale Price</th>
+              <th style="width: 140px; text-align: center;">Wholesale Qty</th>
+            </tr>
+          </thead>
+          <tbody id="wholesale-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Inspection Modal -->
+  <div id="inspect-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box" style="max-width: 640px; max-height: 85vh; overflow-y: auto;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--admin-text); margin: 0;">Upload Details & Audit Log</h2>
+        <button id="inspect-close-btn" class="btn btn-outline btn-sm" style="padding: 2px 8px;">✕</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">File Name</div>
+          <div id="inspect-filename" style="font-weight: 600; word-break: break-all;">-</div>
+        </div>
+        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Status</div>
+          <div id="inspect-status">-</div>
+        </div>
+        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Date & Time</div>
+          <div id="inspect-date">-</div>
+        </div>
+        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Uploaded By</div>
+          <div id="inspect-user">-</div>
+        </div>
+      </div>
+
+      <div style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 0.88rem;">
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Total Source Rows:</span>
+          <strong id="inspect-total-rows">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Valid / Cleaned Products:</span>
+          <strong id="inspect-valid-rows" style="color: var(--admin-brand);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Blank Barcodes Excluded:</span>
+          <strong id="inspect-blank-barcodes">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Duplicate Barcodes Count:</span>
+          <strong id="inspect-duplicate-barcodes">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Wholesale Products Configured:</span>
+          <strong id="inspect-wholesale-products">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Wholesale Quantities Matched:</span>
+          <strong id="inspect-wholesale-matched" style="color: var(--admin-brand);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Wholesale Quantities Manual Input:</span>
+          <strong id="inspect-wholesale-manual" style="color: var(--admin-warning);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Wholesale Quantities Saved to Repo:</span>
+          <strong id="inspect-wholesale-saved" style="color: var(--admin-brand);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+          <span style="color: var(--admin-text-secondary);">Processing Duration:</span>
+          <strong id="inspect-duration">-</strong>
+        </div>
+      </div>
+
+      <div id="inspect-errors-container" style="display: none; margin-bottom: 16px;">
+        <h3 style="font-size: 0.95rem; margin-bottom: 8px; color: var(--admin-danger);">Issues & Conflicts Log</h3>
+        <div id="inspect-errors-content" style="max-height: 140px; overflow-y: auto; background: var(--admin-surface); border: 1px solid var(--admin-danger-border); padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 0.8rem; white-space: pre-wrap;"></div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="inspect-dl-error-btn" class="btn btn-danger btn-sm" style="display: none;">Download Error CSV</button>
+        <button id="inspect-dismiss-btn" class="btn btn-outline btn-sm">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Publish Confirmation Modal -->
+  <div id="publish-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal-box">
+      <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px; color: var(--admin-text);">Confirm Catalogue Publication</h2>
+      <p style="color: var(--admin-text-secondary); font-size: 0.92rem; margin-bottom: 16px;">
+        You are about to replace the live PriceCheck product catalogue. This will atomically update active products and save any new or updated wholesale quantities into the persistent repository.
+      </p>
+      
+      <div style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 0.88rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--admin-text-secondary);">Cleaned products to publish:</span>
+          <strong id="modal-products-count" style="color: var(--admin-text);">0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+          <span style="color: var(--admin-text-secondary);">Total wholesale products:</span>
+          <strong id="modal-wholesale-count" style="color: var(--admin-text);">0</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="color: var(--admin-text-secondary);">Wholesale quantities to save/update:</span>
+          <strong id="modal-updates-count" style="color: var(--admin-brand);">0</strong>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="modal-cancel-btn" class="btn btn-outline">Cancel</button>
+        <button id="modal-confirm-btn" class="btn btn-primary">Confirm & Publish</button>
       </div>
     </div>
   </div>

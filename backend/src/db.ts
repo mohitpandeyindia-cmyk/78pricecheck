@@ -3,7 +3,105 @@ import { open, Database } from 'sqlite';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = process.env.DATABASE_PATH || path.resolve(__dirname, '../../database/78pricecheck.db');
+export function resolveDatabasePath(): string {
+  const isProduction = process.env.NODE_ENV === 'production' && process.platform !== 'win32';
+
+  if (isProduction) {
+    const expectedDir = '/data';
+    const expectedDbPath = '/data/78pricecheck.db';
+
+    // 1. If DATABASE_PATH is explicitly set, validate it strictly
+    if (process.env.DATABASE_PATH) {
+      const rawPath = process.env.DATABASE_PATH.trim();
+
+      // Reject relative database paths
+      if (!path.isAbsolute(rawPath)) {
+        console.error('\n================================================================');
+        console.error('  FATAL ERROR: Production Database Configuration Invalid        ');
+        console.error(`  DATABASE_PATH is relative: "${rawPath}"                       `);
+        console.error('  Production requires the absolute persistent path:             ');
+        console.error(`  ${expectedDbPath}                                            `);
+        console.error('  Halting startup to prevent ephemeral database initialization.  ');
+        console.error('================================================================\n');
+        process.exit(1);
+      }
+
+      const normalized = path.normalize(rawPath);
+      const configuredDir = path.dirname(normalized);
+
+      // Reject an unexpected alternative directory
+      if (configuredDir !== expectedDir) {
+        console.error('\n================================================================');
+        console.error('  FATAL ERROR: Production Database Path Rejected                ');
+        console.error(`  DATABASE_PATH points to unexpected directory: "${configuredDir}" `);
+        console.error(`  Production requires the persistent location: ${expectedDbPath}`);
+        console.error('  Halting startup to prevent ephemeral database initialization.  ');
+        console.error('================================================================\n');
+        process.exit(1);
+      }
+
+      // Verify that the persistent directory exists
+      if (!fs.existsSync(configuredDir)) {
+        console.error('\n================================================================');
+        console.error('  FATAL ERROR: Production Persistent Volume Directory Missing   ');
+        console.error(`  Target persistent directory "${configuredDir}" does not exist.  `);
+        console.error('  Ensure the Railway persistent volume is mounted at /data.     ');
+        console.error('  Halting startup to prevent ephemeral database initialization.  ');
+        console.error('================================================================\n');
+        process.exit(1);
+      }
+
+      // Verify that the persistent directory is accessible and writable
+      try {
+        fs.accessSync(configuredDir, fs.constants.R_OK | fs.constants.W_OK);
+      } catch (accessErr: any) {
+        console.error('\n================================================================');
+        console.error('  FATAL ERROR: Production Persistent Directory Not Writable     ');
+        console.error(`  Directory "${configuredDir}" lacks read/write permissions:     `);
+        console.error(`  ${accessErr.message}                                          `);
+        console.error('  Halting startup to prevent database corruption.               ');
+        console.error('================================================================\n');
+        process.exit(1);
+      }
+
+      return normalized;
+    }
+
+    // 2. If DATABASE_PATH is not explicitly set in production, require the intended persistent mount
+    if (!fs.existsSync(expectedDir)) {
+      console.error('\n================================================================');
+      console.error('  FATAL ERROR: Production Persistent Volume Not Mounted         ');
+      console.error(`  Expected persistent volume at "${expectedDir}", but it is absent.`);
+      console.error('  Ensure Railway persistent volume is mounted at /data.         ');
+      console.error('  Halting startup to prevent ephemeral database initialization.  ');
+      console.error('================================================================\n');
+      process.exit(1);
+    }
+
+    // Verify accessibility and writability
+    try {
+      fs.accessSync(expectedDir, fs.constants.R_OK | fs.constants.W_OK);
+    } catch (accessErr: any) {
+      console.error('\n================================================================');
+      console.error('  FATAL ERROR: Production Persistent Directory Not Writable     ');
+      console.error(`  Directory "${expectedDir}" lacks read/write permissions:        `);
+      console.error(`  ${accessErr.message}                                          `);
+      console.error('  Halting startup to prevent database corruption.               ');
+      console.error('================================================================\n');
+      process.exit(1);
+    }
+
+    return expectedDbPath;
+  }
+
+  // Development environment behavior:
+  if (process.env.DATABASE_PATH) {
+    return process.env.DATABASE_PATH;
+  }
+  return path.resolve(__dirname, '../../database/78pricecheck.db');
+}
+
+export const DB_PATH = resolveDatabasePath();
 
 let dbInstance: Database | null = null;
 
@@ -16,6 +114,23 @@ export async function getDb(): Promise<Database> {
   const dbDir = path.dirname(DB_PATH);
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  // In production, verify writability of the database file if it already exists
+  if (process.env.NODE_ENV === 'production' && process.platform !== 'win32') {
+    if (fs.existsSync(DB_PATH)) {
+      try {
+        fs.accessSync(DB_PATH, fs.constants.R_OK | fs.constants.W_OK);
+      } catch (err: any) {
+        console.error('\n================================================================');
+        console.error('  FATAL ERROR: Production Database File Not Writable            ');
+        console.error(`  Database file "${DB_PATH}" lacks read/write permissions:      `);
+        console.error(`  ${err.message}                                                `);
+        console.error('  Halting startup to prevent uncommitted transaction failures.  ');
+        console.error('================================================================\n');
+        process.exit(1);
+      }
+    }
   }
 
   dbInstance = await open({
@@ -39,6 +154,11 @@ export async function closeDb(): Promise<void> {
     await dbInstance.close();
     dbInstance = null;
   }
+}
+
+export function normalizeProductName(name: string): string {
+  if (!name) return '';
+  return name.trim().replace(/\s+/g, ' ').toUpperCase();
 }
 
 export async function resetDatabase(): Promise<void> {
@@ -96,6 +216,16 @@ export async function initializeDatabase(seedData = false): Promise<void> {
       error_details TEXT,
       uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (uploaded_by) REFERENCES admins(username) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS wholesale_quantities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      original_name TEXT NOT NULL,
+      normalized_name TEXT NOT NULL,
+      wholesale_qty INTEGER NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      last_modified_source TEXT DEFAULT 'INITIAL_MIGRATION'
     );
 
     CREATE TABLE IF NOT EXISTS scan_events (
@@ -233,7 +363,39 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_device_registry_first_seen ON device_registry(first_seen_at);
     CREATE INDEX IF NOT EXISTS idx_device_registry_last_seen ON device_registry(last_seen_at);
     CREATE INDEX IF NOT EXISTS idx_device_registry_os ON device_registry(device_os);
+    CREATE INDEX IF NOT EXISTS idx_wq_normalized_name ON wholesale_quantities(normalized_name);
   `);
+
+  try {
+    const tblInfo = await db.get("SELECT sql FROM sqlite_master WHERE type='table' AND name='wholesale_quantities'");
+    if (tblInfo && tblInfo.sql && tblInfo.sql.includes('UNIQUE')) {
+      await db.run('BEGIN TRANSACTION');
+      await db.exec(`
+        CREATE TABLE wholesale_quantities_temp (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          original_name TEXT NOT NULL,
+          normalized_name TEXT NOT NULL,
+          wholesale_qty INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          last_modified_source TEXT DEFAULT 'INITIAL_MIGRATION'
+        );
+        INSERT INTO wholesale_quantities_temp SELECT id, original_name, normalized_name, wholesale_qty, created_at, updated_at, last_modified_source FROM wholesale_quantities;
+        DROP TABLE wholesale_quantities;
+        ALTER TABLE wholesale_quantities_temp RENAME TO wholesale_quantities;
+      `);
+      await db.run('COMMIT');
+    }
+  } catch (e) {
+    try { await db.run('ROLLBACK'); } catch (_) {}
+  }
+
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN blank_barcodes INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN duplicate_barcodes INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_products INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_matched INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_manual INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_saved INTEGER DEFAULT 0;`); } catch (e) {}
 
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN device_memory_gb REAL;`); } catch (e) {}
@@ -279,12 +441,84 @@ export async function initializeDatabase(seedData = false): Promise<void> {
     );
   }
 
+  // Idempotently seed wholesale quantities repository if empty
+  await seedWholesaleQuantitiesIfEmpty(db);
+
   if (seedData) {
     await seedSampleData(db);
     // Dynamic import to avoid circular dependency
     const { refreshHotDeals } = require('./services/hotDealsService');
     await refreshHotDeals(db);
   }
+}
+
+export async function seedWholesaleQuantitiesIfEmpty(db: Database): Promise<number> {
+  const countRow = await db.get('SELECT COUNT(*) as cnt FROM wholesale_quantities');
+  if (countRow && countRow.cnt > 0) {
+    return countRow.cnt;
+  }
+
+  let seedItems: { original_name: string; normalized_name: string; wholesale_qty: number }[] = [];
+  const seedJsonPath = path.resolve(__dirname, './data/wholesale_seed.json');
+  const fallbackJsonPath = path.resolve(__dirname, '../../database/wholesale_seed.json');
+  const xlsxPath = 'C:/Users/Admin/Downloads/WHOLE SALE.xlsx';
+
+  if (fs.existsSync(seedJsonPath)) {
+    try {
+      seedItems = JSON.parse(fs.readFileSync(seedJsonPath, 'utf8'));
+    } catch (e) {}
+  }
+  
+  if (seedItems.length === 0 && fs.existsSync(fallbackJsonPath)) {
+    try {
+      seedItems = JSON.parse(fs.readFileSync(fallbackJsonPath, 'utf8'));
+    } catch (e) {}
+  }
+
+  if (seedItems.length === 0 && fs.existsSync(xlsxPath)) {
+    try {
+      const XLSX = require('xlsx');
+      const wb = XLSX.readFile(xlsxPath);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws);
+      const seen = new Set<string>();
+      for (const r of rows as any[]) {
+        const rawName = r['NEW ITEM NAME'] || r['OLD ITEM NAME'];
+        const rawWq = r['WQ'] || r['RESULT WQ'];
+        if (rawName && rawWq) {
+          const original_name = String(rawName).trim();
+          const normalized_name = normalizeProductName(original_name);
+          const wholesale_qty = parseInt(String(rawWq).trim(), 10);
+          if (!isNaN(wholesale_qty) && wholesale_qty >= 1 && !seen.has(normalized_name)) {
+            seen.add(normalized_name);
+            seedItems.push({ original_name, normalized_name, wholesale_qty });
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (seedItems.length > 0) {
+    await db.run('BEGIN TRANSACTION');
+    try {
+      const stmt = await db.prepare(
+        `INSERT OR IGNORE INTO wholesale_quantities 
+         (original_name, normalized_name, wholesale_qty, last_modified_source) 
+         VALUES (?, ?, ?, 'INITIAL_MIGRATION')`
+      );
+      for (const item of seedItems) {
+        await stmt.run(item.original_name, item.normalized_name, item.wholesale_qty);
+      }
+      await stmt.finalize();
+      await db.run('COMMIT');
+    } catch (err) {
+      await db.run('ROLLBACK');
+      console.error('Failed to seed wholesale_quantities:', err);
+    }
+  }
+
+  const finalCount = await db.get('SELECT COUNT(*) as cnt FROM wholesale_quantities');
+  return finalCount ? finalCount.cnt : 0;
 }
 
 async function seedSampleData(db: Database): Promise<void> {
