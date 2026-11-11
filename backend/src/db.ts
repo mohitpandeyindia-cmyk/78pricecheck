@@ -158,7 +158,11 @@ export async function closeDb(): Promise<void> {
 
 export function normalizeProductName(name: string): string {
   if (!name) return '';
-  return name.trim().replace(/\s+/g, ' ').toUpperCase();
+  return String(name)
+    .replace(/\u00A0/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
 }
 
 export async function resetDatabase(): Promise<void> {
@@ -396,6 +400,13 @@ export async function initializeDatabase(seedData = false): Promise<void> {
   try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_matched INTEGER DEFAULT 0;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_manual INTEGER DEFAULT 0;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_saved INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN export_filename TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN stock_detail_filename TEXT;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN stock_detail_rows INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN stock_detail_unique_names INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN active_products INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN inactive_products INTEGER DEFAULT 0;`); } catch (e) {}
+  try { await db.exec(`ALTER TABLE upload_history ADD COLUMN wholesale_edited INTEGER DEFAULT 0;`); } catch (e) {}
 
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN cpu_cores INTEGER;`); } catch (e) {}
   try { await db.exec(`ALTER TABLE device_registry ADD COLUMN device_memory_gb REAL;`); } catch (e) {}

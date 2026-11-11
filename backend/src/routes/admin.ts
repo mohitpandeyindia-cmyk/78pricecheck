@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { getDb, initializeDatabase, resetDatabase, normalizeProductName } from '../db';
 import { authenticateToken, AuthenticatedRequest } from '../middleware/auth';
+import { parseStockDetailBuffer, StockDetailParseResult } from '../services/stockDetailParser';
 import * as XLSX from 'xlsx';
 import multer from 'multer';
 import path from 'path';
@@ -94,9 +95,20 @@ export interface ConflictCandidate {
   rowNumber: number;
   barcode: string;
   name: string;
+  normalizedName?: string;
   mrp: number;
   salePrice: number;
   wholesalePrice: number | null;
+  isActive?: boolean;
+}
+
+export interface InactiveProduct {
+  barcode: string;
+  name: string;
+  mrp: number;
+  salePrice: number;
+  wholesalePrice: number | null;
+  reason: string;
 }
 
 export interface DuplicateConflictGroup {
@@ -122,11 +134,20 @@ export interface StagedProduct {
 export interface StagingSession {
   sessionId: string;
   filename: string;
+  exportFilename: string;
+  stockDetailFilename: string;
   uploadedBy: string;
   createdAt: number;
   totalSourceRows: number;
   blankBarcodesExcluded: number;
   duplicateBarcodesCount: number;
+  validUniqueCandidates: number;
+  stockDetailNamedRows: number;
+  stockDetailUniqueNames: number;
+  stockDetailDuplicateNames: number;
+  activeProductCount: number;
+  inactiveProductCount: number;
+  inactiveProducts: InactiveProduct[];
   duplicateConflicts: DuplicateConflictGroup[];
   conflicts: { barcode: string; name: string; error: string }[];
   allProducts: StagedProduct[];
@@ -144,22 +165,43 @@ function cleanupOldSessions() {
   }
 }
 
-export async function processExportItemsBuffer(buffer: Buffer, filename: string, username: string) {
+export async function processDualFileImport(
+  exportBuffer: Buffer,
+  exportFilename: string,
+  stockDetailBuffer: Buffer,
+  stockDetailFilename: string,
+  username: string
+) {
   cleanupOldSessions();
   const db = await getDb();
-  let workbook;
+
+  if (!exportBuffer || exportBuffer.length === 0) {
+    throw new Error('Export Items file buffer is empty or missing.');
+  }
+  if (!stockDetailBuffer || stockDetailBuffer.length === 0) {
+    throw new Error('Stock Detail Report file buffer is empty or missing.');
+  }
+
+  // 1. Parse Stock Detail Report first (fails fast if invalid or missing headers)
+  const stockDetail = parseStockDetailBuffer(stockDetailBuffer);
+
+  // 2. Parse Export Items workbook
+  let workbook: XLSX.WorkBook;
   try {
-    workbook = XLSX.read(buffer, { type: 'buffer' });
+    workbook = XLSX.read(exportBuffer, { type: 'buffer' });
   } catch (err: any) {
-    throw new Error('Invalid Excel file format.');
+    throw new Error('Invalid Excel file format for Export Items.');
   }
 
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
+  if (!worksheet) {
+    throw new Error('Export Items worksheet could not be read.');
+  }
   const rows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
   if (rows.length === 0) {
-    throw new Error('Uploaded sheet is empty.');
+    throw new Error('Export Items sheet is empty.');
   }
 
   const rawHeaders = rows[0].map((h: any) => String(h).trim());
@@ -185,13 +227,14 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
   const conflicts: { barcode: string; name: string; error: string }[] = [];
   const barcodeMap = new Map<string, { firstCand: ConflictCandidate; identicalCount: number; conflicting: ConflictCandidate[] }>();
 
-  const totalSourceRows = rows.length - 1;
+  let totalSourceRows = 0;
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    if (r.length === 0 || r.every((v: any) => v === null || v === undefined || String(v).trim() === '')) {
+    if (!r || r.length === 0 || r.every((v: any) => v === null || v === undefined || String(v).trim() === '')) {
       continue;
     }
+    totalSourceRows++;
 
     const rawBarcode = r[codeIdx];
     let barcode = '';
@@ -228,14 +271,19 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
     const hasWp = rawWp !== undefined && rawWp !== null && String(rawWp).trim() !== '' && !isNaN(Number(rawWp)) && Number(rawWp) > 0;
     const wholesalePrice = hasWp ? Number(rawWp) : null;
 
+    const normalizedName = normalizeProductName(name);
+    const isActive = stockDetail.uniqueNames.has(normalizedName);
+
     const cand: ConflictCandidate = {
       candidateId: `${barcode}_r${i + 1}`,
       rowNumber: i + 1,
       barcode,
       name,
+      normalizedName,
       mrp,
       salePrice,
-      wholesalePrice
+      wholesalePrice,
+      isActive
     };
 
     if (!barcodeMap.has(barcode)) {
@@ -256,6 +304,7 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
   const duplicateConflicts: DuplicateConflictGroup[] = [];
   const stagedProducts: StagedProduct[] = [];
   const wholesaleProducts: StagedProduct[] = [];
+  const inactiveProducts: InactiveProduct[] = [];
 
   for (const [barcode, entry] of barcodeMap.entries()) {
     if (entry.identicalCount > 0) {
@@ -263,63 +312,93 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
     }
 
     if (entry.conflicting.length > 0) {
-      // Conflicting duplicates: administrator must choose or exclude
       duplicateBarcodesCount += entry.conflicting.length;
-      duplicateConflicts.push({
-        barcode,
-        candidates: [entry.firstCand, ...entry.conflicting],
-        status: 'PENDING',
-        selectedCandidateId: null
-      });
+      const allCandidates = [entry.firstCand, ...entry.conflicting];
+      const activeCandidates = allCandidates.filter(c => c.isActive);
+
+      if (activeCandidates.length === 0) {
+        // All occurrences are inactive
+        for (const c of allCandidates) {
+          inactiveProducts.push({
+            barcode: c.barcode,
+            name: c.name,
+            mrp: c.mrp,
+            salePrice: c.salePrice,
+            wholesalePrice: c.wholesalePrice,
+            reason: 'NOT FOUND IN STOCK DETAIL REPORT'
+          });
+        }
+      } else {
+        // Has active candidate(s), requires review
+        duplicateConflicts.push({
+          barcode,
+          candidates: allCandidates,
+          status: 'PENDING',
+          selectedCandidateId: null
+        });
+      }
     } else {
       // Clean, non-conflicting product
       const p = entry.firstCand;
-      const discountPercent = p.mrp > 0 ? Math.round(((p.mrp - p.salePrice) / p.mrp) * 100 * 10) / 10 : 0.0;
-      const normalizedName = normalizeProductName(p.name);
-      const hasWp = p.wholesalePrice !== null && p.wholesalePrice > 0;
+      const normalizedName = p.normalizedName || normalizeProductName(p.name);
+      const isActive = stockDetail.uniqueNames.has(normalizedName);
 
-      let wholesaleQty: number | null = null;
-      let status: 'REQUIRED' | 'MATCHED' | 'AMBIGUOUS' = 'MATCHED';
+      if (!isActive) {
+        inactiveProducts.push({
+          barcode: p.barcode,
+          name: p.name,
+          mrp: p.mrp,
+          salePrice: p.salePrice,
+          wholesalePrice: p.wholesalePrice,
+          reason: 'NOT FOUND IN STOCK DETAIL REPORT'
+        });
+      } else {
+        const discountPercent = p.mrp > 0 ? Math.round(((p.mrp - p.salePrice) / p.mrp) * 100 * 10) / 10 : 0.0;
+        const hasWp = p.wholesalePrice !== null && p.wholesalePrice > 0;
 
-      if (hasWp) {
-        const matches = await db.all(
-          'SELECT wholesale_qty FROM wholesale_quantities WHERE normalized_name = ?',
-          normalizedName
-        );
-        if (matches && matches.length === 1 && matches[0].wholesale_qty >= 1) {
-          wholesaleQty = matches[0].wholesale_qty;
-          status = 'MATCHED';
-        } else if (matches && matches.length > 1) {
-          const uniqueQtys = [...new Set(matches.map((m: any) => m.wholesale_qty))];
-          if (uniqueQtys.length === 1 && uniqueQtys[0] >= 1) {
-            wholesaleQty = uniqueQtys[0];
+        let wholesaleQty: number | null = null;
+        let status: 'REQUIRED' | 'MATCHED' | 'AMBIGUOUS' = 'MATCHED';
+
+        if (hasWp) {
+          const matches = await db.all(
+            'SELECT wholesale_qty FROM wholesale_quantities WHERE normalized_name = ?',
+            normalizedName
+          );
+          if (matches && matches.length === 1 && matches[0].wholesale_qty >= 1) {
+            wholesaleQty = matches[0].wholesale_qty;
             status = 'MATCHED';
+          } else if (matches && matches.length > 1) {
+            const uniqueQtys = [...new Set(matches.map((m: any) => m.wholesale_qty))];
+            if (uniqueQtys.length === 1 && uniqueQtys[0] >= 1) {
+              wholesaleQty = uniqueQtys[0];
+              status = 'MATCHED';
+            } else {
+              wholesaleQty = null;
+              status = 'AMBIGUOUS';
+            }
           } else {
             wholesaleQty = null;
-            status = 'AMBIGUOUS';
+            status = 'REQUIRED';
           }
-        } else {
-          wholesaleQty = null;
-          status = 'REQUIRED';
         }
-      }
 
-      const product: StagedProduct = {
-        barcode: p.barcode,
-        name: p.name,
-        normalizedName,
-        mrp: p.mrp,
-        salePrice: p.salePrice,
-        wholesalePrice: p.wholesalePrice,
-        wholesaleQty,
-        discountPercent,
-        isWholesale: hasWp,
-        status
-      };
+        const product: StagedProduct = {
+          barcode: p.barcode,
+          name: p.name,
+          normalizedName,
+          mrp: p.mrp,
+          salePrice: p.salePrice,
+          wholesalePrice: p.wholesalePrice,
+          wholesaleQty,
+          discountPercent,
+          isWholesale: hasWp,
+          status
+        };
 
-      stagedProducts.push(product);
-      if (hasWp) {
-        wholesaleProducts.push(product);
+        stagedProducts.push(product);
+        if (hasWp) {
+          wholesaleProducts.push(product);
+        }
       }
     }
   }
@@ -336,15 +415,28 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
   const missingCount = wholesaleProducts.filter(p => p.status === 'REQUIRED').length;
   const ambiguousCount = wholesaleProducts.filter(p => p.status === 'AMBIGUOUS').length;
 
+  const validUniqueCandidates = barcodeMap.size;
+  const activeProductCount = stagedProducts.length;
+  const inactiveProductCount = inactiveProducts.length;
+
   const sessionId = randomUUID();
   const session: StagingSession = {
     sessionId,
-    filename,
+    filename: exportFilename,
+    exportFilename,
+    stockDetailFilename,
     uploadedBy: username,
     createdAt: Date.now(),
     totalSourceRows,
     blankBarcodesExcluded,
     duplicateBarcodesCount,
+    validUniqueCandidates,
+    stockDetailNamedRows: stockDetail.namedRowCount,
+    stockDetailUniqueNames: stockDetail.uniqueNames.size,
+    stockDetailDuplicateNames: stockDetail.duplicateNameCount,
+    activeProductCount,
+    inactiveProductCount,
+    inactiveProducts,
     duplicateConflicts,
     conflicts,
     allProducts: stagedProducts,
@@ -355,22 +447,43 @@ export async function processExportItemsBuffer(buffer: Buffer, filename: string,
 
   return {
     sessionId,
-    filename,
+    filename: exportFilename,
+    exportFilename,
+    stockDetailFilename,
     summary: {
       totalSourceRows,
       blankBarcodesExcluded,
       duplicateBarcodesCount,
+      validUniqueCandidates,
+      stockDetailNamedRows: stockDetail.namedRowCount,
+      stockDetailUniqueNames: stockDetail.uniqueNames.size,
+      activeProductCount,
+      inactiveProductCount,
       conflictingBarcodesCount: duplicateConflicts.length,
-      totalValidProducts: stagedProducts.length,
+      totalValidProducts: activeProductCount,
       totalWholesaleProducts: wholesaleProducts.length,
       matchedCount,
       missingCount,
       ambiguousCount
     },
+    inactiveProducts,
     duplicateConflicts,
     wholesaleItems: wholesaleProducts,
     conflicts
   };
+}
+
+export async function processExportItemsBuffer(
+  buffer: Buffer,
+  filename: string,
+  username: string,
+  stockDetailBuffer?: Buffer,
+  stockDetailFilename?: string
+) {
+  if (stockDetailBuffer) {
+    return processDualFileImport(buffer, filename, stockDetailBuffer, stockDetailFilename || 'Stock_Detail_Report.xls', username);
+  }
+  throw new Error('Stock Detail Report file is required for catalogue update.');
 }
 
 // GET /api/admin/template - Download the blank Excel product catalogue template
@@ -395,9 +508,15 @@ router.get('/admin/template', (req: Request, res: Response): void => {
   }
 });
 
-// POST /api/admin/upload-export-items - Parse Vyapar Export Items workbook and prepare staging session
+const dualUpload = upload.fields([
+  { name: 'exportItems', maxCount: 1 },
+  { name: 'stockDetail', maxCount: 1 },
+  { name: 'file', maxCount: 1 }
+]);
+
+// POST /api/admin/upload-export-items - Dual-file upload & reconciliation (Vyapar Export Items + Stock Detail Report)
 router.post('/admin/upload-export-items', authenticateToken, (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
+  dualUpload(req, res, (err) => {
     if (err) {
       res.status(400).json({
         success: false,
@@ -409,13 +528,42 @@ router.post('/admin/upload-export-items', authenticateToken, (req, res, next) =>
   });
 }, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    if (!req.file) {
-      res.status(400).json({ success: false, message: 'Export Items Excel file is required.' });
+    const files = (req as any).files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    const exportFile = files?.['exportItems']?.[0] || files?.['file']?.[0] || (req as any).file;
+    const stockDetailFile = files?.['stockDetail']?.[0];
+
+    if (!exportFile && !stockDetailFile) {
+      res.status(400).json({
+        success: false,
+        message: 'Both Export Items and Stock Detail Report files are required for upload.'
+      });
+      return;
+    }
+
+    if (!exportFile) {
+      res.status(400).json({
+        success: false,
+        message: 'Upload Export Items file is required.'
+      });
+      return;
+    }
+
+    if (!stockDetailFile) {
+      res.status(400).json({
+        success: false,
+        message: 'Upload Stock Detail Report file is required.'
+      });
       return;
     }
 
     const username = req.admin!.username;
-    const result = await processExportItemsBuffer(req.file.buffer, req.file.originalname, username);
+    const result = await processDualFileImport(
+      exportFile.buffer,
+      exportFile.originalname,
+      stockDetailFile.buffer,
+      stockDetailFile.originalname,
+      username
+    );
 
     res.json({
       success: true,
@@ -424,7 +572,7 @@ router.post('/admin/upload-export-items', authenticateToken, (req, res, next) =>
   } catch (error: any) {
     res.status(400).json({
       success: false,
-      message: error.message || 'Failed to process Export Items spreadsheet.'
+      message: error.message || 'Failed to process spreadsheet files.'
     });
   }
 });
@@ -572,12 +720,17 @@ router.post('/admin/publish-catalogue', authenticateToken, async (req: Authentic
     const missingItems: string[] = [];
     const ambiguousItems: string[] = [];
     let manualCount = 0;
+    let editedCount = 0;
 
     for (const item of session.wholesaleItems) {
       if (updatesMap.has(item.normalizedName)) {
+        if (item.status === 'MATCHED') {
+          editedCount++;
+        } else {
+          manualCount++;
+        }
         item.wholesaleQty = updatesMap.get(item.normalizedName)!.wholesaleQty;
         item.status = 'MATCHED';
-        manualCount++;
       } else if (item.status === 'AMBIGUOUS') {
         ambiguousItems.push(item.name);
       } else if (item.wholesaleQty === null || item.wholesaleQty < 1) {
@@ -679,10 +832,13 @@ router.post('/admin/publish-catalogue', authenticateToken, async (req: Authentic
       // 3. Log to upload_history
       await db.run(
         `INSERT INTO upload_history 
-         (filename, uploaded_by, total_rows, successful_rows, failed_rows, status, processing_time_ms, error_details,
-          blank_barcodes, duplicate_barcodes, wholesale_products, wholesale_matched, wholesale_manual, wholesale_saved)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        session.filename,
+         (filename, export_filename, stock_detail_filename, uploaded_by, total_rows, successful_rows, failed_rows, status, processing_time_ms, error_details,
+          blank_barcodes, duplicate_barcodes, stock_detail_rows, stock_detail_unique_names, active_products, inactive_products,
+          wholesale_products, wholesale_matched, wholesale_manual, wholesale_edited, wholesale_saved)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        session.exportFilename || session.filename,
+        session.exportFilename || session.filename,
+        session.stockDetailFilename || '-',
         session.uploadedBy,
         session.totalSourceRows,
         session.allProducts.length,
@@ -692,9 +848,14 @@ router.post('/admin/publish-catalogue', authenticateToken, async (req: Authentic
         combinedAuditDetails.length > 0 ? JSON.stringify(combinedAuditDetails) : null,
         session.blankBarcodesExcluded,
         session.duplicateBarcodesCount,
+        session.stockDetailNamedRows || 0,
+        session.stockDetailUniqueNames || 0,
+        session.allProducts.length,
+        session.inactiveProductCount || 0,
         session.wholesaleItems.length,
         session.wholesaleItems.length - manualCount,
         manualCount,
+        editedCount,
         savedWqCount
       );
 
@@ -711,6 +872,8 @@ router.post('/admin/publish-catalogue', authenticateToken, async (req: Authentic
         success: true,
         message: 'Product catalogue published successfully.',
         totalProducts: session.allProducts.length,
+        activeProducts: session.allProducts.length,
+        inactiveProducts: session.inactiveProductCount || 0,
         totalWholesaleProducts: session.wholesaleItems.length,
         wholesaleSaved: savedWqCount,
         processingTimeMs: processingTime,
@@ -762,6 +925,44 @@ router.get('/admin/export-compiled-catalogue/:sessionId', authenticateToken, (re
     res.status(500).json({
       success: false,
       message: 'Failed to generate compiled catalogue file',
+      error: error.message || error
+    });
+  }
+});
+
+// GET /api/admin/export-inactive-products/:sessionId - Download inactive products excluded from catalogue
+router.get('/admin/export-inactive-products/:sessionId', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  try {
+    const { sessionId } = req.params;
+    const session = stagingSessions.get(sessionId);
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Session not found or expired.' });
+      return;
+    }
+
+    const headers = ['Barcode', 'Product Name', 'MRP', 'Sale Price', 'Wholesale Price', 'Reason'];
+    const dataRows = (session.inactiveProducts || []).map(p => [
+      p.barcode,
+      p.name,
+      p.mrp,
+      p.salePrice,
+      p.wholesalePrice !== null ? p.wholesalePrice : '',
+      p.reason
+    ]);
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+    XLSX.utils.book_append_sheet(wb, ws, 'Inactive Products');
+
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=INACTIVE_PRODUCTS_${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate inactive products file',
       error: error.message || error
     });
   }
@@ -1114,18 +1315,26 @@ router.get('/admin/upload-history', authenticateToken, async (req: Authenticated
   try {
     const db = await getDb();
     const history = await db.all(
-      `SELECT id, filename, uploaded_by as uploadedBy, total_rows as totalRows, 
+      `SELECT id, filename,
+              COALESCE(export_filename, filename) as exportFilename,
+              COALESCE(stock_detail_filename, '-') as stockDetailFilename,
+              uploaded_by as uploadedBy, total_rows as totalRows, 
               successful_rows as successfulRows, failed_rows as failedRows, 
               status, processing_time_ms as processingTimeMs, uploaded_at as uploadedAt,
               error_details as errorDetails,
               COALESCE(blank_barcodes, 0) as blankBarcodes,
               COALESCE(duplicate_barcodes, 0) as duplicateBarcodes,
+              COALESCE(stock_detail_rows, 0) as stockDetailRows,
+              COALESCE(stock_detail_unique_names, 0) as stockDetailUniqueNames,
+              COALESCE(active_products, successful_rows) as activeProducts,
+              COALESCE(inactive_products, 0) as inactiveProducts,
               COALESCE(wholesale_products, 0) as wholesaleProducts,
               COALESCE(wholesale_matched, 0) as wholesaleMatched,
               COALESCE(wholesale_manual, 0) as wholesaleManual,
+              COALESCE(wholesale_edited, 0) as wholesaleEdited,
               COALESCE(wholesale_saved, 0) as wholesaleSaved
        FROM upload_history 
-       ORDER BY uploaded_at DESC`
+       ORDER BY uploaded_at DESC, id DESC`
     );
     res.json(history);
   } catch (error: any) {

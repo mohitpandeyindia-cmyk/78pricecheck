@@ -25,7 +25,7 @@
     <!-- Page Header -->
     <div class="page-header" style="margin-bottom: 24px;">
       <h1 class="page-title" style="font-size: 1.75rem; font-weight: 700; color: var(--admin-text); margin-bottom: 6px;">Product Catalogue</h1>
-      <p class="page-desc" style="color: var(--admin-text-secondary); font-size: 0.95rem;">Upload the latest Vyapar Export Items file. The system extracts product prices, reconciles wholesale quantities against the repository, and updates the live catalogue atomically.</p>
+      <p class="page-desc" style="color: var(--admin-text-secondary); font-size: 0.95rem;">Upload the latest Vyapar Export Items workbook and Stock Detail Report. The system reconciles active supermarket products, extracts prices, resolves wholesale quantities against the repository, and updates the live catalogue atomically.</p>
     </div>
 
     <!-- 1. Inline Upload History (Positioned near the top, below heading & above upload control) -->
@@ -43,12 +43,12 @@
           <thead>
             <tr>
               <th>Date & Time</th>
-              <th>File Name</th>
+              <th>Source Files</th>
               <th>Status</th>
               <th>Source Rows</th>
-              <th>Cleaned Items</th>
-              <th>Blank Barcodes</th>
-              <th>Duplicate Barcodes</th>
+              <th>Active (Retained)</th>
+              <th>Inactive (Excluded)</th>
+              <th>Blank / Dup</th>
               <th>Wholesale (Matched / Manual)</th>
               <th>Duration</th>
               <th>Action</th>
@@ -67,17 +67,37 @@
     <div class="grid-layout" id="upload-section">
       <!-- Left Column: Upload Controls -->
       <div class="card">
-        <h2 class="card-title">Upload Export Items</h2>
-        <p class="card-desc">Select and upload the latest Vyapar Export Items Excel workbook (<code>.xlsx</code> or <code>.xls</code>). You will review any new wholesale quantities before publishing.</p>
+        <h2 class="card-title">Upload Catalogue Files</h2>
+        <p class="card-desc">Both files are required for catalogue update. Export Items provides product data and pricing; Stock Detail Report reconciles currently active items.</p>
         
-        <form id="upload-form" class="upload-area">
-          <div class="file-picker">
-            <input type="file" id="file-input" name="file" accept=".xlsx,.xls" style="display: none;">
-            <button type="button" id="browse-btn" class="btn btn-outline">Choose Vyapar Export File</button>
-            <span id="file-name" class="file-name-label">No file selected</span>
+        <form id="upload-form" class="upload-area" style="display: flex; flex-direction: column; gap: 16px;">
+          <!-- File 1: Export Items -->
+          <div style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 6px; padding: 12px 14px;">
+            <div style="font-size: 0.82rem; font-weight: 600; color: var(--admin-brand); text-transform: uppercase; margin-bottom: 4px;">
+              File 1: Export Items (Data & Pricing)
+            </div>
+            <label style="font-size: 0.88rem; font-weight: 500; display: block; margin-bottom: 6px;">Upload Export Items (.xlsx, .xls)</label>
+            <div class="file-picker" style="display: flex; align-items: center; gap: 10px;">
+              <input type="file" id="export-file-input" name="exportItems" accept=".xlsx,.xls" style="display: none;">
+              <button type="button" id="browse-export-btn" class="btn btn-outline btn-sm">Choose Export Items File</button>
+              <span id="export-file-name" class="file-name-label" style="font-size: 0.85rem; color: var(--admin-text-secondary); word-break: break-all;">No file selected</span>
+            </div>
+          </div>
+
+          <!-- File 2: Stock Detail Report -->
+          <div style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 6px; padding: 12px 14px;">
+            <div style="font-size: 0.82rem; font-weight: 600; color: #38bdf8; text-transform: uppercase; margin-bottom: 4px;">
+              File 2: Stock Detail Report (Active Reconciliation)
+            </div>
+            <label style="font-size: 0.88rem; font-weight: 500; display: block; margin-bottom: 6px;">Upload Stock Detail Report (.xls, .xlsx)</label>
+            <div class="file-picker" style="display: flex; align-items: center; gap: 10px;">
+              <input type="file" id="stock-file-input" name="stockDetail" accept=".xls,.xlsx" style="display: none;">
+              <button type="button" id="browse-stock-btn" class="btn btn-outline btn-sm">Choose Stock Detail File</button>
+              <span id="stock-file-name" class="file-name-label" style="font-size: 0.85rem; color: var(--admin-text-secondary); word-break: break-all;">No file selected</span>
+            </div>
           </div>
           
-          <button type="submit" id="upload-btn" class="btn btn-primary" disabled>Inspect & Review Export Items</button>
+          <button type="submit" id="upload-btn" class="btn btn-primary" style="margin-top: 4px;" disabled>Inspect & Reconcile Catalogue</button>
         </form>
         
         <!-- Progress Indicator -->
@@ -85,7 +105,7 @@
           <div class="progress-bar-wrapper">
             <div id="progress-bar" class="progress-bar" style="width: 0%;"></div>
           </div>
-          <span id="progress-text" class="progress-text">Processing file: 0%</span>
+          <span id="progress-text" class="progress-text">Processing files: 0%</span>
         </div>
         
         <!-- Upload Result Alerts -->
@@ -94,7 +114,8 @@
           <div id="success-alert" class="alert alert-success" style="display: none;">
             <h3 class="alert-title">✔ Product Catalogue Published Successfully</h3>
             <div class="alert-details">
-              <p>Total products in catalogue: <strong id="res-total">0</strong></p>
+              <p>Active products in catalogue: <strong id="res-total">0</strong></p>
+              <p>Inactive products excluded: <strong id="res-inactive">0</strong></p>
               <p>Wholesale products configured: <strong id="res-wholesale">0</strong></p>
               <p>Wholesale quantities saved to repository: <strong id="res-wq-saved">0</strong></p>
               <p>Processing time: <strong id="res-time">0</strong> ms</p>
@@ -174,7 +195,7 @@
       <div class="kpi-grid">
         <div class="kpi-card">
           <span class="kpi-val" id="kpi-source-rows">0</span>
-          <span class="kpi-lbl">Source Rows</span>
+          <span class="kpi-lbl">Total Export Rows</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-val" id="kpi-blank-barcodes" style="color: var(--admin-text-secondary);">0</span>
@@ -184,25 +205,33 @@
           <span class="kpi-val" id="kpi-duplicate-barcodes" style="color: var(--admin-info);">0</span>
           <span class="kpi-lbl">Duplicate Barcodes</span>
         </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-valid-candidates">0</span>
+          <span class="kpi-lbl">Valid Candidates</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-stock-rows" style="color: #38bdf8;">0</span>
+          <span class="kpi-lbl">Stock Detail Named Rows</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-val" id="kpi-stock-unique" style="color: #38bdf8;">0</span>
+          <span class="kpi-lbl">Stock Detail Unique Names</span>
+        </div>
         <div class="kpi-card kpi-card--success">
-          <span class="kpi-val" id="kpi-valid-products" style="color: var(--admin-brand);">0</span>
-          <span class="kpi-lbl">Cleaned Products</span>
+          <span class="kpi-val" id="kpi-active-products" style="color: var(--admin-brand);">0</span>
+          <span class="kpi-lbl">ACTIVE Products Retained</span>
+        </div>
+        <div class="kpi-card kpi-card--highlight">
+          <span class="kpi-val" id="kpi-inactive-products" style="color: #fb923c;">0</span>
+          <span class="kpi-lbl">INACTIVE Excluded</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-val" id="kpi-total-wholesale">0</span>
-          <span class="kpi-lbl">Total Wholesale Items</span>
+          <span class="kpi-lbl">Active Wholesale Items</span>
         </div>
         <div class="kpi-card kpi-card--success">
           <span class="kpi-val" id="kpi-matched-wq" style="color: var(--admin-brand);">0</span>
           <span class="kpi-lbl">Existing WQ Matches</span>
-        </div>
-        <div class="kpi-card kpi-card--highlight">
-          <span class="kpi-val" id="kpi-new-wq" style="color: var(--admin-warning);">0</span>
-          <span class="kpi-lbl">New Products Requiring WQ</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-val" id="kpi-ambiguous-wq" style="color: #a5b4fc;">0</span>
-          <span class="kpi-lbl">Ambiguous Matches</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-val" id="kpi-edited-wq" style="color: #22d3ee;">0</span>
@@ -210,7 +239,43 @@
         </div>
         <div class="kpi-card kpi-card--highlight">
           <span class="kpi-val" id="kpi-missing-wq" style="color: var(--admin-danger);">0</span>
-          <span class="kpi-lbl">Quantities Still Missing</span>
+          <span class="kpi-lbl">Quantities Required / Missing</span>
+        </div>
+      </div>
+
+      <!-- Excluded Inactive Products Collapsible Card -->
+      <div id="inactive-products-card" style="display: none; background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--admin-text); margin: 0;">
+                Excluded Inactive Products (<span id="inactive-count-badge">0</span>)
+              </h3>
+              <button type="button" id="toggle-inactive-btn" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 2px 8px;">View Inactive Products</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--admin-text-secondary); margin: 4px 0 0 0;">
+              These products exist in Export Items but were absent from the Stock Detail Report. Classified as <strong>INACTIVE</strong> and excluded from the live catalogue.
+            </p>
+          </div>
+          <button type="button" id="download-inactive-btn" class="btn btn-outline btn-sm">Download Excluded Items (.xlsx)</button>
+        </div>
+        
+        <div id="inactive-table-wrapper" style="display: none; max-height: 280px; overflow-y: auto; margin-top: 10px; border: 1px solid var(--admin-border-soft); border-radius: 6px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+            <thead>
+              <tr style="background: var(--admin-surface-2); border-bottom: 1px solid var(--admin-border-soft); color: var(--admin-text-muted); text-transform: uppercase;">
+                <th style="padding: 6px 8px; text-align: left;">Barcode</th>
+                <th style="padding: 6px 8px; text-align: left;">Product Name</th>
+                <th style="padding: 6px 8px; text-align: right;">MRP</th>
+                <th style="padding: 6px 8px; text-align: right;">Sale Price</th>
+                <th style="padding: 6px 8px; text-align: right;">Wholesale Price</th>
+                <th style="padding: 6px 8px; text-align: left;">Reason</th>
+              </tr>
+            </thead>
+            <tbody id="inactive-tbody">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -263,8 +328,12 @@
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
         <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
-          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">File Name</div>
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Export Items File</div>
           <div id="inspect-filename" style="font-weight: 600; word-break: break-all;">-</div>
+        </div>
+        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
+          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Stock Detail Report</div>
+          <div id="inspect-stock-filename" style="font-weight: 600; word-break: break-all; color: #38bdf8;">-</div>
         </div>
         <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
           <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Status</div>
@@ -274,20 +343,28 @@
           <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Date & Time</div>
           <div id="inspect-date">-</div>
         </div>
-        <div style="background: var(--admin-surface-3); padding: 10px 12px; border-radius: 6px;">
-          <div style="font-size: 0.75rem; color: var(--admin-text-secondary); text-transform: uppercase;">Uploaded By</div>
-          <div id="inspect-user">-</div>
-        </div>
       </div>
 
       <div style="background: var(--admin-surface-3); border: 1px solid var(--admin-border); border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 0.88rem;">
         <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
-          <span style="color: var(--admin-text-secondary);">Total Source Rows:</span>
+          <span style="color: var(--admin-text-secondary);">Total Export Rows:</span>
           <strong id="inspect-total-rows">-</strong>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
-          <span style="color: var(--admin-text-secondary);">Valid / Cleaned Products:</span>
+          <span style="color: var(--admin-text-secondary);">Stock Detail Named Rows:</span>
+          <strong id="inspect-stock-rows">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Stock Detail Unique Names:</span>
+          <strong id="inspect-stock-unique">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Active Products Retained:</span>
           <strong id="inspect-valid-rows" style="color: var(--admin-brand);">-</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
+          <span style="color: var(--admin-text-secondary);">Inactive Products Excluded:</span>
+          <strong id="inspect-inactive-rows" style="color: #fb923c;">-</strong>
         </div>
         <div style="display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--admin-border-soft);">
           <span style="color: var(--admin-text-secondary);">Blank Barcodes Excluded:</span>

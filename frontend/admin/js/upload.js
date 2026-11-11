@@ -18,11 +18,15 @@ const inspectModal = document.getElementById('inspect-modal');
 const inspectCloseBtn = document.getElementById('inspect-close-btn');
 const inspectDismissBtn = document.getElementById('inspect-dismiss-btn');
 const inspectFilename = document.getElementById('inspect-filename');
+const inspectStockFilename = document.getElementById('inspect-stock-filename');
 const inspectStatus = document.getElementById('inspect-status');
 const inspectDate = document.getElementById('inspect-date');
 const inspectUser = document.getElementById('inspect-user');
 const inspectTotalRows = document.getElementById('inspect-total-rows');
+const inspectStockRows = document.getElementById('inspect-stock-rows');
+const inspectStockUnique = document.getElementById('inspect-stock-unique');
 const inspectValidRows = document.getElementById('inspect-valid-rows');
+const inspectInactiveRows = document.getElementById('inspect-inactive-rows');
 const inspectBlankBarcodes = document.getElementById('inspect-blank-barcodes');
 const inspectDuplicateBarcodes = document.getElementById('inspect-duplicate-barcodes');
 const inspectWholesaleProducts = document.getElementById('inspect-wholesale-products');
@@ -34,10 +38,13 @@ const inspectErrorsContainer = document.getElementById('inspect-errors-container
 const inspectErrorsContent = document.getElementById('inspect-errors-content');
 const inspectDlErrorBtn = document.getElementById('inspect-dl-error-btn');
 
-// DOM Elements - Upload Controls
-const browseBtn = document.getElementById('browse-btn');
-const fileInput = document.getElementById('file-input');
-const fileNameLabel = document.getElementById('file-name');
+// DOM Elements - Dual Upload Controls
+const browseExportBtn = document.getElementById('browse-export-btn');
+const exportFileInput = document.getElementById('export-file-input');
+const exportFileNameLabel = document.getElementById('export-file-name');
+const browseStockBtn = document.getElementById('browse-stock-btn');
+const stockFileInput = document.getElementById('stock-file-input');
+const stockFileNameLabel = document.getElementById('stock-file-name');
 const uploadBtn = document.getElementById('upload-btn');
 const uploadForm = document.getElementById('upload-form');
 const progressContainer = document.getElementById('progress-container');
@@ -65,15 +72,25 @@ const publishBtn = document.getElementById('publish-btn');
 const downloadPreviewBtn = document.getElementById('download-preview-btn');
 const cancelReviewBtn = document.getElementById('cancel-review-btn');
 
+// DOM Elements - Inactive Products Excluded Section
+const inactiveProductsCard = document.getElementById('inactive-products-card');
+const inactiveCountBadge = document.getElementById('inactive-count-badge');
+const toggleInactiveBtn = document.getElementById('toggle-inactive-btn');
+const downloadInactiveBtn = document.getElementById('download-inactive-btn');
+const inactiveTableWrapper = document.getElementById('inactive-table-wrapper');
+const inactiveTbody = document.getElementById('inactive-tbody');
+
 // DOM Elements - KPI Summary
 const kpiSourceRows = document.getElementById('kpi-source-rows');
 const kpiBlankBarcodes = document.getElementById('kpi-blank-barcodes');
 const kpiDuplicateBarcodes = document.getElementById('kpi-duplicate-barcodes');
-const kpiValidProducts = document.getElementById('kpi-valid-products');
+const kpiValidCandidates = document.getElementById('kpi-valid-candidates');
+const kpiStockRows = document.getElementById('kpi-stock-rows');
+const kpiStockUnique = document.getElementById('kpi-stock-unique');
+const kpiActiveProducts = document.getElementById('kpi-active-products');
+const kpiInactiveProducts = document.getElementById('kpi-inactive-products');
 const kpiTotalWholesale = document.getElementById('kpi-total-wholesale');
 const kpiMatchedWq = document.getElementById('kpi-matched-wq');
-const kpiNewWq = document.getElementById('kpi-new-wq');
-const kpiAmbiguousWq = document.getElementById('kpi-ambiguous-wq');
 const kpiEditedWq = document.getElementById('kpi-edited-wq');
 const kpiMissingWq = document.getElementById('kpi-missing-wq');
 
@@ -89,6 +106,7 @@ const modalUpdatesCount = document.getElementById('modal-updates-count');
 let activeSessionId = null;
 let stagedWholesaleItems = [];
 let stagedDuplicateConflicts = [];
+let stagedInactiveProducts = [];
 let duplicateResolutions = new Map(); // barcode -> { action: 'SELECT' | 'EXCLUDE', candidateId?: string }
 let wholesaleUpdates = new Map(); // normalizedName -> { originalName, normalizedName, wholesaleQty }
 let cachedHistoryRecords = [];
@@ -176,14 +194,21 @@ async function loadHistory() {
         const manual = run.wholesaleManual || 0;
         const wholesaleRatio = (run.wholesaleProducts > 0) ? `${matched} / ${manual}` : '-';
 
+        const exportFile = run.exportFilename || run.filename;
+        const stockFile = run.stockDetailFilename || '-';
+        const fileDisplay = `
+          <div style="font-weight: 600; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Export: ${exportFile}">📄 ${exportFile}</div>
+          <div style="font-size: 0.75rem; color: #38bdf8; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="Stock Detail: ${stockFile}">📊 ${stockFile}</div>
+        `;
+
         tr.innerHTML = `
           <td style="font-size: 0.82rem; white-space: nowrap;">${dateStr}</td>
-          <td class="text-semibold" style="font-size: 0.85rem; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${run.filename}">${run.filename}</td>
+          <td class="text-semibold" style="font-size: 0.85rem;">${fileDisplay}</td>
           <td>${statusBadge}</td>
           <td style="font-size: 0.85rem;">${Number(run.totalRows || 0).toLocaleString()}</td>
-          <td style="font-size: 0.85rem; font-weight: 600; color: var(--admin-brand);">${Number(run.successfulRows || 0).toLocaleString()}</td>
-          <td style="font-size: 0.85rem; color: var(--admin-text-secondary);">${Number(run.blankBarcodes || 0).toLocaleString()}</td>
-          <td style="font-size: 0.85rem; color: var(--admin-info);">${Number(run.duplicateBarcodes || 0).toLocaleString()}</td>
+          <td style="font-size: 0.85rem; font-weight: 600; color: var(--admin-brand);">${Number(run.activeProducts || run.successfulRows || 0).toLocaleString()}</td>
+          <td style="font-size: 0.85rem; color: #fb923c;">${Number(run.inactiveProducts || 0).toLocaleString()}</td>
+          <td style="font-size: 0.82rem; color: var(--admin-text-secondary);">${Number(run.blankBarcodes || 0).toLocaleString()} / ${Number(run.duplicateBarcodes || 0).toLocaleString()}</td>
           <td style="font-size: 0.82rem;">${wholesaleRatio}</td>
           <td style="font-size: 0.82rem; color: var(--admin-text-muted);">${run.processingTimeMs || 0} ms</td>
           <td>${actionCell}</td>
@@ -239,7 +264,8 @@ function showInspectModal(run) {
   const d = new Date(run.uploadedAt);
   const dateStr = d.toLocaleString('en-GB');
 
-  inspectFilename.textContent = run.filename || '-';
+  inspectFilename.textContent = run.exportFilename || run.filename || '-';
+  if (inspectStockFilename) inspectStockFilename.textContent = run.stockDetailFilename || '-';
   inspectStatus.innerHTML = run.status === 'Success'
     ? '<span class="badge badge-success">Success</span>'
     : '<span class="badge badge-danger">Failed</span>';
@@ -247,7 +273,10 @@ function showInspectModal(run) {
   inspectUser.textContent = run.uploadedBy || 'admin';
 
   inspectTotalRows.textContent = Number(run.totalRows || 0).toLocaleString();
-  inspectValidRows.textContent = Number(run.successfulRows || 0).toLocaleString();
+  if (inspectStockRows) inspectStockRows.textContent = run.stockDetailRows ? Number(run.stockDetailRows).toLocaleString() : '-';
+  if (inspectStockUnique) inspectStockUnique.textContent = run.stockDetailUniqueNames ? Number(run.stockDetailUniqueNames).toLocaleString() : '-';
+  inspectValidRows.textContent = Number(run.activeProducts || run.successfulRows || 0).toLocaleString();
+  if (inspectInactiveRows) inspectInactiveRows.textContent = Number(run.inactiveProducts || 0).toLocaleString();
   inspectBlankBarcodes.textContent = Number(run.blankBarcodes || 0).toLocaleString();
   inspectDuplicateBarcodes.textContent = Number(run.duplicateBarcodes || 0).toLocaleString();
   inspectWholesaleProducts.textContent = Number(run.wholesaleProducts || 0).toLocaleString();
@@ -308,28 +337,44 @@ if (refreshHistoryBtn) {
   });
 }
 
-// 3. File Selection Handlers
-browseBtn.addEventListener('click', () => fileInput.click());
+// 3. Dual File Selection Handlers
+if (browseExportBtn && exportFileInput) {
+  browseExportBtn.addEventListener('click', () => exportFileInput.click());
+}
+if (browseStockBtn && stockFileInput) {
+  browseStockBtn.addEventListener('click', () => stockFileInput.click());
+}
 
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length > 0) {
-    fileNameLabel.textContent = fileInput.files[0].name;
-    uploadBtn.disabled = false;
-  } else {
-    fileNameLabel.textContent = 'No file selected';
-    uploadBtn.disabled = true;
+function checkFilesSelected() {
+  const hasExport = exportFileInput && exportFileInput.files.length > 0;
+  const hasStock = stockFileInput && stockFileInput.files.length > 0;
+
+  if (exportFileNameLabel) {
+    exportFileNameLabel.textContent = hasExport ? exportFileInput.files[0].name : 'No file selected';
   }
-});
+  if (stockFileNameLabel) {
+    stockFileNameLabel.textContent = hasStock ? stockFileInput.files[0].name : 'No file selected';
+  }
 
-// 4. Handle Upload Form Submission (Export Items Parsing & Staging)
+  if (uploadBtn) {
+    uploadBtn.disabled = !(hasExport && hasStock);
+  }
+}
+
+if (exportFileInput) exportFileInput.addEventListener('change', checkFilesSelected);
+if (stockFileInput) stockFileInput.addEventListener('change', checkFilesSelected);
+
+// 4. Handle Upload Form Submission (Export Items & Stock Detail Dual-File Processing)
 uploadForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (fileInput.files.length === 0) return;
+  if (!exportFileInput || exportFileInput.files.length === 0 || !stockFileInput || stockFileInput.files.length === 0) {
+    return;
+  }
   
   uploadBtn.disabled = true;
   progressContainer.style.display = 'block';
   progressBar.style.width = '0%';
-  progressText.textContent = 'Uploading & parsing workbook: 0%';
+  progressText.textContent = 'Uploading & parsing workbooks: 0%';
   
   resultContainer.style.display = 'none';
   successAlert.style.display = 'none';
@@ -337,7 +382,8 @@ uploadForm.addEventListener('submit', async (e) => {
   reviewSection.style.display = 'none';
   
   const formData = new FormData();
-  formData.append('file', fileInput.files[0]);
+  formData.append('exportItems', exportFileInput.files[0]);
+  formData.append('stockDetail', stockFileInput.files[0]);
   
   try {
     const xhr = new XMLHttpRequest();
@@ -346,13 +392,13 @@ uploadForm.addEventListener('submit', async (e) => {
       if (event.lengthComputable) {
         const percent = Math.round((event.loaded / event.total) * 90);
         progressBar.style.width = percent + '%';
-        progressText.textContent = `Processing workbook: ${percent}%`;
+        progressText.textContent = `Processing workbooks: ${percent}%`;
       }
     });
     
     xhr.addEventListener('load', async () => {
       progressBar.style.width = '100%';
-      progressText.textContent = 'Finalizing extraction...';
+      progressText.textContent = 'Finalizing reconciliation...';
       
       setTimeout(() => {
         progressContainer.style.display = 'none';
@@ -370,22 +416,26 @@ uploadForm.addEventListener('submit', async (e) => {
         activeSessionId = data.sessionId;
         stagedWholesaleItems = data.wholesaleItems || [];
         stagedDuplicateConflicts = data.duplicateConflicts || [];
+        stagedInactiveProducts = data.inactiveProducts || [];
         duplicateResolutions.clear();
         wholesaleUpdates.clear();
         
         // Populate KPIs
         const s = data.summary || {};
-        kpiSourceRows.textContent = Number(s.totalSourceRows || 0).toLocaleString();
-        kpiBlankBarcodes.textContent = Number(s.blankBarcodesExcluded || 0).toLocaleString();
-        kpiDuplicateBarcodes.textContent = Number(s.duplicateBarcodesCount || 0).toLocaleString();
-        kpiValidProducts.textContent = Number(s.totalValidProducts || 0).toLocaleString();
-        kpiTotalWholesale.textContent = Number(s.totalWholesaleProducts || 0).toLocaleString();
-        kpiMatchedWq.textContent = Number(s.matchedCount || 0).toLocaleString();
-        if (kpiNewWq) kpiNewWq.textContent = Number(s.missingCount || 0).toLocaleString();
-        if (kpiAmbiguousWq) kpiAmbiguousWq.textContent = Number(s.ambiguousCount || 0).toLocaleString();
+        if (kpiSourceRows) kpiSourceRows.textContent = Number(s.totalSourceRows || 0).toLocaleString();
+        if (kpiBlankBarcodes) kpiBlankBarcodes.textContent = Number(s.blankBarcodesExcluded || 0).toLocaleString();
+        if (kpiDuplicateBarcodes) kpiDuplicateBarcodes.textContent = Number(s.duplicateBarcodesCount || 0).toLocaleString();
+        if (kpiValidCandidates) kpiValidCandidates.textContent = Number(s.validUniqueCandidates || 0).toLocaleString();
+        if (kpiStockRows) kpiStockRows.textContent = Number(s.stockDetailNamedRows || 0).toLocaleString();
+        if (kpiStockUnique) kpiStockUnique.textContent = Number(s.stockDetailUniqueNames || 0).toLocaleString();
+        if (kpiActiveProducts) kpiActiveProducts.textContent = Number(s.activeProductCount || 0).toLocaleString();
+        if (kpiInactiveProducts) kpiInactiveProducts.textContent = Number(s.inactiveProductCount || 0).toLocaleString();
+        if (kpiTotalWholesale) kpiTotalWholesale.textContent = Number(s.totalWholesaleProducts || 0).toLocaleString();
+        if (kpiMatchedWq) kpiMatchedWq.textContent = Number(s.matchedCount || 0).toLocaleString();
         if (kpiEditedWq) kpiEditedWq.textContent = '0';
-        kpiMissingWq.textContent = Number((s.missingCount || 0) + (s.ambiguousCount || 0)).toLocaleString();
+        if (kpiMissingWq) kpiMissingWq.textContent = Number((s.missingCount || 0) + (s.ambiguousCount || 0)).toLocaleString();
         
+        renderInactiveProductsSection();
         renderDuplicateConflicts();
         renderWholesaleReviewTable();
         validateWholesaleState();
@@ -407,7 +457,7 @@ uploadForm.addEventListener('submit', async (e) => {
       uploadBtn.disabled = false;
       resultContainer.style.display = 'block';
       failureAlert.style.display = 'block';
-      failureMsg.textContent = 'A network error occurred while uploading the file.';
+      failureMsg.textContent = 'A network error occurred while uploading the files.';
     });
     
     xhr.open('POST', '/api/admin/upload-export-items');
@@ -422,6 +472,66 @@ uploadForm.addEventListener('submit', async (e) => {
     failureMsg.textContent = 'Upload submission failed.';
   }
 });
+
+// 4b. Render Excluded Inactive Products Section
+function renderInactiveProductsSection() {
+  if (!inactiveProductsCard || !inactiveTbody) return;
+  if (!Array.isArray(stagedInactiveProducts) || stagedInactiveProducts.length === 0) {
+    inactiveProductsCard.style.display = 'none';
+    return;
+  }
+
+  inactiveProductsCard.style.display = 'block';
+  if (inactiveCountBadge) inactiveCountBadge.textContent = stagedInactiveProducts.length.toLocaleString();
+
+  inactiveTbody.innerHTML = '';
+  stagedInactiveProducts.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--admin-border-soft)';
+    const wpDisplay = (item.wholesalePrice !== null && item.wholesalePrice !== undefined && item.wholesalePrice > 0)
+      ? `₹${Number(item.wholesalePrice).toFixed(2)}`
+      : '-';
+
+    tr.innerHTML = `
+      <td style="padding: 6px 8px; font-family: monospace; font-size: 0.82rem;">${item.barcode}</td>
+      <td style="padding: 6px 8px; font-weight: 500;">${item.name}</td>
+      <td style="padding: 6px 8px; text-align: right; color: var(--admin-text-secondary);">₹${Number(item.mrp || 0).toFixed(2)}</td>
+      <td style="padding: 6px 8px; text-align: right; font-weight: 600;">₹${Number(item.salePrice || 0).toFixed(2)}</td>
+      <td style="padding: 6px 8px; text-align: right; color: var(--admin-brand);">${wpDisplay}</td>
+      <td style="padding: 6px 8px; color: #fb923c; font-size: 0.78rem;">${item.reason || 'NOT FOUND IN STOCK DETAIL REPORT'}</td>
+    `;
+    inactiveTbody.appendChild(tr);
+  });
+}
+
+if (toggleInactiveBtn && inactiveTableWrapper) {
+  toggleInactiveBtn.addEventListener('click', () => {
+    const isHidden = inactiveTableWrapper.style.display === 'none';
+    inactiveTableWrapper.style.display = isHidden ? 'block' : 'none';
+    toggleInactiveBtn.textContent = isHidden ? 'Hide List' : 'View Inactive Products';
+  });
+}
+
+if (downloadInactiveBtn) {
+  downloadInactiveBtn.addEventListener('click', async () => {
+    if (!activeSessionId) return;
+    try {
+      const res = await authFetch(`/api/admin/export-inactive-products/${activeSessionId}`);
+      if (res && res.status === 200) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `INACTIVE_PRODUCTS_${Date.now()}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } catch (err) {
+      console.error('Failed to download inactive products', err);
+    }
+  });
+}
 
 // 5. Render Conflicting Duplicate Barcodes Section
 function renderDuplicateConflicts() {
@@ -726,19 +836,23 @@ cancelReviewBtn.addEventListener('click', () => {
   activeSessionId = null;
   stagedWholesaleItems = [];
   stagedDuplicateConflicts = [];
+  stagedInactiveProducts = [];
   duplicateResolutions.clear();
   wholesaleUpdates.clear();
-  fileInput.value = '';
-  fileNameLabel.textContent = 'No file selected';
-  uploadBtn.disabled = true;
+  if (exportFileInput) exportFileInput.value = '';
+  if (exportFileNameLabel) exportFileNameLabel.textContent = 'No file selected';
+  if (stockFileInput) stockFileInput.value = '';
+  if (stockFileNameLabel) stockFileNameLabel.textContent = 'No file selected';
+  if (uploadBtn) uploadBtn.disabled = true;
+  if (inactiveProductsCard) inactiveProductsCard.style.display = 'none';
 });
 
 // 9. Publish Modal Controls
 publishBtn.addEventListener('click', () => {
   if (publishBtn.disabled || !activeSessionId) return;
   
-  modalProductsCount.textContent = kpiValidProducts.textContent;
-  modalWholesaleCount.textContent = kpiTotalWholesale.textContent;
+  modalProductsCount.textContent = kpiActiveProducts ? kpiActiveProducts.textContent : (kpiValidProducts ? kpiValidProducts.textContent : '0');
+  modalWholesaleCount.textContent = kpiTotalWholesale ? kpiTotalWholesale.textContent : '0';
   modalUpdatesCount.textContent = wholesaleUpdates.size;
   
   publishModal.style.display = 'flex';
@@ -782,21 +896,28 @@ modalConfirmBtn.addEventListener('click', async () => {
       
       resultContainer.style.display = 'block';
       successAlert.style.display = 'block';
-      document.getElementById('res-total').textContent = Number(data.totalProducts || 0).toLocaleString();
+      document.getElementById('res-total').textContent = Number(data.activeProducts || data.totalProducts || 0).toLocaleString();
+      if (document.getElementById('res-inactive')) {
+        document.getElementById('res-inactive').textContent = Number(data.inactiveProducts || 0).toLocaleString();
+      }
       document.getElementById('res-wholesale').textContent = Number(data.totalWholesaleProducts || 0).toLocaleString();
       document.getElementById('res-wq-saved').textContent = Number(data.wholesaleSaved || 0).toLocaleString();
       document.getElementById('res-time').textContent = data.processingTimeMs || 0;
       document.getElementById('res-version').textContent = data.catalogVersion || 'N/A';
       
       // Reset upload form
-      fileInput.value = '';
-      fileNameLabel.textContent = 'No file selected';
-      uploadBtn.disabled = true;
+      if (exportFileInput) exportFileInput.value = '';
+      if (exportFileNameLabel) exportFileNameLabel.textContent = 'No file selected';
+      if (stockFileInput) stockFileInput.value = '';
+      if (stockFileNameLabel) stockFileNameLabel.textContent = 'No file selected';
+      if (uploadBtn) uploadBtn.disabled = true;
       activeSessionId = null;
       stagedWholesaleItems = [];
       stagedDuplicateConflicts = [];
+      stagedInactiveProducts = [];
       duplicateResolutions.clear();
       wholesaleUpdates.clear();
+      if (inactiveProductsCard) inactiveProductsCard.style.display = 'none';
       
       // Refresh status panel & inline history
       updateStatusPanel();
